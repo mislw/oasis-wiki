@@ -4,6 +4,8 @@ This repository packages a Codex skill for Oasis / 绿洲启元 / RedCliff Lua d
 
 The skill bundles a local Markdown export of the Oasis wiki and instructs Codex to search it before answering questions about Lua APIs, gameplay systems, UI systems, editor workflows, templates, debugging, performance, release notes, and terminology.
 
+It also includes distilled project-architecture notes mined from local UGC sample projects. These notes summarize reusable patterns without copying whole project source trees.
+
 ## Install
 
 Copy the `oasis-wiki` folder into your Codex skills directory:
@@ -39,6 +41,8 @@ node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
 - `oasis-wiki/SKILL.md`: Codex skill instructions and trigger metadata.
 - `oasis-wiki/agents/openai.yaml`: UI metadata.
 - `oasis-wiki/references/wiki`: Markdown wiki export.
+- `oasis-wiki/references/project-patterns.md`: Curated UGC project architecture and Lua patterns.
+- `oasis-wiki/references/project-mining-index.md`: Representative project paths and targeted search commands.
 - `oasis-wiki/scripts`: Search helpers.
 
 The bundled wiki export was generated on 2026-06-16 and contains 59 Markdown files, about 278 articles, 263 Lua examples, and 1140 API/class references.
