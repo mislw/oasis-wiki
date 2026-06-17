@@ -1,0 +1,7 @@
+interface:
+  display_name: "Oasis Wiki"
+  short_description: "Search and use the Oasis/RedCliff Lua wiki."
+  default_prompt: "Use $oasis-wiki to answer a question about Oasis/RedCliff Lua APIs with citations from the local wiki."
+
+policy:
+  allow_implicit_invocation: true
