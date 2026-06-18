@@ -1,6 +1,6 @@
 # Teaching Mode
 
-Use this reference when helping the user write or change Oasis/UGC/RedCliff Lua code.
+Use this reference when helping the user write or change Oasis/绿洲启元/和平精英 UGC Lua code.
 
 ## Core Rule
 

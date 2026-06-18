@@ -1,6 +1,6 @@
 # Oasis Wiki Codex Skill
 
-This repository packages a Codex skill for Oasis / 绿洲启元 / RedCliff Lua development.
+This repository packages a Codex skill for Oasis / 绿洲启元 / 和平精英 UGC Lua development.
 
 The skill bundles a local Markdown export of the Oasis wiki and instructs Codex to search it before answering questions about Lua APIs, gameplay systems, UI systems, editor workflows, templates, debugging, performance, release notes, and terminology.
 

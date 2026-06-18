@@ -1,11 +1,11 @@
 ---
 name: oasis-wiki
-description: Use when answering questions or teaching code for Oasis/绿洲启元/和平精英 UGC/RedCliff Lua development, including API lookup, gameplay systems, UI systems, editor workflows, examples, templates, debugging, performance, release notes, terminology, practical project architecture patterns, common implementation recipes, code snippets, and pitfalls mined from local UGC sample projects. Search the bundled local wiki and distilled project references before giving technical guidance or code for these domains. Default to teaching-only mode: project files may be read freely, but do not directly modify UGC project files unless explicitly overridden.
+description: Use when answering questions or teaching code for Oasis/绿洲启元/和平精英 UGC Lua development, including API lookup, gameplay systems, UI systems, editor workflows, examples, templates, debugging, performance, release notes, terminology, practical project architecture patterns, common implementation recipes, code snippets, and pitfalls mined from local UGC sample projects. Search the bundled local wiki and distilled project references before giving technical guidance or code for these domains. Default to teaching-only mode: project files may be read freely, but do not directly modify UGC project files unless explicitly overridden.
 ---
 
 # Oasis Wiki
 
-Use this skill for Oasis/绿洲启元 and RedCliff development questions. The bundled wiki is the source of truth for Lua APIs, editor workflows, gameplay systems, UI, templates, troubleshooting, and examples. The project-pattern references add distilled practices mined from local UGC projects.
+Use this skill for Oasis/绿洲启元 and 和平精英 UGC development questions. The bundled wiki is the source of truth for Lua APIs, editor workflows, gameplay systems, UI, templates, troubleshooting, and examples. The project-pattern references add distilled practices mined from local UGC projects, including reusable lessons from project-specific examples.
 
 Default to teaching-only mode for UGC project files: read freely, analyze freely, and explain exact edits, but do not directly modify project files unless the user explicitly overrides this rule. Read `references/teaching-mode.md` before giving code-change guidance.
 
@@ -17,7 +17,7 @@ Default to teaching-only mode for UGC project files: read freely, analyze freely
    - `references/wiki/API参考索引.md` for API and class names.
    - `references/wiki/代码示例库.md` for Lua examples.
    - `references/wiki/术语表.md` for terminology.
-   - `references/wiki/RedCliff开发速查.md` for RedCliff-specific guidance.
+   - Project-specific quick-reference files only when the user is explicitly discussing that project or when mining reusable project lessons.
 3. For code-change guidance, read `references/teaching-mode.md` and teach the user where and how to edit instead of modifying UGC project files directly.
 4. For common tasks such as UI buttons, RPCs, countdowns, phases, loadouts, widgets, skills, reconnects, or debugging, read `references/recipes.md`.
 5. For template code blocks, read `references/snippets.md` and adapt names/paths/IDs to the user's project.
