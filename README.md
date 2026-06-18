@@ -6,6 +6,8 @@ The skill bundles a local Markdown export of the Oasis wiki and instructs Codex 
 
 It also includes distilled project-architecture notes mined from local UGC sample projects. These notes summarize reusable patterns without copying whole project source trees.
 
+The skill is designed for teaching-oriented project help: Codex can read project files to understand them, but should explain edits instead of directly modifying UGC project files unless explicitly overridden.
+
 ## Install
 
 Copy the `oasis-wiki` folder into your Codex skills directory:
@@ -43,6 +45,7 @@ node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
 - `oasis-wiki/references/wiki`: Markdown wiki export.
 - `oasis-wiki/references/project-patterns.md`: Curated UGC project architecture and Lua patterns.
 - `oasis-wiki/references/project-mining-index.md`: Representative project paths and targeted search commands.
+- `oasis-wiki/references/teaching-mode.md`: Code teaching workflow and read-only project-file constraint.
 - `oasis-wiki/scripts`: Search helpers.
 
 The bundled wiki export was generated on 2026-06-16 and contains 59 Markdown files, about 278 articles, 263 Lua examples, and 1140 API/class references.
