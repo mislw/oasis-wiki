@@ -46,6 +46,9 @@ node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
 - `oasis-wiki/references/project-patterns.md`: Curated UGC project architecture and Lua patterns.
 - `oasis-wiki/references/project-mining-index.md`: Representative project paths and targeted search commands.
 - `oasis-wiki/references/teaching-mode.md`: Code teaching workflow and read-only project-file constraint.
+- `oasis-wiki/references/recipes.md`: Common implementation recipes for UGC coding tasks.
+- `oasis-wiki/references/snippets.md`: Small Lua templates for RPCs, UI, replication, actions, resources, and loadouts.
+- `oasis-wiki/references/pitfalls.md`: Gotchas and verification reminders for UGC Lua work.
 - `oasis-wiki/scripts`: Search helpers.
 
 The bundled wiki export was generated on 2026-06-16 and contains 59 Markdown files, about 278 articles, 263 Lua examples, and 1140 API/class references.

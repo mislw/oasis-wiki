@@ -32,7 +32,7 @@ When the user asks how to implement something:
 
 ## Answer Format For Code Changes
 
-Prefer this shape:
+For any non-trivial code-change answer, use this shape:
 
 ```text
 改哪里:
@@ -52,7 +52,13 @@ Prefer this shape:
 <2-5 concrete test steps>
 ```
 
-For small questions, a shorter answer is fine, but still make the edit location clear.
+For small questions, a shorter answer is fine, but still make the edit location clear. If the answer includes code that changes server/client behavior, do not omit `注意` and `怎么测`.
+
+Before writing the final answer, check whether one of these references should be loaded:
+
+- `recipes.md` for common implementation tasks.
+- `snippets.md` for small template blocks.
+- `pitfalls.md` for gotchas and verification reminders.
 
 ## Project File Safety
 
@@ -63,6 +69,8 @@ Before giving instructions based on a project file:
 - If a change touches replicated state, remind the user to add/update `GetReplicatedProperties()` or call `UnrealNetwork.RepLazyProperty` when appropriate.
 - If a change touches client-to-server behavior, remind the user to register server RPCs in `GetAvailableServerRPCs()`.
 - If a change touches UI, prefer `ClientRPC -> UGCEventSystem:SendEvent -> UI listener` over direct cross-file UI mutation.
+- If the task is a common workflow, include the relevant recipe name or summarize the matching recipe.
+- If using a snippet, tell the user which names and paths must be adapted.
 
 ## When The User Asks To Modify Directly
 
