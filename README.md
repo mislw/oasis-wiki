@@ -1,6 +1,8 @@
 # Oasis Wiki Codex Skill
 
-This repository packages a Codex skill for Oasis / 绿洲启元 / 和平精英 UGC Lua development.
+This repository packages a portable AI-agent knowledge bundle for Oasis / 绿洲启元 / 和平精英 UGC Lua development.
+
+It is Codex-native through `oasis-wiki/SKILL.md`, and also includes generic instructions for other AI coding agents through `AGENTS.md` and `AGENT_PROMPT.md`.
 
 The skill bundles a local Markdown export of the Oasis wiki and instructs Codex to search it before answering questions about Lua APIs, gameplay systems, UI systems, editor workflows, templates, debugging, performance, release notes, and terminology.
 
@@ -17,6 +19,16 @@ Copy-Item -Recurse -Force .\oasis-wiki "$env:USERPROFILE\.codex\skills\oasis-wik
 ```
 
 Restart Codex or refresh skills after copying.
+
+## Use With Other AI Agents
+
+For agents that do not support Codex skills directly:
+
+1. Open `AGENTS.md` as the repository-level instruction file.
+2. If the agent accepts a setup prompt, paste `AGENT_PROMPT.md`.
+3. Point the agent at the `oasis-wiki/references` folder for search and citation.
+
+The important behavior is the same across agents: search the local wiki and distilled references first, teach code changes clearly, and do not directly modify UGC project files unless explicitly allowed for that task.
 
 ## Use
 
@@ -40,6 +52,9 @@ node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
 
 ## Contents
 
+- `AGENTS.md`: Generic instructions for AI coding agents.
+- `AGENT_PROMPT.md`: Copy-paste prompt for agents that do not auto-read repository instructions.
+- `oasis-wiki/AGENTS.md`: Generic instructions kept inside the portable skill folder.
 - `oasis-wiki/SKILL.md`: Codex skill instructions and trigger metadata.
 - `oasis-wiki/agents/openai.yaml`: UI metadata.
 - `oasis-wiki/references/wiki`: Markdown wiki export.
