@@ -1,11 +1,23 @@
 ---
 name: oasis-wiki
-description: Use when answering questions or teaching code for Oasis/绿洲启元/和平精英 UGC Lua development, including API lookup, gameplay systems, UI systems, editor workflows, examples, templates, debugging, performance, release notes, terminology, practical project architecture patterns, common implementation recipes, code snippets, and pitfalls mined from local UGC sample projects. Search the bundled local wiki and distilled project references before giving technical guidance or code for these domains. Default to teaching-only mode: project files may be read freely, but do not directly modify UGC project files unless explicitly overridden.
+description: Always use when a user question appears related to an Oasis/绿洲启元/绿洲起源/和平精英 UGC project, UGCProjects workspace, or UGC Lua code, even if the user does not explicitly name this skill. Trigger on Chinese or English mentions such as 绿洲启元, 绿洲起源, 起源UGC, 和平精英UGC, UGC项目, UGCProjects, UGC Lua, GameMode, GameState, PlayerController, PlayerState, PlayerPawn, UIManager, EventDefine, Action_*, LuaQuickFireEvent, GetAvailableServerRPCs, UnrealNetwork, UGCGameSystem, UGCEventSystem, UGCTimerTools, UGCBackPackSystem, UGCTeamSystem, GameplayStatics, UE.LoadClass, UE.LoadObject, AddToViewport, replication, RPC, UI, countdowns, loadouts, skills, teams, respawn, reconnect, debugging, performance, templates, and editor workflows. Use when answering questions or teaching code for Oasis/绿洲启元/和平精英 UGC Lua development, including API lookup, gameplay systems, UI systems, editor workflows, examples, templates, debugging, performance, release notes, terminology, practical project architecture patterns, common implementation recipes, code snippets, and pitfalls mined from local UGC sample projects. Search the bundled local wiki and distilled project references before giving technical guidance or code for these domains. Default to teaching-only mode: project files may be read freely, but do not directly modify UGC project files unless explicitly overridden.
 ---
 
 # Oasis Wiki
 
 Use this skill for Oasis/绿洲启元 and 和平精英 UGC development questions. The bundled wiki is the source of truth for Lua APIs, editor workflows, gameplay systems, UI, templates, troubleshooting, and examples. The project-pattern references add distilled practices mined from local UGC projects, including reusable lessons from project-specific examples.
+
+## Always Invoke
+
+Invoke this skill for every user question that looks like it belongs to a 绿洲启元/绿洲起源/和平精英 UGC project, even when the user asks casually or only mentions a project file/class/API name.
+
+Treat these as strong signals:
+
+- Chinese project/domain wording: `绿洲启元`, `绿洲起源`, `起源UGC`, `和平精英UGC`, `UGC项目`, `玩法`, `编辑器`, `脚本`, `蓝图`, `项目工程`.
+- Workspace/path wording: `UGCProjects`, `ShadowTrackerExtra`, `Script/Blueprint`, `Script/gamemode`, `Script/GameConfigs`, `Script/UI`.
+- Common code names: `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UGCPlayerState`, `UGCPlayerPawn`, `UIManager`, `EventDefine`, `GlobalConfig`, `Action_*`.
+- Common APIs/patterns: `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs`, `LuaQuickFireEvent`, `UGCEventSystem`, `UGCTimerTools`, `UGCBackPackSystem`, `UGCTeamSystem`, `GameplayStatics`, `UE.LoadClass`, `UE.LoadObject`, `AddToViewport`, `RepLazyProperty`.
+- Gameplay tasks: UI buttons, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, damage, items, widgets, game phases, debugging, performance.
 
 Default to teaching-only mode for UGC project files: read freely, analyze freely, and explain exact edits, but do not directly modify project files unless the user explicitly overrides this rule. Read `references/teaching-mode.md` before giving code-change guidance.
 

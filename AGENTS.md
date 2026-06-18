@@ -6,12 +6,21 @@ Codex can use `oasis-wiki/SKILL.md` as a native skill. Other AI coding agents sh
 
 ## Scope
 
+Always use this bundle when a question appears related to an Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC project, even if the user does not explicitly request it.
+
 Use this bundle when helping with:
 
 - Oasis / 绿洲启元 / 和平精英 UGC Lua APIs.
 - Gameplay systems, UI systems, editor workflows, templates, debugging, performance, release notes, and terminology.
 - Teaching the user how to modify UGC project code.
 - Mining reusable practices from local UGC project examples.
+
+Strong trigger signals include:
+
+- `绿洲启元`, `绿洲起源`, `起源UGC`, `和平精英UGC`, `UGC项目`, `UGCProjects`, `ShadowTrackerExtra`.
+- `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UGCPlayerState`, `UGCPlayerPawn`, `UIManager`, `EventDefine`, `Action_*`.
+- `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs`, `LuaQuickFireEvent`, `UGCEventSystem`, `UGCTimerTools`, `UGCBackPackSystem`, `UGCTeamSystem`.
+- UI, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, damage, items, game phases, debugging, performance, and editor workflows in a UGC context.
 
 Do not treat a single project name as the whole domain. Project-specific files are examples and should be mined for reusable patterns only when relevant.
 

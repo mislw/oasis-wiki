@@ -3,7 +3,9 @@
 Copy this prompt into any AI coding agent that does not support Codex skills natively.
 
 ```text
-Use the Oasis Wiki knowledge bundle in this repository to help with Oasis / 绿洲启元 / 和平精英 UGC Lua development.
+Use the Oasis Wiki knowledge bundle in this repository to help with Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua development.
+
+Always use this bundle whenever my question appears related to a 绿洲启元/绿洲起源/和平精英 UGC project, UGCProjects workspace, or UGC Lua code, even if I do not explicitly mention the bundle.
 
 Entry points:
 - Read AGENTS.md first.

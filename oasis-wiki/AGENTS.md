@@ -1,8 +1,14 @@
 # Agent Instructions For This Skill Folder
 
-Use this folder as a portable Oasis / 绿洲启元 / 和平精英 UGC Lua knowledge bundle.
+Use this folder as a portable Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua knowledge bundle.
 
 Codex should use `SKILL.md`. Other AI coding agents should follow this file.
+
+## Always Invoke
+
+Always use this folder when a question appears related to a 绿洲启元/绿洲起源/和平精英 UGC project, UGCProjects workspace, or UGC Lua code.
+
+Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs`, `LuaQuickFireEvent`, `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UIManager`, `EventDefine`, `Action_*`, UI, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, debugging, performance, and editor workflows.
 
 ## Rules
 

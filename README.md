@@ -30,6 +30,8 @@ For agents that do not support Codex skills directly:
 
 The important behavior is the same across agents: search the local wiki and distilled references first, teach code changes clearly, and do not directly modify UGC project files unless explicitly allowed for that task.
 
+Trigger expectation: if a question looks related to a 绿洲启元 / 绿洲起源 / 和平精英 UGC project, UGCProjects workspace, or UGC Lua code, the agent should use this bundle by default.
+
 ## Use
 
 Ask Codex questions such as:
