@@ -32,13 +32,15 @@ Default to teaching-only mode for UGC project files: read freely, analyze freely
    - Project-specific quick-reference files only when the user is explicitly discussing that project or when mining reusable project lessons.
 3. For code-change guidance, read `references/teaching-mode.md` and teach the user where and how to edit instead of modifying UGC project files directly.
 4. For common tasks such as UI buttons, RPCs, countdowns, phases, loadouts, widgets, skills, reconnects, or debugging, read `references/recipes.md`.
-5. For template code blocks, read `references/snippets.md` and adapt names/paths/IDs to the user's project.
-6. Before finalizing code advice, scan `references/pitfalls.md` for gotchas that apply.
-7. For practical architecture or "how should I structure this project?" questions, read `references/project-patterns.md`.
-8. If the project-pattern summary is not enough and the local project corpus is available, use `references/project-mining-index.md` for targeted search commands and representative source paths.
-9. For implementation answers, cite the relevant local file paths and line numbers when possible.
-10. When writing Lua, match the wiki examples and API naming exactly. If a detail is not found, say that the local wiki did not confirm it.
-11. For broad questions, synthesize from 2-4 relevant files rather than one giant context load.
+5. For end-to-end feature work, especially UI -> ServerRPC -> ClientRPC/event -> replication -> reconnect, read `references/feature-development-flow.md`.
+6. For template code blocks, read `references/snippets.md` and adapt names/paths/IDs to the user's project.
+7. Before finalizing code advice, scan `references/pitfalls.md` for gotchas that apply.
+8. For practical architecture or "how should I structure this project?" questions, read `references/project-patterns.md`.
+9. If the project-pattern summary is not enough and the local project corpus is available, use `references/project-mining-index.md` for targeted search commands and representative source paths.
+10. If the user asks whether new knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
+11. For implementation answers, cite the relevant local file paths and line numbers when possible.
+12. When writing Lua, match the wiki examples and API naming exactly. If a detail is not found, say that the local wiki did not confirm it.
+13. For broad questions, synthesize from 2-4 relevant files rather than one giant context load.
 
 ## Search
 
@@ -69,6 +71,8 @@ Additional distilled references:
 - `references/project-patterns.md`: reusable architecture and coding patterns mined from local UGC projects.
 - `references/project-mining-index.md`: representative project paths and search commands for deeper inspection.
 - `references/teaching-mode.md`: code-teaching workflow and project-file read-only constraint.
+- `references/feature-development-flow.md`: end-to-end UGC feature pipeline from config through server, RPC, UI, replication, and reconnect.
 - `references/recipes.md`: common implementation recipes for UGC coding tasks.
 - `references/snippets.md`: small Lua templates for RPCs, UI, replication, actions, resources, and loadouts.
 - `references/pitfalls.md`: gotchas and verification reminders to check before giving code advice.
+- `references/skill-evolution.md`: controlled protocol for deciding when and how to update this skill.

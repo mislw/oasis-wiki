@@ -45,14 +45,16 @@ Read `oasis-wiki/references/teaching-mode.md` before giving code-change guidance
    - `oasis-wiki/references/wiki/术语表.md`
 3. For implementation help, load the relevant distilled references:
    - `oasis-wiki/references/teaching-mode.md`
+   - `oasis-wiki/references/feature-development-flow.md`
    - `oasis-wiki/references/recipes.md`
    - `oasis-wiki/references/snippets.md`
    - `oasis-wiki/references/pitfalls.md`
    - `oasis-wiki/references/project-patterns.md`
 4. If more evidence is needed and the local UGC project corpus is available, use:
    - `oasis-wiki/references/project-mining-index.md`
-5. Cite local file paths and line numbers when possible.
-6. If a Lua API or behavior is not found in the bundled wiki or examples, say it was not confirmed.
+5. If the user asks whether a conversation, correction, or project pattern should be added to the bundle, read `oasis-wiki/references/skill-evolution.md` and use its controlled update protocol.
+6. Cite local file paths and line numbers when possible.
+7. If a Lua API or behavior is not found in the bundled wiki or examples, say it was not confirmed.
 
 ## Search Commands
 

@@ -24,10 +24,12 @@ Useful references:
 - oasis-wiki/references/wiki/API参考索引.md
 - oasis-wiki/references/wiki/代码示例库.md
 - oasis-wiki/references/teaching-mode.md
+- oasis-wiki/references/feature-development-flow.md
 - oasis-wiki/references/recipes.md
 - oasis-wiki/references/snippets.md
 - oasis-wiki/references/pitfalls.md
 - oasis-wiki/references/project-patterns.md
+- oasis-wiki/references/skill-evolution.md
 
 Search examples:
 rg --line-number --smart-case --glob "*.md" "UGCGameSystem" oasis-wiki/references

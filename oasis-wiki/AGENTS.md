@@ -14,6 +14,8 @@ Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs
 
 - Search `references/` before answering.
 - Read `references/teaching-mode.md` before giving code-change guidance.
+- Read `references/feature-development-flow.md` for end-to-end feature work that crosses config, server logic, RPC, UI, replication, and reconnect.
+- Read `references/skill-evolution.md` when deciding whether a conversation, correction, or project pattern should be added to this knowledge bundle.
 - UGC project files may be read and analyzed freely.
 - Do not directly modify UGC project files unless the user explicitly overrides teaching-only mode for the current task.
 - Give exact edit guidance: file path, function/table, code snippet, caveats, and test steps.
@@ -24,10 +26,12 @@ Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs
 - `references/wiki/README.md`: wiki overview.
 - `references/wiki/API参考索引.md`: API/class lookup.
 - `references/wiki/代码示例库.md`: Lua examples.
+- `references/feature-development-flow.md`: end-to-end feature development flow.
 - `references/recipes.md`: common implementation recipes.
 - `references/snippets.md`: reusable Lua snippets.
 - `references/pitfalls.md`: gotchas and verification reminders.
 - `references/project-patterns.md`: project architecture patterns.
+- `references/skill-evolution.md`: controlled protocol for updating the knowledge bundle.
 
 ## Search
 
