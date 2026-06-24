@@ -68,24 +68,31 @@ node .\oasis-wiki\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 1
 
 ## Answer Shape For Code Help
 
-For non-trivial code changes, answer in this shape:
+For non-trivial code changes, answer in a detailed walkthrough shape. Use numbered sections when a feature touches multiple files or systems:
 
 ```text
-改哪里:
-<file path>
-<function/table>
+1. <配置 / 存档 / 服务端逻辑 / RPC 注册 / UI 按钮 / UI 刷新 / 复制 / 重连>
 
-为什么改这里:
-<short explanation>
+位置:
+<file path> (line <line if known>), <function/table> 里
 
-代码:
-<snippet or replacement block>
+现在是:
+<existing nearby code, when useful>
+
+改成:
+<replacement block or inserted block>
+
+为什么这样改:
+<explain the data flow and server/client responsibility>
 
 注意:
-<server/client, RPC, replication, nil checks, config IDs>
+<punctuation, comma, nil check, server/client, RPC registration, replication, event ID, config ID>
 
 怎么测:
-<2-5 concrete test steps>
+1. <success path>
+2. <failure path>
+3. <multiplayer/server-client path if relevant>
+4. <reconnect/respawn path if relevant>
 ```
 
-Keep answers practical and specific. Prefer small, teachable changes over broad rewrites.
+When changing an existing block, show both `现在是:` and `改成:`. For fragile Lua syntax, explicitly call out commas, table separators, return-list formatting, and where comments can safely go. Keep answers practical and specific. Prefer small, teachable changes over broad rewrites.

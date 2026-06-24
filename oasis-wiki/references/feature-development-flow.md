@@ -115,7 +115,7 @@ For features that only show a transient tip, reconnect handling may be unnecessa
 
 ## Teaching Answer Shape
 
-For a user asking "how do I add this feature?", answer in this order:
+For a user asking "how do I add this feature?", answer in this order, but use the detailed edit-walkthrough format from `teaching-mode.md` for each step:
 
 1. What data/config to add.
 2. Which server function owns the rule.
@@ -125,6 +125,15 @@ For a user asking "how do I add this feature?", answer in this order:
 6. What must replicate.
 7. What to add to reconnect/request-data flow.
 8. How to test success and failure paths.
+
+For each non-trivial edit, include:
+
+- `位置`: exact file, line number when known, and function/table name.
+- `现在是`: nearby existing code when the edit modifies an existing block.
+- `改成`: focused replacement or insertion block.
+- `为什么这样改`: how this line connects to config, server authority, RPC, UI refresh, replication, or reconnect.
+- `注意`: Lua syntax, commas, nil checks, RPC registration strings, event IDs, replicated fields, and server/client responsibility.
+- `怎么测`: success path, failure path, multiplayer/server-client path, and reconnect/respawn path when relevant.
 
 Include exact file paths and function names when available. If the project files are accessible, inspect them first and adapt the pipeline to the project's current architecture.
 
@@ -149,4 +158,3 @@ Testing:
 - The client cannot grant itself coins by editing UI state.
 - Two players do not affect each other's income.
 - Reconnect shows the correct current coin count and income state.
-

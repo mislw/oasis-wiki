@@ -40,3 +40,34 @@ rg --line-number --smart-case --glob "*.md" "UGCGameSystem" references
 powershell -ExecutionPolicy Bypass -File .\scripts\search-oasis-wiki.ps1 -Query "角色复活" -MaxResults 10
 node .\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 10
 ```
+
+## Answer Shape For Code Help
+
+For non-trivial code changes, answer like a detailed edit walkthrough:
+
+```text
+1. <配置 / 存档 / 服务端逻辑 / RPC 注册 / UI 按钮 / UI 刷新 / 复制 / 重连>
+
+位置:
+<file path> (line <line if known>), <function/table> 里
+
+现在是:
+<existing nearby code, when useful>
+
+改成:
+<replacement block or inserted block>
+
+为什么这样改:
+<explain the data flow and server/client responsibility>
+
+注意:
+<punctuation, comma, nil check, server/client, RPC registration, replication, event ID, config ID>
+
+怎么测:
+1. <success path>
+2. <failure path>
+3. <multiplayer/server-client path if relevant>
+4. <reconnect/respawn path if relevant>
+```
+
+When changing an existing block, show both `现在是:` and `改成:`. For Lua return lists, tables, and RPC registration, explicitly call out commas and separators.

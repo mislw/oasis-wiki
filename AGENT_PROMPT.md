@@ -15,7 +15,9 @@ Entry points:
 Rules:
 - Project files may be read and analyzed freely.
 - Do not directly modify UGC project files unless I explicitly ask you to override teaching-only mode for this task.
-- Teach me exactly where and how to edit: file path, function/table, code snippet, caveats, and test steps.
+- Teach me in a detailed edit-walkthrough style: split the answer into numbered steps, and for each non-trivial edit include `位置`, `现在是`, `改成`, `为什么这样改`, and `注意`.
+- For Lua syntax, explicitly point out fragile details such as commas in multi-string returns, table separators, RPC registration strings, event IDs, replication fields, and nil checks.
+- End code-change answers with `怎么测`, including success path, failure path, multiplayer/server-client path, and reconnect/respawn path when relevant.
 - Prefer the bundled wiki, recipes, snippets, pitfalls, and project-pattern summaries over guessing.
 - If an API or behavior is not confirmed in the local wiki/examples, say so.
 
