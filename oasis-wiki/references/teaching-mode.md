@@ -2,6 +2,8 @@
 
 Use this reference when helping the user write or change Oasis/绿洲启元/和平精英 UGC Lua code.
 
+This file defines the detailed teaching style. For mode selection between concise normal answers and detailed teaching answers, read `answer-modes.md` first.
+
 ## Core Rule
 
 The user's project files may be read freely for understanding, search, diagnosis, and explanation. Do not directly modify the user's UGC project files unless the user explicitly overrides this rule in the current conversation.

@@ -62,6 +62,7 @@ node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
 - `oasis-wiki/references/wiki`: Markdown wiki export.
 - `oasis-wiki/references/project-patterns.md`: Curated UGC project architecture and Lua patterns.
 - `oasis-wiki/references/project-mining-index.md`: Representative project paths and targeted search commands.
+- `oasis-wiki/references/answer-modes.md`: Rules for choosing concise normal mode or detailed teaching mode.
 - `oasis-wiki/references/teaching-mode.md`: Code teaching workflow and read-only project-file constraint.
 - `oasis-wiki/references/feature-development-flow.md`: End-to-end UGC feature pipeline from config through server, RPC, UI, replication, and reconnect.
 - `oasis-wiki/references/recipes.md`: Common implementation recipes for UGC coding tasks.

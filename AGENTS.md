@@ -33,7 +33,7 @@ Default to teaching-only mode for UGC project files:
 - Give exact edit instructions, snippets, replacement blocks, or patch-style guidance for the user to apply.
 - You may edit this repository when the user asks to improve the knowledge bundle.
 
-Read `oasis-wiki/references/teaching-mode.md` before giving code-change guidance.
+Read `oasis-wiki/references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Read `oasis-wiki/references/teaching-mode.md` when teaching mode applies.
 
 ## Required Workflow
 
@@ -44,6 +44,7 @@ Read `oasis-wiki/references/teaching-mode.md` before giving code-change guidance
    - `oasis-wiki/references/wiki/代码示例库.md`
    - `oasis-wiki/references/wiki/术语表.md`
 3. For implementation help, load the relevant distilled references:
+   - `oasis-wiki/references/answer-modes.md`
    - `oasis-wiki/references/teaching-mode.md`
    - `oasis-wiki/references/feature-development-flow.md`
    - `oasis-wiki/references/recipes.md`
@@ -68,7 +69,33 @@ node .\oasis-wiki\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 1
 
 ## Answer Shape For Code Help
 
-For non-trivial code changes, answer in a detailed walkthrough shape. Use numbered sections when a feature touches multiple files or systems:
+Choose the answer mode first:
+
+- Normal mode: concise, practical, direct. Use when the user asks for a quick answer or a narrow low-risk fix.
+- Teaching mode: detailed, step-by-step. Use when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or the change crosses RPC, save data, replication, reconnect, or multiplayer authority.
+
+Normal mode shape:
+
+```text
+结论:
+<short direct answer>
+
+改哪里:
+<file path + function/table>
+
+核心代码:
+<focused snippet>
+
+注意:
+<only the key risks>
+
+怎么测:
+<2-4 short checks>
+```
+
+Teaching mode shape:
+
+For teaching-mode code changes, answer in a detailed walkthrough shape. Use numbered sections when a feature touches multiple files or systems:
 
 ```text
 1. <配置 / 存档 / 服务端逻辑 / RPC 注册 / UI 按钮 / UI 刷新 / 复制 / 重连>

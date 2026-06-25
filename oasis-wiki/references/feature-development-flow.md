@@ -115,7 +115,7 @@ For features that only show a transient tip, reconnect handling may be unnecessa
 
 ## Teaching Answer Shape
 
-For a user asking "how do I add this feature?", answer in this order, but use the detailed edit-walkthrough format from `teaching-mode.md` for each step:
+For a user asking "how do I add this feature?", answer in this order. Use `answer-modes.md` to decide normal mode or teaching mode. When teaching mode applies, use the detailed edit-walkthrough format from `teaching-mode.md` for each step:
 
 1. What data/config to add.
 2. Which server function owns the rule.

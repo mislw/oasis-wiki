@@ -13,7 +13,8 @@ Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs
 ## Rules
 
 - Search `references/` before answering.
-- Read `references/teaching-mode.md` before giving code-change guidance.
+- Read `references/answer-modes.md` before choosing concise normal mode or detailed teaching mode.
+- Read `references/teaching-mode.md` when teaching mode applies.
 - Read `references/feature-development-flow.md` for end-to-end feature work that crosses config, server logic, RPC, UI, replication, and reconnect.
 - Read `references/skill-evolution.md` when deciding whether a conversation, correction, or project pattern should be added to this knowledge bundle.
 - UGC project files may be read and analyzed freely.
@@ -26,6 +27,7 @@ Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs
 - `references/wiki/README.md`: wiki overview.
 - `references/wiki/API参考索引.md`: API/class lookup.
 - `references/wiki/代码示例库.md`: Lua examples.
+- `references/answer-modes.md`: normal mode vs teaching mode selection.
 - `references/feature-development-flow.md`: end-to-end feature development flow.
 - `references/recipes.md`: common implementation recipes.
 - `references/snippets.md`: reusable Lua snippets.
@@ -43,7 +45,33 @@ node .\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 10
 
 ## Answer Shape For Code Help
 
-For non-trivial code changes, answer like a detailed edit walkthrough:
+Choose the answer mode first:
+
+- Normal mode: concise, practical, direct. Use when the user asks for a quick answer or a narrow low-risk fix.
+- Teaching mode: detailed, step-by-step. Use when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or the change crosses RPC, save data, replication, reconnect, or multiplayer authority.
+
+Normal mode shape:
+
+```text
+结论:
+<short direct answer>
+
+改哪里:
+<file path + function/table>
+
+核心代码:
+<focused snippet>
+
+注意:
+<only the key risks>
+
+怎么测:
+<2-4 short checks>
+```
+
+Teaching mode shape:
+
+For teaching-mode code changes, answer like a detailed edit walkthrough:
 
 ```text
 1. <配置 / 存档 / 服务端逻辑 / RPC 注册 / UI 按钮 / UI 刷新 / 复制 / 重连>
