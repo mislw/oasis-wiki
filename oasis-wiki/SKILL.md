@@ -41,7 +41,8 @@ Default to teaching-only mode for UGC project files: read freely, analyze freely
 11. If the user asks whether new knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
 12. For implementation answers, cite the relevant local file paths and line numbers when possible.
 13. When writing Lua, match the wiki examples and API naming exactly. If a detail is not found, say that the local wiki did not confirm it.
-14. For broad questions, synthesize from 2-4 relevant files rather than one giant context load.
+14. When providing Lua or UGC code snippets, include concise Chinese comments for non-obvious intent, control flow, RPC/replication boundaries, UI bindings, timers, and configuration IDs. Avoid noisy line-by-line comments for self-explanatory assignments.
+15. For broad questions, synthesize from 2-4 relevant files rather than one giant context load.
 
 ## Search
 
