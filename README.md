@@ -32,6 +32,44 @@ The important behavior is the same across agents: search the local wiki and dist
 
 Trigger expectation: if a question looks related to a 绿洲启元 / 绿洲起源 / 和平精英 UGC project, UGCProjects workspace, or UGC Lua code, the agent should use this bundle by default.
 
+### Claude Code
+
+Claude Code can use this bundle through a project `CLAUDE.md` file. Keep this repository cloned somewhere stable, then create a `CLAUDE.md` in your UGC project that points Claude Code to the bundle:
+
+```powershell
+# 1. Clone the bundle once.
+git clone https://github.com/mislw/oasis-wiki.git "$env:USERPROFILE\oasis-wiki"
+
+# 2. Go to your UGC project root.
+Set-Location "D:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\YourProject"
+
+# 3. Create or update the project-level Claude Code instruction file.
+@"
+# Oasis Wiki
+
+Use the Oasis Wiki bundle at:
+$env:USERPROFILE\oasis-wiki
+
+Read this first:
+$env:USERPROFILE\oasis-wiki\AGENTS.md
+
+For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua questions, search these references before answering:
+$env:USERPROFILE\oasis-wiki\oasis-wiki\references
+
+Default behavior:
+- Use normal mode for concise review-friendly answers.
+- Use teaching mode when I ask to learn, or when the change touches RPC, replication, save data, reconnect, or multiplayer authority.
+- Keep UGC project files read-only unless I explicitly ask you to directly modify them.
+- When writing Lua or UGC code, include detailed Chinese comments inside every code block.
+- Prefer the smallest additive change and minimize impact on existing code.
+"@ | Set-Content -Encoding UTF8 .\CLAUDE.md
+
+# 4. Start Claude Code with access to the bundle directory.
+claude --add-dir "$env:USERPROFILE\oasis-wiki"
+```
+
+If the bundle is already inside the same repository as the UGC project, you can skip `--add-dir` and use relative paths in `CLAUDE.md`.
+
 ## Use
 
 Ask Codex questions such as:
