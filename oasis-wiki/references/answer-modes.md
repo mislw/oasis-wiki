@@ -4,14 +4,14 @@ Use this reference when deciding how detailed an Oasis / UGC answer should be.
 
 The skill has two answer modes:
 
-1. **Normal mode**: concise, practical, and direct.
+1. **Normal mode**: concise, practical, review-friendly, and direct.
 2. **Teaching mode**: detailed, step-by-step, and beginner-friendly.
 
 Default to normal mode unless the user asks to learn, the task is structurally complex, or the change is risky.
 
 ## Normal Mode
 
-Use normal mode when the user wants a quick answer, already knows the project flow, or asks a narrow question.
+Use normal mode when the user wants a quick answer, already knows the project flow, asks a narrow question, or is sharing the answer with experienced teammates who need fast review and implementation guidance.
 
 Trigger phrases:
 
@@ -23,6 +23,9 @@ Trigger phrases:
 - "哪里有问题"
 - "帮我查一下"
 - "正常模式"
+- "给前辈看"
+- "方便 review"
+- "快速审一下"
 
 Answer shape:
 
@@ -33,11 +36,14 @@ Answer shape:
 改哪里:
 <file path + function/table>
 
-核心代码:
-<focused snippet>
+最小改动:
+<focused snippet with detailed Chinese comments inside the code block>
+
+影响范围:
+<server/client/UI/save/replication/RPC/reconnect impact, or "only affects this local function">
 
 注意:
-<only the key risks>
+<only the key risks and compatibility notes>
 
 怎么测:
 <2-4 short checks>
@@ -45,9 +51,13 @@ Answer shape:
 
 Rules:
 
-- Keep it compact.
-- Do not explain the whole system unless needed.
-- Still include critical warnings for server/client authority, RPC registration, replication, save data, reconnect, nil checks, and Lua punctuation.
+- Put the conclusion first, then the exact edit target. Do not open with background teaching.
+- Keep prose compact and review-friendly. Assume the reader understands the project flow unless the code shows a surprising dependency.
+- Prefer the smallest additive diff. State whether the change preserves existing behavior and call order.
+- Keep detailed Chinese comments inside code blocks, but keep explanation outside the code short.
+- Include `影响范围` for non-trivial changes so reviewers can quickly judge blast radius.
+- In `注意`, prioritize server/client authority, RPC registration, replication, save data, reconnect, nil checks, Lua punctuation, compatibility, and rollback risk.
+- If useful, include a one-line rollback note such as "回滚: 删除新增 helper 和调用点即可".
 - If the user seems confused during follow-up, switch to teaching mode.
 
 ## Teaching Mode
