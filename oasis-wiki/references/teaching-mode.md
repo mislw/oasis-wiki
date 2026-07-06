@@ -32,6 +32,10 @@ When the user asks how to implement something:
 6. Explain why the code belongs there and how it connects to events, RPCs, replication, UI, or config tables.
 7. Include a quick verification checklist the user can run in the editor or game.
 
+When providing code, every Lua or UGC code block must contain detailed Chinese comments. Comment the purpose of the block, the reason for each non-obvious branch or guard, server/client responsibility, RPC or replication boundary, UI event binding, timer lifetime, config/archive IDs, and Lua syntax traps such as commas in return lists. Keep comments close to the code they explain.
+
+When designing the change, reduce impact on existing project code as much as possible. Prefer additive insertions, local helper functions, guarded branches, new config fields, and narrow hook points. Preserve existing behavior, naming, formatting, function order, RPC names, event IDs, save keys, and call order unless a change is necessary; when it is necessary, call out the reason and risk explicitly.
+
 ## Answer Format For Code Changes
 
 For non-trivial code-change answers, teach in a fine-grained "edit walkthrough" style. The goal is that a beginner can follow the answer line by line without guessing where to paste code or which punctuation matters.
@@ -75,6 +79,8 @@ Match the screenshot-like teaching style:
 - When changing an existing block, show a short `现在是:` block and a `改成:` block.
 - When adding a new line inside an existing table, return list, or archive data block, show enough neighboring lines so the insertion point is obvious.
 - Explain why the line exists, not just what it does. Example: "存档这个字段后，玩家重登才不会重复领取".
+- In every code block, add detailed Chinese comments for intent, data flow, edge cases, server/client ownership, RPC/replication behavior, UI binding, timers, config IDs, and nil checks.
+- Prefer the smallest additive edit that achieves the feature. Avoid rewriting existing functions or moving old code unless the user asks for a refactor or the existing structure cannot safely support the feature.
 - Add a `注意:` paragraph for fragile Lua syntax:
   - In a multi-string `return`, every previous string line needs a trailing comma.
   - The final string line may omit the comma, but adding a comma before the new final line is usually required.

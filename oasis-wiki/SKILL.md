@@ -1,6 +1,6 @@
 ---
 name: oasis-wiki
-description: Always use when a user question appears related to an Oasis/绿洲启元/绿洲起源/和平精英 UGC project, UGCProjects workspace, or UGC Lua code, even if the user does not explicitly name this skill. Trigger on Chinese or English mentions such as 绿洲启元, 绿洲起源, 起源UGC, 和平精英UGC, UGC项目, UGCProjects, UGC Lua, GameMode, GameState, PlayerController, PlayerState, PlayerPawn, UIManager, EventDefine, Action_*, LuaQuickFireEvent, GetAvailableServerRPCs, UnrealNetwork, UGCGameSystem, UGCEventSystem, UGCTimerTools, UGCBackPackSystem, UGCTeamSystem, GameplayStatics, UE.LoadClass, UE.LoadObject, AddToViewport, replication, RPC, UI, countdowns, loadouts, skills, teams, respawn, reconnect, debugging, performance, templates, and editor workflows. Use when answering questions or teaching code for Oasis/绿洲启元/和平精英 UGC Lua development, including API lookup, gameplay systems, UI systems, editor workflows, examples, templates, debugging, performance, release notes, terminology, practical project architecture patterns, common implementation recipes, code snippets, and pitfalls mined from local UGC sample projects. Search the bundled local wiki and distilled project references before giving technical guidance or code for these domains. Default to teaching-only mode: project files may be read freely, but do not directly modify UGC project files unless explicitly overridden.
+description: Always use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, or UGC Lua code, even if the skill is not named. Trigger on 绿洲启元, 绿洲起源, 起源UGC, 和平精英UGC, UGC项目, UGC Lua, GameMode, GameState, PlayerController, PlayerState, PlayerPawn, UIManager, EventDefine, Action_*, UnrealNetwork, LuaQuickFireEvent, GetAvailableServerRPCs, UGCGameSystem, UGCEventSystem, UGCTimerTools, UGCBackPackSystem, UGCTeamSystem, GameplayStatics, UE.LoadClass, UE.LoadObject, AddToViewport, replication, RPC, UI, countdowns, loadouts, skills, teams, respawn, reconnect, debugging, performance, templates, and editor workflows. Search the bundled local wiki and distilled project references before giving technical guidance or code. Default to teaching-only mode: read project files freely, but do not directly modify UGC project files unless explicitly overridden.
 ---
 
 # Oasis Wiki
@@ -41,8 +41,9 @@ Default to teaching-only mode for UGC project files: read freely, analyze freely
 11. If the user asks whether new knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
 12. For implementation answers, cite the relevant local file paths and line numbers when possible.
 13. When writing Lua, match the wiki examples and API naming exactly. If a detail is not found, say that the local wiki did not confirm it.
-14. When providing Lua or UGC code snippets, include concise Chinese comments for non-obvious intent, control flow, RPC/replication boundaries, UI bindings, timers, and configuration IDs. Avoid noisy line-by-line comments for self-explanatory assignments.
-15. For broad questions, synthesize from 2-4 relevant files rather than one giant context load.
+14. When providing Lua or UGC code snippets, include detailed Chinese comments in every code block. Explain intent, control flow, key variables, server/client boundaries, RPC/replication behavior, UI bindings, timers, config IDs, nil guards, and fragile Lua syntax near the lines they affect.
+15. When designing or explaining a feature change, minimize impact on existing code. Prefer small additive changes, local helper functions, guarded branches, config-driven hooks, and narrow insertion points over rewrites. Preserve existing behavior, formatting, naming, and call order unless changing them is required and explicitly explained.
+16. For broad questions, synthesize from 2-4 relevant files rather than one giant context load.
 
 ## Search
 
