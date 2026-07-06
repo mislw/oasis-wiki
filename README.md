@@ -34,20 +34,36 @@ Trigger expectation: if a question looks related to a 绿洲启元 / 绿洲起�
 
 ### Claude Code
 
-Claude Code can use this bundle without adding any files to your UGC project. Keep this repository cloned somewhere stable, then start Claude Code from your UGC project root with access to the bundle directory:
+Claude Code can use this bundle as a user-level skill, so you do not need to add `CLAUDE.md` or any other helper file to a UGC project root.
+
+Install once:
 
 ```powershell
-# 1. Clone the bundle once.
+# 1. Clone the bundle somewhere stable.
 git clone https://github.com/mislw/oasis-wiki.git "$env:USERPROFILE\oasis-wiki"
 
-# 2. Go to your UGC project root.
-Set-Location "D:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\YourProject"
+# 2. Create Claude Code's user skills directory.
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
 
-# 3. Start Claude Code with access to the bundle and a one-time setup prompt.
-claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua, debugging, or log questions, search oasis-wiki/references before answering. For logs, distinguish PIE logs, Clientlog, DSlog, phone client logs, management-platform DS logs, and battle logs. Before writing Lua, read oasis-wiki/references/code-style.md. Use normal mode for concise review-friendly answers, teaching mode when I ask to learn or when changes touch RPC, replication, save data, reconnect, or multiplayer authority. Keep UGC project files read-only unless I explicitly ask you to directly modify them. When writing Lua or UGC code, include detailed Chinese comments inside every code block and prefer the smallest additive change."
+# 3. Copy the skill folder into Claude Code's user skills directory.
+Copy-Item -Recurse -Force "$env:USERPROFILE\oasis-wiki\oasis-wiki" "$env:USERPROFILE\.claude\skills\"
 ```
 
-For later sessions in the same Claude Code conversation, continue normally. For a fresh session, run the same command again so Claude Code receives the bundle path and rules without writing anything into the UGC project.
+After installing, restart VS Code or run `Developer: Reload Window`, then open Claude Code from your UGC project as usual. In most cases, questions about Oasis / 绿洲启元 / 和平精英 UGC, `UGCProjects`, UGC Lua, RPC, replication, UI, logs, `DSlog`, or `Clientlog` should trigger the skill from the conversation context. If Claude Code does not pick it up automatically, call it explicitly once with `/oasis-wiki`, then continue the conversation normally.
+
+Update the installed skill:
+
+```powershell
+git -C "$env:USERPROFILE\oasis-wiki" pull
+Copy-Item -Recurse -Force "$env:USERPROFILE\oasis-wiki\oasis-wiki" "$env:USERPROFILE\.claude\skills\"
+```
+
+Temporary fallback: if a Claude Code environment does not load user skills, keep the repository cloned and start Claude Code with access to the bundle directory:
+
+```powershell
+Set-Location "D:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\YourProject"
+claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua, debugging, or log questions, search oasis-wiki/references before answering. For logs, distinguish PIE logs, Clientlog, DSlog, phone client logs, management-platform DS logs, and battle logs. Before writing Lua, read oasis-wiki/references/code-style.md. Use normal mode for concise review-friendly answers, teaching mode when I ask to learn or when changes touch RPC, replication, save data, reconnect, or multiplayer authority. Keep UGC project files read-only unless I explicitly ask you to directly modify them. When writing Lua or UGC code, include detailed Chinese comments inside every code block and prefer the smallest additive change."
+```
 
 ## Use
 
