@@ -36,16 +36,17 @@ Default to teaching-only mode for UGC project files: read freely, analyze freely
 5. For common tasks such as UI buttons, RPCs, countdowns, phases, loadouts, widgets, skills, reconnects, or debugging, read `references/recipes.md`.
 6. For log and debugging questions, search and read the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
 7. For end-to-end feature work, especially UI -> ServerRPC -> ClientRPC/event -> replication -> reconnect, read `references/feature-development-flow.md`.
-8. For template code blocks, read `references/snippets.md` and adapt names/paths/IDs to the user's project.
-9. Before finalizing code advice, scan `references/pitfalls.md` for gotchas that apply.
-10. For practical architecture or "how should I structure this project?" questions, read `references/project-patterns.md`.
-11. If the project-pattern summary is not enough and the local project corpus is available, use `references/project-mining-index.md` for targeted search commands and representative source paths.
-12. If the user asks whether new knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
-13. For implementation answers, cite the relevant local file paths and line numbers when possible.
-14. When writing Lua, match the wiki examples and API naming exactly. If a detail is not found, say that the local wiki did not confirm it.
-15. When providing Lua or UGC code snippets, include detailed Chinese comments in every code block. Explain intent, control flow, key variables, server/client boundaries, RPC/replication behavior, UI bindings, timers, config IDs, nil guards, and fragile Lua syntax near the lines they affect.
-16. When designing or explaining a feature change, minimize impact on existing code. Prefer small additive changes, local helper functions, guarded branches, config-driven hooks, and narrow insertion points over rewrites. Preserve existing behavior, formatting, naming, and call order unless changing them is required and explicitly explained.
-17. For broad questions, synthesize from 2-4 relevant files rather than one giant context load.
+8. Before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries, read `references/code-style.md`.
+9. For template code blocks, read `references/snippets.md` and adapt names/paths/IDs to the user's project.
+10. Before finalizing code advice, scan `references/pitfalls.md` for gotchas that apply.
+11. For practical architecture or "how should I structure this project?" questions, read `references/project-patterns.md`.
+12. If the project-pattern summary is not enough and the local project corpus is available, use `references/project-mining-index.md` for targeted search commands and representative source paths.
+13. If the user asks whether new knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
+14. For implementation answers, cite the relevant local file paths and line numbers when possible.
+15. When writing Lua, match the wiki examples, project code style, and API naming exactly. If a detail is not found, say that the local wiki did not confirm it.
+16. When providing Lua or UGC code snippets, include detailed Chinese comments in every code block. Explain intent, control flow, key variables, server/client boundaries, RPC/replication behavior, UI bindings, timers, config IDs, nil guards, and fragile Lua syntax near the lines they affect.
+17. When designing or explaining a feature change, minimize impact on existing code. Prefer small additive changes, local helper functions, guarded branches, config-driven hooks, and narrow insertion points over rewrites. Preserve existing behavior, formatting, naming, and call order unless changing them is required and explicitly explained.
+18. For broad questions, synthesize from 2-4 relevant files rather than one giant context load.
 
 ## Search
 
@@ -77,6 +78,7 @@ Additional distilled references:
 - `references/project-mining-index.md`: representative project paths and search commands for deeper inspection.
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.
 - `references/teaching-mode.md`: code-teaching workflow and project-file read-only constraint.
+- `references/code-style.md`: lightweight project code style for comments, config tables, variable names, member variables, and methods.
 - `references/feature-development-flow.md`: end-to-end UGC feature pipeline from config through server, RPC, UI, replication, and reconnect.
 - `references/recipes.md`: common implementation recipes for UGC coding tasks.
 - `references/snippets.md`: small Lua templates for RPCs, UI, replication, actions, resources, and loadouts.

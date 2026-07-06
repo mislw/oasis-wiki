@@ -15,6 +15,7 @@ Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs
 - Search `references/` before answering.
 - Read `references/answer-modes.md` before choosing concise normal mode or detailed teaching mode.
 - Read `references/teaching-mode.md` when teaching mode applies.
+- Read `references/code-style.md` before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries.
 - Read `references/feature-development-flow.md` for end-to-end feature work that crosses config, server logic, RPC, UI, replication, and reconnect.
 - For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
 - Read `references/skill-evolution.md` when deciding whether a conversation, correction, or project pattern should be added to this knowledge bundle.
@@ -29,6 +30,7 @@ Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs
 - `references/wiki/API参考索引.md`: API/class lookup.
 - `references/wiki/代码示例库.md`: Lua examples.
 - `references/answer-modes.md`: normal mode vs teaching mode selection.
+- `references/code-style.md`: lightweight project code style.
 - `references/feature-development-flow.md`: end-to-end feature development flow.
 - `references/recipes.md`: common implementation recipes.
 - `references/snippets.md`: reusable Lua snippets.

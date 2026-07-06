@@ -46,17 +46,19 @@ Read `oasis-wiki/references/answer-modes.md` before choosing concise normal mode
 3. For implementation help, load the relevant distilled references:
    - `oasis-wiki/references/answer-modes.md`
    - `oasis-wiki/references/teaching-mode.md`
+   - `oasis-wiki/references/code-style.md`
    - `oasis-wiki/references/feature-development-flow.md`
    - `oasis-wiki/references/recipes.md`
    - `oasis-wiki/references/snippets.md`
    - `oasis-wiki/references/pitfalls.md`
    - `oasis-wiki/references/project-patterns.md`
-4. For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
-5. If more evidence is needed and the local UGC project corpus is available, use:
+4. Before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries, read `oasis-wiki/references/code-style.md`.
+5. For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
+6. If more evidence is needed and the local UGC project corpus is available, use:
    - `oasis-wiki/references/project-mining-index.md`
-6. If the user asks whether a conversation, correction, or project pattern should be added to the bundle, read `oasis-wiki/references/skill-evolution.md` and use its controlled update protocol.
-7. Cite local file paths and line numbers when possible.
-8. If a Lua API or behavior is not found in the bundled wiki or examples, say it was not confirmed.
+7. If the user asks whether a conversation, correction, or project pattern should be added to the bundle, read `oasis-wiki/references/skill-evolution.md` and use its controlled update protocol.
+8. Cite local file paths and line numbers when possible.
+9. If a Lua API or behavior is not found in the bundled wiki or examples, say it was not confirmed.
 
 ## Search Commands
 

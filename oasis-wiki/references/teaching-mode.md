@@ -32,6 +32,8 @@ When the user asks how to implement something:
 6. Explain why the code belongs there and how it connects to events, RPCs, replication, UI, or config tables.
 7. Include a quick verification checklist the user can run in the editor or game.
 
+Before writing config tables, member variables, methods, or `GlobalConfig` entries, read `code-style.md` and apply its lightweight project style: Chinese comments for every config column, member variable, config variable, and method; complete English words except common abbreviations such as `ID` and `UI`; and simple type prefixes such as `nLevel`, `szName`, and `tbItemList`.
+
 When providing code, every Lua or UGC code block must contain detailed Chinese comments. Comment the purpose of the block, the reason for each non-obvious branch or guard, server/client responsibility, RPC or replication boundary, UI event binding, timer lifetime, config/archive IDs, and Lua syntax traps such as commas in return lists. Keep comments close to the code they explain.
 
 When designing the change, reduce impact on existing project code as much as possible. Prefer additive insertions, local helper functions, guarded branches, new config fields, and narrow hook points. Preserve existing behavior, naming, formatting, function order, RPC names, event IDs, save keys, and call order unless a change is necessary; when it is necessary, call out the reason and risk explicitly.
