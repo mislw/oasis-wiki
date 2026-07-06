@@ -72,7 +72,7 @@ node .\oasis-wiki\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 1
 
 Choose the answer mode first:
 
-- Normal mode: concise, practical, direct. Use when the user asks for a quick answer or a narrow low-risk fix.
+- Normal mode: concise, practical, review-friendly, and direct. Use when the user asks for a quick answer, a narrow low-risk fix, or an answer intended for experienced teammates to review.
 - Teaching mode: detailed, step-by-step. Use when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or the change crosses RPC, save data, replication, reconnect, or multiplayer authority.
 
 Normal mode shape:
@@ -81,17 +81,32 @@ Normal mode shape:
 结论:
 <short direct answer>
 
+依据:
+<confirmed from project code / confirmed from wiki / inferred from existing pattern>
+
 改哪里:
 <file path + function/table>
 
-核心代码:
-<focused snippet>
+最小改动:
+<focused snippet with detailed Chinese comments inside the code block>
+
+影响范围:
+<server/client/UI/save/replication/RPC/reconnect/log impact, or "only affects this local function">
+
+风险:
+<低/中/高 + one short reason>
 
 注意:
-<only the key risks>
+<only the key risks and compatibility notes>
+
+日志:
+<DSlog/Clientlog/PIE log panel/battle log keywords to search, or "not needed">
 
 怎么测:
 <2-4 short checks>
+
+回滚:
+<the smallest revert point>
 ```
 
 Teaching mode shape:

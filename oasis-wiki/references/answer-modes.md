@@ -33,6 +33,9 @@ Answer shape:
 结论:
 <short direct answer>
 
+依据:
+<confirmed from project code / confirmed from wiki / inferred from existing pattern>
+
 改哪里:
 <file path + function/table>
 
@@ -40,13 +43,22 @@ Answer shape:
 <focused snippet with detailed Chinese comments inside the code block>
 
 影响范围:
-<server/client/UI/save/replication/RPC/reconnect impact, or "only affects this local function">
+<server/client/UI/save/replication/RPC/reconnect/log impact, or "only affects this local function">
+
+风险:
+<低/中/高 + one short reason>
 
 注意:
 <only the key risks and compatibility notes>
 
+日志:
+<DSlog/Clientlog/PIE log panel/battle log keywords to search, or "not needed">
+
 怎么测:
 <2-4 short checks>
+
+回滚:
+<the smallest revert point>
 ```
 
 Rules:
@@ -56,8 +68,11 @@ Rules:
 - Prefer the smallest additive diff. State whether the change preserves existing behavior and call order.
 - Keep detailed Chinese comments inside code blocks, but keep explanation outside the code short.
 - Include `影响范围` for non-trivial changes so reviewers can quickly judge blast radius.
+- Include `依据` so reviewers know whether the recommendation is confirmed from wiki, confirmed from project code, or inferred from a local pattern.
+- Include `风险` using `低`, `中`, or `高`. Raise risk for save data, replication, RPC, reconnect, inventory/reward, damage, team, ranking, settlement, or anti-cheat-sensitive changes.
+- Include `日志` for anything that might need runtime verification. Name the side and keyword, such as `DSlog 搜 Server_RequestXXX`, `Clientlog 搜 ClientRPC_XXX`, or `PIE日志面板同时看 Client/DS`.
 - In `注意`, prioritize server/client authority, RPC registration, replication, save data, reconnect, nil checks, Lua punctuation, compatibility, and rollback risk.
-- If useful, include a one-line rollback note such as "回滚: 删除新增 helper 和调用点即可".
+- Keep `回滚` as a one-line minimum revert point, such as "删除新增 helper 和调用点即可".
 - If the user seems confused during follow-up, switch to teaching mode.
 
 ## Teaching Mode
