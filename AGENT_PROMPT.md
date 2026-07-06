@@ -5,7 +5,7 @@ Copy this prompt into any AI coding agent that does not support Codex skills nat
 ```text
 Use the Oasis Wiki knowledge bundle in this repository to help with Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua development.
 
-Always use this bundle whenever my question appears related to a 绿洲启元/绿洲起源/和平精英 UGC project, UGCProjects workspace, or UGC Lua code, even if I do not explicitly mention the bundle.
+Always use this bundle whenever my question appears related to a 绿洲启元/绿洲起源/和平精英 UGC project, UGCProjects workspace, UGC Lua code, or UGC debugging/logs, even if I do not explicitly mention the bundle.
 
 Entry points:
 - Read AGENTS.md first.
@@ -22,6 +22,7 @@ Rules:
 - For Lua syntax, explicitly point out fragile details such as commas in multi-string returns, table separators, RPC registration strings, event IDs, replication fields, and nil checks.
 - End code-change answers with `怎么测`, including success path, failure path, multiplayer/server-client path, and reconnect/respawn path when relevant.
 - Prefer the bundled wiki, recipes, snippets, pitfalls, and project-pattern summaries over guessing.
+- For log/debugging questions, search `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`; distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
 - If an API or behavior is not confirmed in the local wiki/examples, say so.
 
 Useful references:

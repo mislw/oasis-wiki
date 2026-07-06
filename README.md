@@ -4,7 +4,7 @@ This repository packages a portable AI-agent knowledge bundle for Oasis / 绿洲
 
 It is Codex-native through `oasis-wiki/SKILL.md`, and also includes generic instructions for other AI coding agents through `AGENTS.md` and `AGENT_PROMPT.md`.
 
-The skill bundles a local Markdown export of the Oasis wiki and instructs Codex to search it before answering questions about Lua APIs, gameplay systems, UI systems, editor workflows, templates, debugging, performance, release notes, and terminology.
+The skill bundles a local Markdown export of the Oasis wiki and instructs Codex to search it before answering questions about Lua APIs, gameplay systems, UI systems, editor workflows, templates, debugging, logs, performance, release notes, and terminology.
 
 It also includes distilled project-architecture notes mined from local UGC sample projects. These notes summarize reusable patterns without copying whole project source trees.
 
@@ -44,7 +44,7 @@ git clone https://github.com/mislw/oasis-wiki.git "$env:USERPROFILE\oasis-wiki"
 Set-Location "D:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\YourProject"
 
 # 3. Start Claude Code with access to the bundle and a one-time setup prompt.
-claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua questions, search oasis-wiki/references before answering. Use normal mode for concise review-friendly answers, teaching mode when I ask to learn or when changes touch RPC, replication, save data, reconnect, or multiplayer authority. Keep UGC project files read-only unless I explicitly ask you to directly modify them. When writing Lua or UGC code, include detailed Chinese comments inside every code block and prefer the smallest additive change."
+claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua, debugging, or log questions, search oasis-wiki/references before answering. For logs, distinguish PIE logs, Clientlog, DSlog, phone client logs, management-platform DS logs, and battle logs. Use normal mode for concise review-friendly answers, teaching mode when I ask to learn or when changes touch RPC, replication, save data, reconnect, or multiplayer authority. Keep UGC project files read-only unless I explicitly ask you to directly modify them. When writing Lua or UGC code, include detailed Chinese comments inside every code block and prefer the smallest additive change."
 ```
 
 For later sessions in the same Claude Code conversation, continue normally. For a fresh session, run the same command again so Claude Code receives the bundle path and rules without writing anything into the UGC project.
