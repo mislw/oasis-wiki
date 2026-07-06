@@ -7,7 +7,7 @@ The skill has two answer modes:
 1. **Normal mode**: concise, practical, review-friendly, and direct.
 2. **Teaching mode**: detailed, step-by-step, and beginner-friendly.
 
-Default to normal mode unless the user asks to learn, the task is structurally complex, or the change is risky.
+Default to normal mode. Use teaching mode only when the user explicitly asks to learn, asks for detailed reasoning, or names teaching mode.
 
 ## Normal Mode
 
@@ -73,11 +73,11 @@ Rules:
 - Include `日志` for anything that might need runtime verification. Name the side and keyword, such as `DSlog 搜 Server_RequestXXX`, `Clientlog 搜 ClientRPC_XXX`, or `PIE日志面板同时看 Client/DS`.
 - In `注意`, prioritize server/client authority, RPC registration, replication, save data, reconnect, nil checks, Lua punctuation, compatibility, and rollback risk.
 - Keep `回滚` as a one-line minimum revert point, such as "删除新增 helper 和调用点即可".
-- If the user seems confused during follow-up, switch to teaching mode.
+- If the user seems confused during follow-up, offer to switch to teaching mode, but keep the current answer concise unless they ask for it.
 
 ## Teaching Mode
 
-Use teaching mode when the user is learning a project, asking for reasoning, or implementing a feature across several systems.
+Use teaching mode when the user explicitly asks to learn a project, asks for reasoning, or asks for a step-by-step walkthrough.
 
 Trigger phrases:
 
@@ -93,7 +93,7 @@ Trigger phrases:
 - "一步一步"
 - "教学模式"
 
-Also use teaching mode automatically for high-risk or cross-system UGC changes:
+Do not switch to teaching mode automatically only because a change is high-risk or cross-system. Keep normal mode as the default, but make the risk, authority boundary, verification logs, test cases, and rollback point explicit for:
 
 - Client button -> ServerRPC -> server logic -> ClientRPC/event -> UI refresh.
 - Save/archive data.
@@ -120,5 +120,5 @@ Teaching mode answer shape is defined in `teaching-mode.md`. It should include n
 
 ## Interaction With Project File Safety
 
-Both modes keep the same safety rule: UGC project files may be read and analyzed freely, but should not be directly modified unless the user explicitly overrides teaching-only project-file behavior for the current task.
+Both modes keep the same safety rule: UGC project files may be read and analyzed freely, but should not be directly modified unless the user explicitly overrides project-file read-only behavior for the current task.
 

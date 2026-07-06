@@ -148,4 +148,4 @@ Before giving instructions based on a project file:
 
 ## When The User Asks To Modify Directly
 
-If the user explicitly asks to directly edit files in a UGC project, confirm once that they want to override teaching-only mode for that specific change. After confirmation, keep edits narrow and avoid unrelated formatting or generated asset changes.
+If the user explicitly asks to directly edit files in a UGC project, confirm once that they want to override project-file read-only behavior for that specific change. After confirmation, keep edits narrow and avoid unrelated formatting or generated asset changes.

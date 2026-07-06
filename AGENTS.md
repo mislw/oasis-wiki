@@ -26,14 +26,14 @@ Do not treat a single project name as the whole domain. Project-specific files a
 
 ## Safety Rule
 
-Default to teaching-only mode for UGC project files:
+Default to normal answer mode, while keeping UGC project files read-only by default:
 
 - You may read, search, inspect, and analyze project files freely.
 - Do not directly modify UGC project files unless the user explicitly overrides this rule for the current task.
 - Give exact edit instructions, snippets, replacement blocks, or patch-style guidance for the user to apply.
 - You may edit this repository when the user asks to improve the knowledge bundle.
 
-Read `oasis-wiki/references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Read `oasis-wiki/references/teaching-mode.md` when teaching mode applies.
+Read `oasis-wiki/references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Read `oasis-wiki/references/teaching-mode.md` only when the user explicitly asks for teaching mode or detailed step-by-step explanation.
 
 ## Required Workflow
 
@@ -74,8 +74,8 @@ node .\oasis-wiki\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 1
 
 Choose the answer mode first:
 
-- Normal mode: concise, practical, review-friendly, and direct. Use when the user asks for a quick answer, a narrow low-risk fix, or an answer intended for experienced teammates to review.
-- Teaching mode: detailed, step-by-step. Use when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or the change crosses RPC, save data, replication, reconnect, or multiplayer authority.
+- Normal mode: concise, practical, review-friendly, and direct. Use by default, especially for answers intended for experienced teammates to review.
+- Teaching mode: detailed, step-by-step. Use only when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or explicitly wants a walkthrough.
 
 Normal mode shape:
 

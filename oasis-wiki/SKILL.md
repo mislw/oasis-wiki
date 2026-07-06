@@ -1,6 +1,6 @@
 ---
 name: oasis-wiki
-description: Always use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, or UGC Lua code, even if the skill is not named. Trigger on 绿洲启元, 绿洲起源, 起源UGC, 和平精英UGC, UGC项目, UGC Lua, GameMode, GameState, PlayerController, PlayerState, PlayerPawn, UIManager, EventDefine, Action_*, UnrealNetwork, LuaQuickFireEvent, GetAvailableServerRPCs, UGCGameSystem, UGCEventSystem, GameplayStatics, replication, RPC, UI, logs, DSlog, Clientlog, UGCClientLog, UGCServerLog, PIE日志面板, ugcprint, game_id, countdowns, skills, respawn, reconnect, debugging, performance, templates, and editor workflows. Search the bundled local wiki and distilled project references before giving technical guidance or code. Default to teaching-only mode: read project files freely, but do not directly modify UGC project files unless explicitly overridden.
+description: Always use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, or UGC Lua code, even if the skill is not named. Trigger on 绿洲启元, 绿洲起源, 起源UGC, 和平精英UGC, UGC项目, UGC Lua, GameMode, GameState, PlayerController, PlayerState, PlayerPawn, UIManager, EventDefine, Action_*, UnrealNetwork, LuaQuickFireEvent, GetAvailableServerRPCs, UGCGameSystem, UGCEventSystem, GameplayStatics, replication, RPC, UI, logs, DSlog, Clientlog, UGCClientLog, UGCServerLog, PIE日志面板, ugcprint, game_id, countdowns, skills, respawn, reconnect, debugging, performance, templates, and editor workflows. Search the bundled local wiki and distilled project references before giving technical guidance or code. Default to normal answer mode; read project files freely, but do not directly modify UGC project files unless explicitly overridden.
 ---
 
 # Oasis Wiki
@@ -20,7 +20,7 @@ Treat these as strong signals:
 - Logs and debugging wording: `日志`, `调试日志`, `PIE日志面板`, `战斗日志`, `日志提取`, `DS日志`, `客户端日志`, `服务端日志`, `DSlog`, `Clientlog`, `FullLog`, `UGCClientLog`, `UGCServerLog`, `game_id`.
 - Gameplay tasks: UI buttons, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, damage, items, widgets, game phases, debugging, logs, performance.
 
-Default to teaching-only mode for UGC project files: read freely, analyze freely, and explain exact edits, but do not directly modify project files unless the user explicitly overrides this rule. Read `references/teaching-mode.md` before giving code-change guidance.
+Default to normal answer mode. For UGC project files, read freely, analyze freely, and explain exact edits, but do not directly modify project files unless the user explicitly overrides this rule. Read `references/answer-modes.md` before giving code-change guidance, and only read `references/teaching-mode.md` when the user explicitly asks for teaching-mode detail.
 
 ## Workflow
 
@@ -32,7 +32,7 @@ Default to teaching-only mode for UGC project files: read freely, analyze freely
    - `references/wiki/术语表.md` for terminology.
    - Project-specific quick-reference files only when the user is explicitly discussing that project or when mining reusable project lessons.
 3. For code-change guidance, read `references/answer-modes.md` first to choose normal mode or teaching mode, then read `references/teaching-mode.md` when teaching-mode detail is needed.
-4. Teach the user where and how to edit instead of modifying UGC project files directly.
+4. In normal mode, give concise edit targets, minimal snippets, risks, logs, tests, and rollback notes instead of long teaching walkthroughs. Do not modify UGC project files directly unless explicitly allowed.
 5. For common tasks such as UI buttons, RPCs, countdowns, phases, loadouts, widgets, skills, reconnects, or debugging, read `references/recipes.md`.
 6. For log and debugging questions, search and read the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
 7. For end-to-end feature work, especially UI -> ServerRPC -> ClientRPC/event -> replication -> reconnect, read `references/feature-development-flow.md`.

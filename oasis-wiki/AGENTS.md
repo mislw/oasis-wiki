@@ -14,13 +14,13 @@ Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs
 
 - Search `references/` before answering.
 - Read `references/answer-modes.md` before choosing concise normal mode or detailed teaching mode.
-- Read `references/teaching-mode.md` when teaching mode applies.
+- Read `references/teaching-mode.md` only when the user explicitly asks for teaching mode or detailed step-by-step explanation.
 - Read `references/code-style.md` before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries.
 - Read `references/feature-development-flow.md` for end-to-end feature work that crosses config, server logic, RPC, UI, replication, and reconnect.
 - For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
 - Read `references/skill-evolution.md` when deciding whether a conversation, correction, or project pattern should be added to this knowledge bundle.
 - UGC project files may be read and analyzed freely.
-- Do not directly modify UGC project files unless the user explicitly overrides teaching-only mode for the current task.
+- Do not directly modify UGC project files unless the user explicitly overrides project-file read-only behavior for the current task.
 - Give exact edit guidance: file path, function/table, code snippet, caveats, and test steps.
 - If an API or behavior is not confirmed in the bundled wiki or examples, say so.
 
@@ -50,8 +50,8 @@ node .\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 10
 
 Choose the answer mode first:
 
-- Normal mode: concise, practical, review-friendly, and direct. Use when the user asks for a quick answer, a narrow low-risk fix, or an answer intended for experienced teammates to review.
-- Teaching mode: detailed, step-by-step. Use when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or the change crosses RPC, save data, replication, reconnect, or multiplayer authority.
+- Normal mode: concise, practical, review-friendly, and direct. Use by default, especially for answers intended for experienced teammates to review.
+- Teaching mode: detailed, step-by-step. Use only when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or explicitly wants a walkthrough.
 
 Normal mode shape:
 

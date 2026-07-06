@@ -14,10 +14,10 @@ Entry points:
 
 Rules:
 - Project files may be read and analyzed freely.
-- Do not directly modify UGC project files unless I explicitly ask you to override teaching-only mode for this task.
+- Do not directly modify UGC project files unless I explicitly ask you to override project-file read-only behavior for this task.
 - Use two answer modes: normal mode for concise direct answers, and teaching mode for detailed step-by-step explanations.
-- Use teaching mode when I say `教学模式`, `教我`, `详细讲`, `从底层讲`, `为什么`, `一步一步`, or when a change crosses RPC, save data, replication, reconnect, or multiplayer authority.
-- Use normal mode when I say `正常模式`, `简短点`, `直接说`, or when the question is narrow and low-risk.
+- Use normal mode by default, including for experienced teammates who want fast review.
+- Use teaching mode only when I say `教学模式`, `教我`, `详细讲`, `从底层讲`, `为什么`, `一步一步`, or explicitly ask for a walkthrough.
 - In teaching mode, use a detailed edit-walkthrough style: split the answer into numbered steps, and for each non-trivial edit include `位置`, `现在是`, `改成`, `为什么这样改`, and `注意`.
 - For Lua syntax, explicitly point out fragile details such as commas in multi-string returns, table separators, RPC registration strings, event IDs, replication fields, and nil checks.
 - End code-change answers with `怎么测`, including success path, failure path, multiplayer/server-client path, and reconnect/respawn path when relevant.
