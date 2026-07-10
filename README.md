@@ -28,7 +28,7 @@ For agents that do not support Codex skills directly:
 2. If the agent accepts a setup prompt, paste `AGENT_PROMPT.md`.
 3. Point the agent at the `oasis-wiki/references` folder for search and citation.
 
-The important behavior is the same across agents: search the local wiki and distilled references first, teach code changes clearly, and do not directly modify UGC project files unless explicitly allowed for that task.
+The important behavior is the same across agents: search the local wiki and distilled references first, use concise normal mode by default, and do not directly modify UGC project files unless explicitly allowed for that task.
 
 Trigger expectation: if a question looks related to a 绿洲启元 / 绿洲起源 / 和平精英 UGC project, UGCProjects workspace, or UGC Lua code, the agent should use this bundle by default.
 
@@ -62,7 +62,7 @@ Temporary fallback: if a Claude Code environment does not load user skills, keep
 
 ```powershell
 Set-Location "D:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\YourProject"
-claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua, debugging, or log questions, search oasis-wiki/references before answering. For logs, distinguish PIE logs, Clientlog, DSlog, phone client logs, management-platform DS logs, and battle logs. Before writing Lua, read oasis-wiki/references/code-style.md. Use normal mode by default for concise review-friendly answers. Use teaching mode only when I explicitly ask to learn, say 教学模式, or ask for detailed step-by-step explanation. Keep UGC project files read-only unless I explicitly ask you to directly modify them. When writing Lua or UGC code, include detailed Chinese comments inside every code block and prefer the smallest additive change."
+claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua, debugging, or log questions, search oasis-wiki/references before answering. For logs, distinguish PIE logs, Clientlog, DSlog, phone client logs, management-platform DS logs, and battle logs. Before writing Lua, read oasis-wiki/references/code-style.md. Use normal mode by default for concise review-friendly answers. Use teaching mode only when I explicitly ask to learn, say 教学模式, or ask for detailed step-by-step explanation. Keep UGC project files read-only unless I explicitly ask you to directly modify them. In normal mode code snippets, use only brief summary comments before functions/methods or major blocks; do not add line-by-line teaching comments. Prefer the smallest additive change."
 ```
 
 ## Use
@@ -95,6 +95,8 @@ node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
 - `oasis-wiki/references/wiki`: Markdown wiki export.
 - `oasis-wiki/references/project-patterns.md`: Curated UGC project architecture and Lua patterns.
 - `oasis-wiki/references/project-mining-index.md`: Representative project paths and targeted search commands.
+- `oasis-wiki/references/project-cache.md`: Local computer cache workflow for reusing parsed knowledge from a specific UGC project without writing cache files into the project workspace.
+- `oasis-wiki/references/project-planning-memory.md`: Project-name/path routing workflow for uploaded planning docs, requirements, system details, and whole-project design memory.
 - `oasis-wiki/references/answer-modes.md`: Rules for choosing concise normal mode or detailed teaching mode.
 - `oasis-wiki/references/code-style.md`: Lightweight project code style for comments, config tables, variable names, member variables, and methods.
 - `oasis-wiki/references/teaching-mode.md`: Code teaching workflow and read-only project-file constraint.

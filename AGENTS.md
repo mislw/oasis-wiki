@@ -90,7 +90,7 @@ Normal mode shape:
 <file path + function/table>
 
 最小改动:
-<focused snippet with detailed Chinese comments inside the code block>
+<focused snippet with only brief summary comments before functions/methods or major blocks>
 
 影响范围:
 <server/client/UI/save/replication/RPC/reconnect/log impact, or "only affects this local function">
@@ -140,4 +140,4 @@ For teaching-mode code changes, answer in a detailed walkthrough shape. Use numb
 4. <reconnect/respawn path if relevant>
 ```
 
-When changing an existing block, show both `现在是:` and `改成:`. For fragile Lua syntax, explicitly call out commas, table separators, return-list formatting, and where comments can safely go. Keep answers practical and specific. Prefer small, teachable changes over broad rewrites.
+In normal mode, do not add line-by-line teaching comments inside code blocks. Prefer one brief Chinese summary comment before a function/method or major logic block. When changing an existing block, show both `现在是:` and `改成:`. For fragile Lua syntax, explicitly call out commas, table separators, return-list formatting, and where comments can safely go. Keep answers practical and specific.

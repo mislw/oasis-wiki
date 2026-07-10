@@ -22,6 +22,7 @@ Rules:
 - For Lua syntax, explicitly point out fragile details such as commas in multi-string returns, table separators, RPC registration strings, event IDs, replication fields, and nil checks.
 - End code-change answers with `怎么测`, including success path, failure path, multiplayer/server-client path, and reconnect/respawn path when relevant.
 - Before writing or reviewing Lua code, read `oasis-wiki/references/code-style.md`; apply Chinese comments for every config column, member variable, config variable, and method, spell English words completely except common abbreviations like ID/UI, and use simple prefixes like `nLevel`, `szName`, and `tbItemList`.
+- In normal mode code snippets, do not add line-by-line teaching comments. Prefer one brief Chinese summary comment before a function/method or major logic block, while keeping required config/member-variable comments.
 - Prefer the bundled wiki, recipes, snippets, pitfalls, and project-pattern summaries over guessing.
 - For log/debugging questions, search `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`; distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
 - If an API or behavior is not confirmed in the local wiki/examples, say so.
@@ -32,6 +33,8 @@ Useful references:
 - oasis-wiki/references/wiki/代码示例库.md
 - oasis-wiki/references/answer-modes.md
 - oasis-wiki/references/code-style.md
+- oasis-wiki/references/project-cache.md
+- oasis-wiki/references/project-planning-memory.md
 - oasis-wiki/references/teaching-mode.md
 - oasis-wiki/references/feature-development-flow.md
 - oasis-wiki/references/recipes.md
