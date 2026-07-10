@@ -1,5 +1,65 @@
 # Oasis Wiki Codex Skill
 
+这是一个给 **绿洲启元 / 绿洲起源 / 和平精英 UGC Lua 开发** 用的 Codex Skill / AI Agent 知识包。
+
+这个仓库主要面向国内小团队自用：默认使用中文语境，默认正常模式，回答尽量简洁、方便 review；只有明确要求“教学模式 / 详细讲 / 一步一步 / 教我”时才切换到详细教学模式。
+
+它会让 Codex 或其他 AI Agent 在回答 UGC Lua、RPC、UI、复制、日志、编辑器流程、项目结构、功能规划等问题前，优先搜索本地 wiki 和整理过的参考资料，而不是凭记忆猜。
+
+## 中文快速说明
+
+### 这个仓库解决什么
+
+- 把绿洲启元相关 wiki、Lua API、代码例子、术语、日志说明打包成一个本地知识包。
+- 帮 AI 在回答前先查资料，减少胡编 API、乱改项目、漏注册 RPC、漏复制字段这类问题。
+- 默认让 AI **只读项目文件并给修改建议**，不直接改 UGC 工程，除非你明确说可以直接改。
+- 支持本机项目缓存和策划案记忆：项目级资料会放到 `%USERPROFILE%\.codex\oasis-project-cache`，不会写进 UGC 项目目录，也不会提交到团队仓库。
+
+### 默认回答习惯
+
+- 默认正常模式：直接给结论、依据、改哪里、最小改动、风险、怎么测。
+- 正常模式代码注释不要太密：只在函数/方法或大逻辑块前加一句中文概括，不逐行写教学注释。
+- 教学模式只在明确要求时使用：`教学模式`、`教我`、`详细讲`、`一步一步`、`为什么`。
+- 做功能前先总结项目已有基础：已有配置、属性、RPC、事件、UI、存档、复制字段、helper、前辈已有代码，再规划整体怎么接。
+- 代码习惯：尊重旧命名；新配置/成员变量/方法要有中文注释；不要加一堆无意义保护判断。
+
+### 安装到 Codex
+
+把 `oasis-wiki` 文件夹复制到 Codex skills 目录：
+
+```powershell
+Copy-Item -Recurse -Force .\oasis-wiki "$env:USERPROFILE\.codex\skills\oasis-wiki"
+```
+
+然后重启 Codex 或刷新 skills。
+
+### 更新本地安装
+
+```powershell
+git pull
+Copy-Item -Recurse -Force .\oasis-wiki "$env:USERPROFILE\.codex\skills\oasis-wiki"
+```
+
+### 常用问法
+
+```text
+用 oasis-wiki 看一下这个 UGCPlayerController 里的 RPC 怎么接。
+帮我按 RedCliff 项目已有基础规划一下装备升级功能。
+看一下这个报错，先查 DSlog / Clientlog 相关说明。
+正常模式，给我最小改动代码。
+教学模式，带我一步一步做这个 UI -> ServerRPC -> 刷新流程。
+```
+
+### 注意
+
+- 不要把 `%USERPROFILE%\.codex\oasis-project-cache` 里的内容提交到 GitHub。
+- 不要把具体项目策划案、Excel、截图原件直接塞进这个 skill 仓库。
+- 如果要沉淀项目资料，只写入本机项目缓存；如果要沉淀通用经验，再更新这个仓库。
+
+---
+
+## English Overview
+
 This repository packages a portable AI-agent knowledge bundle for Oasis / 绿洲启元 / 和平精英 UGC Lua development.
 
 It is Codex-native through `oasis-wiki/SKILL.md`, and also includes generic instructions for other AI coding agents through `AGENTS.md` and `AGENT_PROMPT.md`.
