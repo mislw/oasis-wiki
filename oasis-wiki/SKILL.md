@@ -57,7 +57,7 @@ If running from outside the skill directory, pass an absolute path to the script
 
 ## Reference Layout
 
-The full markdown export lives in `references/wiki`. It contains 58 Markdown files, about 278 articles, 263 Lua examples, and 1140 API/class references as of the bundled export generated on 2026-06-16.
+The full markdown export lives in `references/wiki`. It contains 58 Markdown files + 1 incremental update file, about 278 articles + ~15 new (1.37), 263 Lua examples + ~40 new, and 1140 API/class references + ~50 new. The bundled export was generated on 2026-06-16, with a 1.37 incremental update added on 2026-07-10 in `references/wiki/新增内容_1.37版本.md`.
 
 Additional distilled references:
 
