@@ -33,6 +33,34 @@ Copy-Item -Recurse -Force .\oasis-wiki "$env:USERPROFILE\.codex\skills\oasis-wik
 
 然后重启 Codex 或刷新 skills。
 
+### 安装到 Claude Code（VS Code 插件）
+
+Claude Code 的 VS Code 插件也可以读取用户级 skill。安装后不需要在 UGC 项目根目录额外放 `CLAUDE.md`，后续打开 UGC 项目时让 Claude Code 自动识别，或者手动输入 `/oasis-wiki` 调用一次。
+
+第一次安装：
+
+```powershell
+# 1. 把这个仓库克隆到一个稳定位置。
+git clone https://github.com/mislw/oasis-wiki.git "$env:USERPROFILE\oasis-wiki"
+
+# 2. 创建 Claude Code 的用户级 skills 目录。
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
+
+# 3. 复制 oasis-wiki skill 到 Claude Code。
+Copy-Item -Recurse -Force "$env:USERPROFILE\oasis-wiki\oasis-wiki" "$env:USERPROFILE\.claude\skills\"
+```
+
+装完后重启 VS Code，或在命令面板执行 `Developer: Reload Window`。然后在 UGC 工程里打开 Claude Code；如果它没有自动触发，就先发一句 `/oasis-wiki`，后面继续正常提问。
+
+更新 Claude Code 里的本地 skill：
+
+```powershell
+git -C "$env:USERPROFILE\oasis-wiki" pull
+Copy-Item -Recurse -Force "$env:USERPROFILE\oasis-wiki\oasis-wiki" "$env:USERPROFILE\.claude\skills\"
+```
+
+如果某个 Claude Code 环境没有加载用户级 skill，就保留这个仓库，并让 Claude Code 能访问仓库目录；然后把 `AGENTS.md` 或 `AGENT_PROMPT.md` 当作临时启动说明使用。
+
 ### 更新本地安装
 
 ```powershell
