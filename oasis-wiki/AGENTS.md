@@ -15,8 +15,8 @@ If a path, current workspace, or uploaded filename contains a known project name
 ## Rules
 
 - Search `references/` before answering.
-- Read `references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Default to normal mode unless the user asks to learn, asks for step-by-step guidance, or needs a feature walkthrough.
-- Read `references/teaching-mode.md` only for teaching/project walkthrough presentation.
+- Read `references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Default to normal mode.
+- Read `references/teaching-mode.md` only when the user explicitly asks to learn, asks for detailed reasoning, names teaching mode, or asks for step-by-step explanation.
 - Read `references/code-style.md` before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries.
 - Read `references/feature-development-flow.md` for end-to-end feature work that crosses config, server logic, RPC, UI, replication, save/archive, and reconnect.
 - Before teaching or planning a new feature, summarize the project's existing foundation first: already declared configs, attributes, event IDs, RPC names, UI widgets, save keys, replicated fields, helper methods, current data owners, and teammate partial implementations. Then explain the missing pieces and the overall config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect plan.
@@ -59,7 +59,7 @@ node .\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 10
 Choose the answer mode first:
 
 - Normal mode: concise, practical, review-friendly, and direct. Use by default, especially for answers intended for experienced teammates to review.
-- Teaching mode: detailed, step-by-step. Use when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or explicitly wants a feature walkthrough.
+- Teaching mode: detailed, step-by-step. Use only when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or explicitly asks for step-by-step explanation.
 
 Normal mode shape:
 
