@@ -4,14 +4,14 @@ Use this reference when deciding how detailed an Oasis / UGC answer should be.
 
 The skill has two answer modes:
 
-1. **Normal mode**: concise, practical, review-friendly, and direct.
-2. **Teaching mode**: detailed, step-by-step, and beginner-friendly.
+1. **Teaching mode**: detailed, step-by-step, and beginner-friendly.
+2. **Normal mode**: concise, practical, review-friendly, and direct.
 
-Default to normal mode. Use teaching mode only when the user explicitly asks to learn, asks for detailed reasoning, names teaching mode, or asks for step-by-step explanation.
+Default to teaching mode. Use normal mode only when the user explicitly asks for `正常模式`, brevity, direct code, or review-friendly output.
 
 ## Normal Mode
 
-Use normal mode when the user wants a quick answer, already knows the project flow, asks a narrow question, or is sharing the answer with experienced teammates who need fast review and implementation guidance.
+Use normal mode only when the user explicitly wants a quick answer, already knows the project flow, asks for direct code, says `正常模式`, or is sharing the answer with experienced teammates who need fast review and implementation guidance.
 
 Trigger phrases:
 
@@ -77,7 +77,7 @@ Rules:
 
 ## Teaching Mode
 
-Use teaching mode when the user explicitly asks to learn a project, asks for reasoning, names teaching mode, or asks for a step-by-step walkthrough.
+Use teaching mode by default for Oasis / UGC questions, especially project reading, code explanation, feature planning, debugging, and cross-system implementation.
 
 Trigger phrases:
 
@@ -93,7 +93,7 @@ Trigger phrases:
 - "一步一步"
 - "教学模式"
 
-Do not switch to teaching mode automatically only because a change is high-risk or cross-system. Keep normal mode as the default, but make the risk, authority boundary, verification logs, test cases, and rollback point explicit for:
+Keep teaching mode as the default. If the user explicitly requests normal mode, keep the answer concise but still make the risk, authority boundary, verification logs, test cases, and rollback point explicit for:
 
 - Client button -> ServerRPC -> server logic -> ClientRPC/event -> UI refresh.
 - Save/archive data.
@@ -113,8 +113,9 @@ Teaching mode answer shape is defined in `teaching-mode.md`. It should include n
 
 ## Mode Switching
 
-- If the user explicitly says "正常模式" or "简短点", use normal mode.
-- If the user explicitly says "教学模式" or "详细讲", use teaching mode.
+- If the user explicitly says "正常模式", "简短点", "直接说", or "给我代码", use normal mode.
+- If the user does not specify a mode, use teaching mode.
+- If the user explicitly says "教学模式" or "详细讲", keep teaching mode.
 - If a normal-mode answer would hide a dangerous detail, briefly include the detail rather than staying overly short.
 - If a teaching-mode answer becomes too long, split it into phases and ask the user to continue with the next file or next step.
 

@@ -1,7 +1,7 @@
 interface:
   display_name: "Oasis Wiki"
-  short_description: "Search and use the Oasis UGC Lua wiki."
-  default_prompt: "Use $oasis-wiki to answer a question about Oasis UGC Lua APIs with citations from the local wiki."
+  short_description: "Use Oasis UGC Lua official docs in teaching mode."
+  default_prompt: "Use $oasis-wiki to answer an Oasis UGC Lua question in teaching mode. Search the official wiki docs, API reference, 1.37 updates, and official forum tutorials before giving a conclusion."
 
 policy:
   allow_implicit_invocation: true

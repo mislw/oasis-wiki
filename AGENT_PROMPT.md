@@ -17,18 +17,22 @@
 规则：
 - 可以自由读取和分析 UGC 项目文件。
 - 除非我明确要求你直接改项目文件，否则不要直接修改 UGC 工程，只给我明确的修改位置、代码片段、替换块和测试方法。
-- 默认使用正常模式：回答简洁、直接、方便 review。
-- 只有我明确说“教学模式”“教我”“详细讲”“从底层讲”“为什么”“一步一步”时，才使用详细教学模式。
+- 默认使用教学模式：先讲已有基础、资料依据、整体流程，再分步骤说明怎么接。
+- 只有我明确说“正常模式”“简短点”“直接说”“给我代码”“方便 review”时，才使用简洁正常模式。
 - 正常模式代码片段不要写逐行教学注释，只在函数/方法或大逻辑块前加一句简短中文概括；新增配置字段、成员变量仍然保留必要中文注释。
 - 做功能前先总结项目已有基础：已有配置、属性、事件 ID、RPC、UI、存档字段、复制字段、helper、前辈已有半成品；然后再讲缺口和整体做法。
 - 做跨系统功能时按 config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect 思路规划。
 - 写或审 Lua 前先读 oasis-wiki/references/code-style.md；遵守中文注释、命名、少加无意义保护判断等规则。
+- 问功能、API、系统、模板、编辑器能力时，先查官方文档包：基础官方 wiki 教学文档、官方API参考手册.md、新增内容_1.37版本.md、论坛经验帖_绿洲启妹.md。
 - 优先使用本地 wiki、recipes、snippets、pitfalls、project-patterns，不要凭空猜 API。
 - 日志/调试问题要区分 PIE 日志、Clientlog、DSlog、手机客户端日志、管理平台 DS 日志、战斗日志。
 - 如果本地 wiki 或示例没有确认某个 API 或行为，要明确说没有确认。
 
 常用参考：
 - oasis-wiki/references/wiki/README.md
+- oasis-wiki/references/wiki/官方API参考手册.md
+- oasis-wiki/references/wiki/新增内容_1.37版本.md
+- oasis-wiki/references/wiki/论坛经验帖_绿洲启妹.md
 - oasis-wiki/references/wiki/API参考索引.md
 - oasis-wiki/references/wiki/代码示例库.md
 - oasis-wiki/references/answer-modes.md
@@ -65,20 +69,24 @@ Entry points:
 Rules:
 - Project files may be read and analyzed freely.
 - Do not directly modify UGC project files unless I explicitly ask you to override project-file read-only behavior for this task.
-- Use two answer modes: normal mode for concise direct answers, and teaching mode for detailed step-by-step explanations.
-- Use normal mode by default, including for experienced teammates who want fast review.
-- Use teaching mode only when I say `教学模式`, `教我`, `详细讲`, `从底层讲`, `为什么`, `一步一步`, or explicitly ask for a walkthrough.
+- Use two answer modes: teaching mode for detailed step-by-step explanations, and normal mode for concise direct answers.
+- Use teaching mode by default.
+- Use normal mode only when I say `正常模式`, `简短点`, `直接说`, `给我代码`, ask for brevity, direct code, or explicitly ask for review-friendly output.
 - In teaching mode, use a detailed edit-walkthrough style: split the answer into numbered steps, and for each non-trivial edit include `位置`, `现在是`, `改成`, `为什么这样改`, and `注意`.
 - For Lua syntax, explicitly point out fragile details such as commas in multi-string returns, table separators, RPC registration strings, event IDs, replication fields, and nil checks.
 - End code-change answers with `怎么测`, including success path, failure path, multiplayer/server-client path, and reconnect/respawn path when relevant.
 - Before writing or reviewing Lua code, read `oasis-wiki/references/code-style.md`; apply Chinese comments for every config column, member variable, config variable, and method, spell English words completely except common abbreviations like ID/UI, and use simple prefixes like `nLevel`, `szName`, and `tbItemList`.
 - In normal mode code snippets, do not add line-by-line teaching comments. Prefer one brief Chinese summary comment before a function/method or major logic block, while keeping required config/member-variable comments.
+- For feature/API/system questions, search the official documentation bundle first: base wiki teaching docs, 官方API参考手册.md, 新增内容_1.37版本.md, and 论坛经验帖_绿洲启妹.md.
 - Prefer the bundled wiki, recipes, snippets, pitfalls, and project-pattern summaries over guessing.
 - For log/debugging questions, search `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`; distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
 - If an API or behavior is not confirmed in the local wiki/examples, say so.
 
 Useful references:
 - oasis-wiki/references/wiki/README.md
+- oasis-wiki/references/wiki/官方API参考手册.md
+- oasis-wiki/references/wiki/新增内容_1.37版本.md
+- oasis-wiki/references/wiki/论坛经验帖_绿洲启妹.md
 - oasis-wiki/references/wiki/API参考索引.md
 - oasis-wiki/references/wiki/代码示例库.md
 - oasis-wiki/references/answer-modes.md

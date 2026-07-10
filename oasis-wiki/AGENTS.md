@@ -15,8 +15,9 @@ If a path, current workspace, or uploaded filename contains a known project name
 ## Rules
 
 - Search `references/` before answering.
-- Read `references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Default to normal mode.
-- Read `references/teaching-mode.md` only when the user explicitly asks to learn, asks for detailed reasoning, names teaching mode, or asks for step-by-step explanation.
+- For feature/API/system questions (`怎么用`, `怎么做`, `有没有`, `支持吗`, class/API names, editor feature names, templates, systems, components), search the official documentation bundle before giving a conclusion. This includes the base official wiki teaching docs in `references/wiki/*.md`, plus `references/wiki/官方API参考手册.md`, `references/wiki/新增内容_1.37版本.md`, and `references/wiki/论坛经验帖_绿洲启妹.md`.
+- Read `references/answer-modes.md` before choosing detailed teaching mode or concise normal mode. Default to teaching mode.
+- Read `references/teaching-mode.md` by default for implementation, planning, code explanation, and project-reading tasks. Use normal mode only when the user explicitly asks for `正常模式`, brevity, direct code, or review-friendly output.
 - Read `references/code-style.md` before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries.
 - Read `references/feature-development-flow.md` for end-to-end feature work that crosses config, server logic, RPC, UI, replication, save/archive, and reconnect.
 - Before teaching or planning a new feature, summarize the project's existing foundation first: already declared configs, attributes, event IDs, RPC names, UI widgets, save keys, replicated fields, helper methods, current data owners, and teammate partial implementations. Then explain the missing pieces and the overall config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect plan.
@@ -33,6 +34,10 @@ If a path, current workspace, or uploaded filename contains a known project name
 ## High-Value References
 
 - `references/wiki/README.md`: wiki overview.
+- `references/wiki/*.md`: base official wiki teaching docs by category, including UI, GamePlay systems, skills, items, monsters, editor workflows, templates, debugging, and performance.
+- `references/wiki/官方API参考手册.md`: official class, enum, function, parameter, and API lookup.
+- `references/wiki/新增内容_1.37版本.md`: official 1.37 feature additions and behavior updates.
+- `references/wiki/论坛经验帖_绿洲启妹.md`: official forum tutorials, setup steps, and implementation examples.
 - `references/wiki/API参考索引.md`: API/class lookup.
 - `references/wiki/代码示例库.md`: Lua examples.
 - `references/answer-modes.md`: normal mode vs teaching mode selection.
@@ -58,8 +63,8 @@ node .\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 10
 
 Choose the answer mode first:
 
-- Normal mode: concise, practical, review-friendly, and direct. Use by default, especially for answers intended for experienced teammates to review.
-- Teaching mode: detailed, step-by-step. Use only when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or explicitly asks for step-by-step explanation.
+- Teaching mode: detailed, step-by-step. Use by default.
+- Normal mode: concise, practical, review-friendly, and direct. Use only when the user asks for `正常模式`, says `简短点` / `直接说` / `给我代码`, or explicitly wants experienced teammates to review.
 
 Normal mode shape:
 

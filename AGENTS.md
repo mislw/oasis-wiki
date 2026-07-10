@@ -26,24 +26,29 @@ Do not treat a single project name as the whole domain. Keep project-specific no
 
 ## Safety Rule
 
-Default to normal answer mode, while keeping UGC project files read-only by default:
+Default to teaching answer mode, while keeping UGC project files read-only by default:
 
 - You may read, search, inspect, and analyze project files freely.
 - Do not directly modify UGC project files unless the user explicitly overrides this rule for the current task.
 - Give exact edit instructions, snippets, replacement blocks, or patch-style guidance for the user to apply.
 - You may edit this repository when the user asks to improve the knowledge bundle.
 
-Read `oasis-wiki/references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Read `oasis-wiki/references/teaching-mode.md` only when the user explicitly asks for teaching mode or detailed step-by-step explanation.
+Read `oasis-wiki/references/answer-modes.md` before choosing detailed teaching mode or concise normal mode. Read `oasis-wiki/references/teaching-mode.md` by default for implementation, planning, code explanation, and project-reading tasks. Use concise normal mode only when the user explicitly asks for `正常模式`, brevity, direct code, or review-friendly output.
 
 ## Required Workflow
 
 1. Search before answering. Do not load the full wiki into context.
-2. Start with the focused references:
+2. For feature/API/system questions (`怎么用`, `怎么做`, `有没有`, `支持吗`, class/API names, editor feature names, templates, systems, components), search the official documentation bundle before giving a conclusion:
    - `oasis-wiki/references/wiki/README.md`
+   - `oasis-wiki/references/wiki/官方API参考手册.md`
+   - `oasis-wiki/references/wiki/新增内容_1.37版本.md`
+   - `oasis-wiki/references/wiki/论坛经验帖_绿洲启妹.md`
+   - matching base official wiki teaching docs under `oasis-wiki/references/wiki/*.md`
+3. Use focused indexes as needed:
    - `oasis-wiki/references/wiki/API参考索引.md`
    - `oasis-wiki/references/wiki/代码示例库.md`
    - `oasis-wiki/references/wiki/术语表.md`
-3. For implementation help, load the relevant distilled references:
+4. For implementation help, load the relevant distilled references:
    - `oasis-wiki/references/answer-modes.md`
    - `oasis-wiki/references/teaching-mode.md`
    - `oasis-wiki/references/code-style.md`
@@ -52,11 +57,11 @@ Read `oasis-wiki/references/answer-modes.md` before choosing concise normal mode
    - `oasis-wiki/references/snippets.md`
    - `oasis-wiki/references/pitfalls.md`
    - `oasis-wiki/references/project-patterns.md`
-4. Before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries, read `oasis-wiki/references/code-style.md`.
-5. For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
-6. If the user asks whether a conversation, correction, or project pattern should be added to the bundle, read `oasis-wiki/references/skill-evolution.md` and use its controlled update protocol.
-7. Cite local file paths and line numbers when possible.
-8. If a Lua API or behavior is not found in the bundled wiki or examples, say it was not confirmed.
+5. Before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries, read `oasis-wiki/references/code-style.md`.
+6. For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
+7. If the user asks whether a conversation, correction, or project pattern should be added to the bundle, read `oasis-wiki/references/skill-evolution.md` and use its controlled update protocol.
+8. Cite local file paths and line numbers when possible.
+9. If a Lua API or behavior is not found in the bundled wiki or examples, say it was not confirmed.
 
 ## Search Commands
 
@@ -72,8 +77,8 @@ node .\oasis-wiki\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 1
 
 Choose the answer mode first:
 
-- Normal mode: concise, practical, review-friendly, and direct. Use by default, especially for answers intended for experienced teammates to review.
-- Teaching mode: detailed, step-by-step. Use only when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or explicitly wants a walkthrough.
+- Teaching mode: detailed, step-by-step. Use by default.
+- Normal mode: concise, practical, review-friendly, and direct. Use only when the user asks for `正常模式`, says `简短点` / `直接说` / `给我代码`, or explicitly wants experienced teammates to review.
 
 Normal mode shape:
 
