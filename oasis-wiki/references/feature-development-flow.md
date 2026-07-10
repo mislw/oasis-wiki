@@ -6,6 +6,7 @@ Use this reference when the user asks how to add a new Oasis / UGC gameplay feat
 
 Default pipeline:
 
+0. Summarize the existing project foundation.
 1. Add configuration.
 2. Add authoritative server logic.
 3. Register Server RPC when the client needs to request the action.
@@ -26,6 +27,27 @@ Before writing code, decide:
 - Is it one-shot feedback, persistent state, or both?
 
 If the feature changes gameplay results, the server must decide the result. The client can request, animate, and display, but should not directly change authoritative resources.
+
+## Step 0.5: Summarize Existing Foundation
+
+Before planning edits, inspect and summarize what the project already has. Do not make the user rebuild context that is already present in code.
+
+Look for:
+
+- Existing declarations: config tables, attribute IDs, enum/status values, event IDs, archive/save keys, replicated fields, RPC names, UI widget names, and manager member variables.
+- Existing entry points: UI buttons, `GetAvailableServerRPCs()`, ClientRPCs, `UGCEventSystem` listeners, `OnRep_*`, request-data/reconnect methods, Action flow hooks, and manager init functions.
+- Existing data owners: whether the state currently lives in `GlobalConfig`, `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UGCPlayerState`, `UGCPlayerPawn`, UI scripts, feature managers, or Actions.
+- Existing helper APIs: resource add/remove helpers, backpack helpers, task helpers, attribute helpers, UI refresh helpers, save/load helpers, and project-specific manager methods.
+- Existing partial implementations from teammates. Treat them as protected by default; preserve their names, call order, and behavior unless the user asks to refactor them.
+
+Then answer with:
+
+1. `已有基础`: short list of the relevant declarations, helpers, files, and flows already in the project.
+2. `缺口`: what is missing for the requested feature.
+3. `整体做法`: planned config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect path.
+4. `最小改动点`: exact files/functions to touch.
+
+If local project planning memory exists, read it before this step so the foundation summary considers both design intent and current source code.
 
 ## Step 1: Add Configuration
 
@@ -115,18 +137,19 @@ For features that only show a transient tip, reconnect handling may be unnecessa
 
 ## Teaching Answer Shape
 
-For a user asking "how do I add this feature?", answer in this order. Use `answer-modes.md` to decide normal mode or teaching mode. When teaching mode applies, use the detailed edit-walkthrough format from `teaching-mode.md` for each step:
+For a user asking "how do I add this feature?", use this section as the planning order. Use `answer-modes.md` to decide normal mode or teaching mode. When teaching mode applies, use `teaching-mode.md` for the presentation format instead of duplicating a second format here.
 
-1. What data/config to add.
-2. Which server function owns the rule.
-3. Which RPC to register.
-4. Which UI button/input calls it.
-5. How the server tells UI the result.
-6. What must replicate.
-7. What to add to reconnect/request-data flow.
-8. How to test success and failure paths.
+1. Existing project foundation: declarations, helpers, files, current flow, teammate partial code.
+2. What data/config to add.
+3. Which server function owns the rule.
+4. Which RPC to register.
+5. Which UI button/input calls it.
+6. How the server tells UI the result.
+7. What must replicate.
+8. What to add to reconnect/request-data flow.
+9. How to test success and failure paths.
 
-For each non-trivial edit, include:
+For each non-trivial edit, make sure the final answer can identify:
 
 - `位置`: exact file, line number when known, and function/table name.
 - `现在是`: nearby existing code when the edit modifies an existing block.

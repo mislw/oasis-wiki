@@ -23,20 +23,21 @@ When the user asks how to implement something:
 
 1. Locate the closest matching wiki entries and project patterns.
 2. Inspect the relevant project files if a project path or feature context is available.
-3. Explain the existing flow in plain language before proposing code.
-4. Identify the edit target:
+3. For feature work, use `feature-development-flow.md` to classify the feature, summarize `已有基础`, identify missing pieces, and plan the config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect path.
+4. Explain the existing flow in plain language before proposing code.
+5. Identify the edit target:
    - file path
    - function or table name
    - whether the code runs on server, client, UI, GameState, GameMode, PlayerController, Pawn, or Action
-5. Provide the smallest working code change.
-6. Explain why the code belongs there and how it connects to events, RPCs, replication, UI, or config tables.
-7. Include a quick verification checklist the user can run in the editor or game.
+6. Provide the smallest working code change.
+7. Explain why the code belongs there and how it connects to events, RPCs, replication, UI, or config tables.
+8. Include a quick verification checklist the user can run in the editor or game.
 
 Before writing config tables, member variables, methods, or `GlobalConfig` entries, read `code-style.md` and apply its lightweight project style: Chinese comments for every config column, member variable, config variable, and method; complete English words except common abbreviations such as `ID` and `UI`; and simple type prefixes such as `nLevel`, `szName`, and `tbItemList`.
 
 When providing code, every Lua or UGC code block must contain detailed Chinese comments. Comment the purpose of the block, the reason for each non-obvious branch or guard, server/client responsibility, RPC or replication boundary, UI event binding, timer lifetime, config/archive IDs, and Lua syntax traps such as commas in return lists. Keep comments close to the code they explain.
 
-When designing the change, reduce impact on existing project code as much as possible. Prefer additive insertions, local helper functions, guarded branches, new config fields, and narrow hook points. Preserve existing behavior, naming, formatting, function order, RPC names, event IDs, save keys, and call order unless a change is necessary; when it is necessary, call out the reason and risk explicitly.
+When designing the change, reduce impact on existing project code as much as possible. Prefer additive insertions, local helper functions, guarded branches, new config fields, and narrow hook points. Treat existing code from prior teammates as protected by default: avoid changing it when an additive hook can solve the problem. If changing existing code is necessary, first reason through the affected feature path and confirm the change does not break the prior behavior, call out the exact impact surface, and explain what the changed code does in plain teaching-mode language. Preserve existing behavior, naming, formatting, function order, RPC names, event IDs, save keys, and call order unless a change is necessary; when it is necessary, call out the reason and risk explicitly.
 
 ## Answer Format For Code Changes
 
@@ -45,6 +46,17 @@ For non-trivial code-change answers, teach in a fine-grained "edit walkthrough" 
 Use numbered sections when the change touches multiple places:
 
 ```text
+0. 已有基础
+
+项目里已经有:
+<existing declarations / configs / RPCs / events / UI / helpers / save or replication fields>
+
+还缺:
+<missing pieces needed by this feature>
+
+整体做法:
+<config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect plan>
+
 1. 配置 / 存档 / 服务端逻辑 / RPC 注册 / UI 按钮 / UI 刷新 / 复制 / 重连
 
 位置:
@@ -77,6 +89,7 @@ At the end, always include:
 
 Match the screenshot-like teaching style:
 
+- Start feature walkthroughs with the `已有基础` section defined by `feature-development-flow.md`. The goal is to teach from the project's current foundation, not from a blank project.
 - Show the exact file and function for each edit. Prefer `UGCPlayerController.lua (line 415), GetAvailableServerRPCs()` over only saying "注册 RPC".
 - When changing an existing block, show a short `现在是:` block and a `改成:` block.
 - When adding a new line inside an existing table, return list, or archive data block, show enough neighboring lines so the insertion point is obvious.
@@ -130,6 +143,7 @@ For small questions, a shorter answer is fine, but still make the edit location 
 
 Before writing the final answer, check whether one of these references should be loaded:
 
+- `feature-development-flow.md` for any cross-system feature plan.
 - `recipes.md` for common implementation tasks.
 - `snippets.md` for small template blocks.
 - `pitfalls.md` for gotchas and verification reminders.

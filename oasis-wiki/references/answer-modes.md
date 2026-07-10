@@ -7,7 +7,7 @@ The skill has two answer modes:
 1. **Normal mode**: concise, practical, review-friendly, and direct.
 2. **Teaching mode**: detailed, step-by-step, and beginner-friendly.
 
-Default to normal mode. Use teaching mode only when the user explicitly asks to learn, asks for detailed reasoning, or names teaching mode.
+Default to normal mode. Use teaching mode when the user explicitly asks to learn, asks for detailed reasoning, names teaching mode, or wants a feature/project walkthrough.
 
 ## Normal Mode
 
@@ -77,7 +77,7 @@ Rules:
 
 ## Teaching Mode
 
-Use teaching mode when the user explicitly asks to learn a project, asks for reasoning, or asks for a step-by-step walkthrough.
+Use teaching mode when the user explicitly asks to learn a project, asks for reasoning, wants to plan/build a feature step by step, or asks for a step-by-step walkthrough.
 
 Trigger phrases:
 

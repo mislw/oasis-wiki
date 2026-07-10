@@ -4,6 +4,8 @@ Use this reference when the user asks whether new knowledge, a conversation, a p
 
 This is a controlled improvement protocol, not silent self-modification.
 
+Project-specific feature memory is separate from global skill evolution. When the user says `记住这个功能`, `同步一下项目知识`, `记录这次改动`, or similar after finishing a feature, write a local project feature memory with `scripts/remember-oasis-feature.ps1`. Do not update global `references/` unless the user explicitly asks to make the lesson reusable across projects.
+
 ## When To Propose A Skill Update
 
 Suggest updating the skill when at least one is true:
@@ -19,6 +21,7 @@ Do not add:
 
 - Raw chat transcripts.
 - Whole project source trees.
+- Local project cache or feature-memory files.
 - One-off project names as global triggers.
 - Unverified guesses.
 - Secrets, private IDs, account data, or user-specific credentials.

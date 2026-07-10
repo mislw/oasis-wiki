@@ -6,21 +6,27 @@ Codex should use `SKILL.md`. Other AI coding agents should follow this file.
 
 ## Always Invoke
 
-Always use this folder when a question appears related to a 绿洲启元/绿洲起源/和平精英 UGC project, UGCProjects workspace, or UGC Lua code.
+Always use this folder when a question appears related to a 绿洲启元/绿洲起源/和平精英 UGC project, UGCProjects workspace, UGC Lua code, or project-level planning material for a UGC project.
 
-Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs`, `LuaQuickFireEvent`, `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UIManager`, `EventDefine`, `Action_*`, UI, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, debugging, logs, DSlog, Clientlog, `UGCClientLog`, `UGCServerLog`, `PIE日志面板`, `ugcprint`, `game_id`, performance, and editor workflows.
+Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs`, `LuaQuickFireEvent`, `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UIManager`, `EventDefine`, `Action_*`, UI, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, debugging, logs, DSlog, Clientlog, `UGCClientLog`, `UGCServerLog`, `PIE日志面板`, `ugcprint`, `game_id`, performance, editor workflows, `策划案`, `玩法案`, `需求文档`, `项目方案`, `系统设计`, `全局规划`, `版本规划`, `数值表`, `UI流程`, `关卡流程`, `经济系统`, `养成系统`, `项目细节`, and `项目记忆`.
+
+If a path, current workspace, or uploaded filename contains a known project name, route the question through that project's local planning memory and cache before answering.
 
 ## Rules
 
 - Search `references/` before answering.
-- Read `references/answer-modes.md` before choosing concise normal mode or detailed teaching mode.
-- Read `references/teaching-mode.md` only when the user explicitly asks for teaching mode or detailed step-by-step explanation.
+- Read `references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Default to normal mode unless the user asks to learn, asks for step-by-step guidance, or needs a feature walkthrough.
+- Read `references/teaching-mode.md` only for teaching/project walkthrough presentation.
 - Read `references/code-style.md` before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries.
-- Read `references/feature-development-flow.md` for end-to-end feature work that crosses config, server logic, RPC, UI, replication, and reconnect.
-- For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
+- Read `references/feature-development-flow.md` for end-to-end feature work that crosses config, server logic, RPC, UI, replication, save/archive, and reconnect.
+- Before teaching or planning a new feature, summarize the project's existing foundation first: already declared configs, attributes, event IDs, RPC names, UI widgets, save keys, replicated fields, helper methods, current data owners, and teammate partial implementations. Then explain the missing pieces and the overall config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect plan.
+- For current-project questions, read `references/project-cache.md` when local project memory may help. Check `%USERPROFILE%\.codex\oasis-project-cache` before broad project scans. If the user asks to cache, parse, or broadly analyze a project, run `scripts/index-oasis-project.ps1`. If the user says `记住这个功能`, `同步一下项目知识`, `记录这次改动`, or similar after completing a feature, run `scripts/remember-oasis-feature.ps1`. Never write cache files inside the UGC project workspace.
+- For project-level planning, uploaded design docs, requirements, economy/numerical/UI/stage/system details, or any question where a path/current workspace/uploaded filename contains a known project name, read `references/project-planning-memory.md`. Resolve the project identity from the path first, then load that project's local planning memory, feature memories, and index before proposing implementation. Prefer whole-project architecture, system boundaries, data flow, long-term maintainability, and future compatibility over one-off patches.
+- For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs. When the user asks why something errored or how an error happened, proactively inspect available project/editor logs first instead of asking the user to look them up.
 - Read `references/skill-evolution.md` when deciding whether a conversation, correction, or project pattern should be added to this knowledge bundle.
 - UGC project files may be read and analyzed freely.
 - Do not directly modify UGC project files unless the user explicitly overrides project-file read-only behavior for the current task.
+- In teaching mode, avoid changing existing teammate code when an additive hook is enough. If existing code must change, reason through the affected feature path, confirm the prior behavior remains intact, and explain what the changed code does.
 - Give exact edit guidance: file path, function/table, code snippet, caveats, and test steps.
 - If an API or behavior is not confirmed in the bundled wiki or examples, say so.
 
@@ -36,6 +42,8 @@ Strong signals include `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs
 - `references/snippets.md`: reusable Lua snippets.
 - `references/pitfalls.md`: gotchas and verification reminders.
 - `references/project-patterns.md`: project architecture patterns.
+- `references/project-cache.md`: local computer cache workflow for reusing parsed information from a specific UGC project.
+- `references/project-planning-memory.md`: project-name/path routing workflow for uploaded planning docs, requirements, system details, and whole-project design memory.
 - `references/skill-evolution.md`: controlled protocol for updating the knowledge bundle.
 
 ## Search
@@ -51,7 +59,7 @@ node .\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 10
 Choose the answer mode first:
 
 - Normal mode: concise, practical, review-friendly, and direct. Use by default, especially for answers intended for experienced teammates to review.
-- Teaching mode: detailed, step-by-step. Use only when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or explicitly wants a walkthrough.
+- Teaching mode: detailed, step-by-step. Use when the user asks to learn, says `教学模式`, asks `为什么` / `从底层讲` / `详细讲`, or explicitly wants a feature walkthrough.
 
 Normal mode shape:
 
@@ -92,6 +100,17 @@ Teaching mode shape:
 For teaching-mode code changes, answer like a detailed edit walkthrough:
 
 ```text
+0. 已有基础
+
+项目里已经有:
+<existing declarations / configs / RPCs / events / UI / helpers / save or replication fields>
+
+还缺:
+<missing pieces needed by this feature>
+
+整体做法:
+<config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect plan>
+
 1. <配置 / 存档 / 服务端逻辑 / RPC 注册 / UI 按钮 / UI 刷新 / 复制 / 重连>
 
 位置:

@@ -1,6 +1,6 @@
 ---
 name: oasis-wiki
-description: Always use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, or UGC Lua code, even if the skill is not named. Trigger on 绿洲启元, 绿洲起源, 起源UGC, 和平精英UGC, UGC项目, UGC Lua, GameMode, GameState, PlayerController, PlayerState, PlayerPawn, UIManager, EventDefine, Action_*, UnrealNetwork, LuaQuickFireEvent, GetAvailableServerRPCs, UGCGameSystem, UGCEventSystem, GameplayStatics, replication, RPC, UI, logs, DSlog, Clientlog, UGCClientLog, UGCServerLog, PIE日志面板, ugcprint, game_id, countdowns, skills, respawn, reconnect, debugging, performance, templates, and editor workflows. Search the bundled local wiki and distilled project references before giving technical guidance or code. Default to normal answer mode; read project files freely, but do not directly modify UGC project files unless explicitly overridden.
+description: Always use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, or UGC Lua code, even if the skill is not named. Trigger on 绿洲启元, 绿洲起源, 起源UGC, 和平精英UGC, UGC项目, 策划案, 玩法案, 需求文档, 项目方案, 系统设计, 全局规划, 版本规划, 数值表, UI流程, 关卡流程, 经济系统, 养成系统, UGC Lua, GameMode, GameState, PlayerController, PlayerState, PlayerPawn, UIManager, EventDefine, Action_*, UnrealNetwork, LuaQuickFireEvent, GetAvailableServerRPCs, UGCGameSystem, UGCEventSystem, GameplayStatics, replication, RPC, UI, logs, DSlog, Clientlog, UGCClientLog, UGCServerLog, PIE日志面板, ugcprint, game_id, countdowns, skills, respawn, reconnect, debugging, performance, templates, and editor workflows. When a path, current workspace, or uploaded file can be associated with a known project name, route through that project's local planning memory and cache before answering. Search the bundled local wiki and distilled project references before giving technical guidance or code. Default to concise normal mode unless the user asks to learn or needs a feature walkthrough. Read project files freely, but do not directly modify UGC project files unless explicitly overridden.
 ---
 
 # Oasis Wiki
@@ -18,35 +18,22 @@ Treat these as strong signals:
 - Common code names: `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UGCPlayerState`, `UGCPlayerPawn`, `UIManager`, `EventDefine`, `GlobalConfig`, `Action_*`.
 - Common APIs/patterns: `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs`, `LuaQuickFireEvent`, `UGCEventSystem`, `UGCTimerTools`, `UGCBackPackSystem`, `UGCTeamSystem`, `GameplayStatics`, `UE.LoadClass`, `UE.LoadObject`, `AddToViewport`, `RepLazyProperty`, `ugcprint`.
 - Logs and debugging wording: `日志`, `调试日志`, `PIE日志面板`, `战斗日志`, `日志提取`, `DS日志`, `客户端日志`, `服务端日志`, `DSlog`, `Clientlog`, `FullLog`, `UGCClientLog`, `UGCServerLog`, `game_id`.
+- Planning and project-level wording: `策划案`, `玩法案`, `需求文档`, `项目方案`, `系统设计`, `全局规划`, `版本规划`, `数值表`, `UI流程`, `关卡流程`, `经济系统`, `养成系统`, `项目细节`, `项目记忆`.
 - Gameplay tasks: UI buttons, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, damage, items, widgets, game phases, debugging, logs, performance.
 
-Default to normal answer mode. For UGC project files, read freely, analyze freely, and explain exact edits, but do not directly modify project files unless the user explicitly overrides this rule. Read `references/answer-modes.md` before giving code-change guidance, and only read `references/teaching-mode.md` when the user explicitly asks for teaching-mode detail.
+Default to concise normal mode. Switch to teaching/project walkthrough mode when the user asks to learn, asks for step-by-step guidance, or wants help planning/building a feature. For UGC project files, read freely and analyze freely, but do not directly modify project files unless the user explicitly overrides this rule.
 
 ## Workflow
 
-1. Search first; do not load the full wiki into context.
-2. Prefer the focused index files when starting:
-   - `references/wiki/README.md` for the knowledge base overview.
-   - `references/wiki/API参考索引.md` for API and class names.
-   - `references/wiki/代码示例库.md` for Lua examples.
-   - `references/wiki/术语表.md` for terminology.
-   - Project-specific quick-reference files only when the user is explicitly discussing that project or when mining reusable project lessons.
-3. For code-change guidance, read `references/answer-modes.md` first to choose normal mode or teaching mode, then read `references/teaching-mode.md` when teaching-mode detail is needed.
-4. In normal mode, give concise edit targets, minimal snippets, risks, logs, tests, and rollback notes instead of long teaching walkthroughs. Do not modify UGC project files directly unless explicitly allowed.
-5. For common tasks such as UI buttons, RPCs, countdowns, phases, loadouts, widgets, skills, reconnects, or debugging, read `references/recipes.md`.
-6. For log and debugging questions, search and read the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
-7. For end-to-end feature work, especially UI -> ServerRPC -> ClientRPC/event -> replication -> reconnect, read `references/feature-development-flow.md`.
-8. Before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries, read `references/code-style.md`.
-9. For template code blocks, read `references/snippets.md` and adapt names/paths/IDs to the user's project.
-10. Before finalizing code advice, scan `references/pitfalls.md` for gotchas that apply.
-11. For practical architecture or "how should I structure this project?" questions, read `references/project-patterns.md`.
-12. If the project-pattern summary is not enough and the local project corpus is available, use `references/project-mining-index.md` for targeted search commands and representative source paths.
-13. If the user asks whether new knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
-14. For implementation answers, cite the relevant local file paths and line numbers when possible.
-15. When writing Lua, match the wiki examples, project code style, and API naming exactly. If a detail is not found, say that the local wiki did not confirm it.
-16. When providing Lua or UGC code snippets, include detailed Chinese comments in every code block. Explain intent, control flow, key variables, server/client boundaries, RPC/replication behavior, UI bindings, timers, config IDs, nil guards, and fragile Lua syntax near the lines they affect.
-17. When designing or explaining a feature change, minimize impact on existing code. Prefer small additive changes, local helper functions, guarded branches, config-driven hooks, and narrow insertion points over rewrites. Preserve existing behavior, formatting, naming, and call order unless changing them is required and explicitly explained.
-18. For broad questions, synthesize from 2-4 relevant files rather than one giant context load.
+1. Search first; do not load the full wiki into context. Start with focused indexes such as `references/wiki/README.md`, `references/wiki/API参考索引.md`, `references/wiki/代码示例库.md`, and `references/wiki/术语表.md`.
+2. Choose answer style with `references/answer-modes.md`. Read `references/teaching-mode.md` only for teaching/project walkthrough answers.
+3. For current-project context, read `references/project-cache.md`; for uploaded plans, project docs, or project-name/path routing, read `references/project-planning-memory.md`.
+4. For feature implementation planning, read `references/feature-development-flow.md`. Start by summarizing `已有基础`, then plan config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect.
+5. For Lua code style or review, read `references/code-style.md`. Match wiki/project style and avoid excessive defensive checks that add noise without recovery behavior.
+6. For common tasks, snippets, gotchas, or architecture mining, read only the relevant file: `references/recipes.md`, `references/snippets.md`, `references/pitfalls.md`, `references/project-patterns.md`, or `references/project-mining-index.md`.
+7. For log/debugging questions, inspect available project/editor logs first when possible, and distinguish PIE logs, local `Clientlog`/`DSlog`, phone logs, management-platform DS logs, and battle logs.
+8. If the user asks whether knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
+9. For implementation answers, cite relevant local file paths and line numbers when possible. Preserve existing teammate behavior, names, call order, formatting, RPC names, event IDs, save keys, and project style unless the change is required and explained.
 
 ## Search
 
@@ -76,6 +63,8 @@ Additional distilled references:
 
 - `references/project-patterns.md`: reusable architecture and coding patterns mined from local UGC projects.
 - `references/project-mining-index.md`: representative project paths and search commands for deeper inspection.
+- `references/project-cache.md`: local computer cache workflow for reusing parsed information from a specific UGC project.
+- `references/project-planning-memory.md`: project-name/path routing workflow for uploaded planning docs, requirements, system details, and whole-project design memory.
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.
 - `references/teaching-mode.md`: code-teaching workflow and project-file read-only constraint.
 - `references/code-style.md`: lightweight project code style for comments, config tables, variable names, member variables, and methods.
