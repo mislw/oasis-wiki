@@ -52,7 +52,7 @@ The cache is an index, not a source replacement. Use it to decide where to inspe
 3. Search `index\symbols.tsv`, `index\files.tsv`, `index\summary.md`, and feature memories with `rg` before scanning the project tree:
 
 ```powershell
-rg --line-number --smart-case "ServerRPC|UIManager|EventDefine|RepLazyProperty|三国地图" "%USERPROFILE%\.codex\oasis-project-cache"
+rg --line-number --smart-case "ServerRPC|UIManager|EventDefine|RepLazyProperty|keyword" "%USERPROFILE%\.codex\oasis-project-cache"
 ```
 
 4. Open only the real source files identified by the cache.

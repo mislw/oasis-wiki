@@ -13,7 +13,7 @@ Use this bundle when helping with:
 - Oasis / 绿洲启元 / 和平精英 UGC Lua APIs.
 - Gameplay systems, UI systems, editor workflows, templates, debugging, logs, performance, release notes, and terminology.
 - Teaching the user how to modify UGC project code.
-- Mining reusable practices from local UGC project examples.
+- Applying reusable UGC Lua project architecture patterns.
 
 Strong trigger signals include:
 
@@ -22,7 +22,7 @@ Strong trigger signals include:
 - `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs`, `LuaQuickFireEvent`, `UGCEventSystem`, `UGCTimerTools`, `UGCBackPackSystem`, `UGCTeamSystem`, `ugcprint`.
 - UI, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, damage, items, game phases, debugging, logs, DSlog, Clientlog, `UGCClientLog`, `UGCServerLog`, `PIE日志面板`, `game_id`, performance, and editor workflows in a UGC context.
 
-Do not treat a single project name as the whole domain. Project-specific files are examples and should be mined for reusable patterns only when relevant.
+Do not treat a single project name as the whole domain. Keep project-specific notes, names, paths, plans, screenshots, and spreadsheets in local project memory instead of this public bundle.
 
 ## Safety Rule
 
@@ -54,11 +54,9 @@ Read `oasis-wiki/references/answer-modes.md` before choosing concise normal mode
    - `oasis-wiki/references/project-patterns.md`
 4. Before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries, read `oasis-wiki/references/code-style.md`.
 5. For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
-6. If more evidence is needed and the local UGC project corpus is available, use:
-   - `oasis-wiki/references/project-mining-index.md`
-7. If the user asks whether a conversation, correction, or project pattern should be added to the bundle, read `oasis-wiki/references/skill-evolution.md` and use its controlled update protocol.
-8. Cite local file paths and line numbers when possible.
-9. If a Lua API or behavior is not found in the bundled wiki or examples, say it was not confirmed.
+6. If the user asks whether a conversation, correction, or project pattern should be added to the bundle, read `oasis-wiki/references/skill-evolution.md` and use its controlled update protocol.
+7. Cite local file paths and line numbers when possible.
+8. If a Lua API or behavior is not found in the bundled wiki or examples, say it was not confirmed.
 
 ## Search Commands
 

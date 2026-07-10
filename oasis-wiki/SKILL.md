@@ -5,7 +5,7 @@ description: Always use for Oasis/绿洲启元/绿洲起源/和平精英 UGC pro
 
 # Oasis Wiki
 
-Use this skill for Oasis/绿洲启元 and 和平精英 UGC development questions. The bundled wiki is the source of truth for Lua APIs, editor workflows, gameplay systems, UI, templates, troubleshooting, and examples. The project-pattern references add distilled practices mined from local UGC projects, including reusable lessons from project-specific examples.
+Use this skill for Oasis/绿洲启元 and 和平精英 UGC development questions. The bundled wiki is the source of truth for Lua APIs, editor workflows, gameplay systems, UI, templates, troubleshooting, and examples. The project-pattern references summarize generic UGC Lua architecture habits without private project names, local paths, or planning details.
 
 ## Always Invoke
 
@@ -30,7 +30,7 @@ Default to concise normal mode. Use teaching mode only when the user explicitly 
 3. For current-project context, read `references/project-cache.md`; for uploaded plans, project docs, or project-name/path routing, read `references/project-planning-memory.md`.
 4. For feature implementation planning, read `references/feature-development-flow.md`. Start by summarizing `已有基础`, then plan config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect.
 5. For Lua code style or review, read `references/code-style.md`. Match wiki/project style and avoid excessive defensive checks that add noise without recovery behavior.
-6. For common tasks, snippets, gotchas, or architecture mining, read only the relevant file: `references/recipes.md`, `references/snippets.md`, `references/pitfalls.md`, `references/project-patterns.md`, or `references/project-mining-index.md`.
+6. For common tasks, snippets, gotchas, or architecture planning, read only the relevant file: `references/recipes.md`, `references/snippets.md`, `references/pitfalls.md`, or `references/project-patterns.md`.
 7. For log/debugging questions, inspect available project/editor logs first when possible, and distinguish PIE logs, local `Clientlog`/`DSlog`, phone logs, management-platform DS logs, and battle logs.
 8. If the user asks whether knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
 9. For implementation answers, cite relevant local file paths and line numbers when possible. Preserve existing teammate behavior, names, call order, formatting, RPC names, event IDs, save keys, and project style unless the change is required and explained.
@@ -57,12 +57,11 @@ If running from outside the skill directory, pass an absolute path to the script
 
 ## Reference Layout
 
-The full markdown export lives in `references/wiki`. It contains 59 Markdown files, about 278 articles, 263 Lua examples, and 1140 API/class references as of the bundled export generated on 2026-06-16.
+The full markdown export lives in `references/wiki`. It contains 58 Markdown files, about 278 articles, 263 Lua examples, and 1140 API/class references as of the bundled export generated on 2026-06-16.
 
 Additional distilled references:
 
-- `references/project-patterns.md`: reusable architecture and coding patterns mined from local UGC projects.
-- `references/project-mining-index.md`: representative project paths and search commands for deeper inspection.
+- `references/project-patterns.md`: reusable architecture and coding patterns without private project names or local paths.
 - `references/project-cache.md`: local computer cache workflow for reusing parsed information from a specific UGC project.
 - `references/project-planning-memory.md`: project-name/path routing workflow for uploaded planning docs, requirements, system details, and whole-project design memory.
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.

@@ -1,21 +1,14 @@
 # UGC Project Patterns
 
-This reference distills recurring patterns from the local UGC project corpus at:
+This reference summarizes reusable UGC Lua architecture patterns. It avoids project-specific names, local paths, and private planning details. Keep project-specific notes in local project memory instead of this public bundle.
 
-`E:\Program Files (x86)\2001776(2001776)\ShadowTrackerExtra\UGCProjects`
+Common repeated script names:
 
-It is not a copy of the projects. Use it as practical guidance before opening the full wiki or writing new Lua.
-
-## Corpus Snapshot
-
-- Top-level project directories: 70+.
-- Lua files scanned: about 5,600, including templates and extended resources.
-- Common repeated script names:
-  - `UGCGameMode.lua`, `UGCGameState.lua`, `UGCPlayerController.lua`, `UGCPlayerPawn.lua`, `UGCPlayerState.lua`
-  - `EventDefine.lua`, `GlobalConfig.lua`, `CommonConfigPackage.lua`
-  - `UGCEventSystem.lua`, `UGCTimerTools.lua`, `ResourcesTools.lua`, `TableHelper.lua`, `VectorHelper.lua`
-  - `UIManager.lua`, `MainUI.lua`, `GuideUI.lua`, `SettlementUI.lua`
-  - `Action_SendEvent.lua`, `Action_PlayerLogin.lua`, `Action_WaitingPlayer.lua`, `Action_GamePrepare.lua`, `Action_GameStart.lua`, `Action_RoundPrepare.lua`, `Action_RoundStart.lua`, `Action_RoundEnd.lua`, `Action_GameEnd.lua`
+- `UGCGameMode.lua`, `UGCGameState.lua`, `UGCPlayerController.lua`, `UGCPlayerPawn.lua`, `UGCPlayerState.lua`
+- `EventDefine.lua`, `GlobalConfig.lua`, `CommonConfigPackage.lua`
+- `UGCEventSystem.lua`, `UGCTimerTools.lua`, `ResourcesTools.lua`, `TableHelper.lua`, `VectorHelper.lua`
+- `UIManager.lua`, `MainUI.lua`, `GuideUI.lua`, `SettlementUI.lua`
+- `Action_SendEvent.lua`, `Action_PlayerLogin.lua`, `Action_WaitingPlayer.lua`, `Action_GamePrepare.lua`, `Action_GameStart.lua`, `Action_RoundPrepare.lua`, `Action_RoundStart.lua`, `Action_RoundEnd.lua`, `Action_GameEnd.lua`
 
 ## Standard Project Shape
 
@@ -262,7 +255,7 @@ On reconnect/respawn:
 
 ## Common API Hotspots
 
-These APIs appeared frequently in the project corpus and are worth checking in the wiki before use:
+These APIs are common UGC hotspots and are worth checking in the wiki before use:
 
 - `UGCGameSystem.GameState`
 - `UGCGameSystem.GameMode`

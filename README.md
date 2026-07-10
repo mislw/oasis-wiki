@@ -72,7 +72,7 @@ Copy-Item -Recurse -Force .\oasis-wiki "$env:USERPROFILE\.codex\skills\oasis-wik
 
 ```text
 用 oasis-wiki 看一下这个 UGCPlayerController 里的 RPC 怎么接。
-帮我按当前项目已有基础规划一下装备升级功能。
+帮我按当前项目已有基础规划一下某个养成功能。
 看一下这个报错，先查 DSlog / Clientlog 相关说明。
 正常模式，给我最小改动代码。
 教学模式，带我一步一步做这个 UI -> ServerRPC -> 刷新流程。
@@ -94,7 +94,7 @@ It is Codex-native through `oasis-wiki/SKILL.md`, and also includes generic inst
 
 The skill bundles a local Markdown export of the Oasis wiki and instructs Codex to search it before answering questions about Lua APIs, gameplay systems, UI systems, editor workflows, templates, debugging, logs, performance, release notes, and terminology.
 
-It also includes distilled project-architecture notes mined from local UGC sample projects. These notes summarize reusable patterns without copying whole project source trees.
+It also includes generic project-architecture notes for common UGC Lua workflows. Project-specific planning notes, local caches, and private docs should stay outside this public repository.
 
 The skill is designed for normal-mode, review-friendly project help by default: Codex can read project files to understand them, but should explain edits instead of directly modifying UGC project files unless explicitly overridden. Teaching mode is available only when explicitly requested.
 
@@ -149,7 +149,7 @@ Copy-Item -Recurse -Force "$env:USERPROFILE\oasis-wiki\oasis-wiki" "$env:USERPRO
 Temporary fallback: if a Claude Code environment does not load user skills, keep the repository cloned and start Claude Code with access to the bundle directory:
 
 ```powershell
-Set-Location "D:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\YourProject"
+Set-Location "$env:USERPROFILE\UGCProjects\YourProject"
 claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua, debugging, or log questions, search oasis-wiki/references before answering. For logs, distinguish PIE logs, Clientlog, DSlog, phone client logs, management-platform DS logs, and battle logs. Before writing Lua, read oasis-wiki/references/code-style.md. Use normal mode by default for concise review-friendly answers. Use teaching mode only when I explicitly ask to learn, say 教学模式, or ask for detailed step-by-step explanation. Keep UGC project files read-only unless I explicitly ask you to directly modify them. In normal mode code snippets, use only brief summary comments before functions/methods or major blocks; do not add line-by-line teaching comments. Prefer the smallest additive change."
 ```
 
@@ -181,8 +181,7 @@ node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
 - `oasis-wiki/SKILL.md`: Codex skill instructions and trigger metadata.
 - `oasis-wiki/agents/openai.yaml`: UI metadata.
 - `oasis-wiki/references/wiki`: Markdown wiki export.
-- `oasis-wiki/references/project-patterns.md`: Curated UGC project architecture and Lua patterns.
-- `oasis-wiki/references/project-mining-index.md`: Representative project paths and targeted search commands.
+- `oasis-wiki/references/project-patterns.md`: Generic UGC project architecture and Lua patterns without private project names or local paths.
 - `oasis-wiki/references/project-cache.md`: Local computer cache workflow for reusing parsed knowledge from a specific UGC project without writing cache files into the project workspace.
 - `oasis-wiki/references/project-planning-memory.md`: Project-name/path routing workflow for uploaded planning docs, requirements, system details, and whole-project design memory.
 - `oasis-wiki/references/answer-modes.md`: Rules for choosing concise normal mode or detailed teaching mode.
@@ -195,4 +194,4 @@ node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
 - `oasis-wiki/references/skill-evolution.md`: Controlled protocol for deciding when and how to update the skill.
 - `oasis-wiki/scripts`: Search helpers.
 
-The bundled wiki export was generated on 2026-06-16 and contains 59 Markdown files, about 278 articles, 263 Lua examples, and 1140 API/class references.
+The bundled wiki export was generated on 2026-06-16 and contains 58 Markdown files, about 278 articles, 263 Lua examples, and 1140 API/class references.
