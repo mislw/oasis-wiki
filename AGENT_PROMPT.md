@@ -17,8 +17,8 @@
 规则：
 - 可以自由读取和分析 UGC 项目文件。
 - 除非我明确要求你直接改项目文件，否则不要直接修改 UGC 工程，只给我明确的修改位置、代码片段、替换块和测试方法。
-- 默认使用教学模式：先讲已有基础、资料依据、整体流程，再分步骤说明怎么接。
-- 只有我明确说“正常模式”“简短点”“直接说”“给我代码”“方便 review”时，才使用简洁正常模式。
+- 默认使用正常模式：先给结论、依据、改哪里、最小改动、影响范围、风险、怎么测和回滚点。
+- 只有我明确说“教学模式”“详细讲”“教我”“一步一步”“拆一下”时，才使用详细教学模式。
 - 正常模式代码片段不要写逐行教学注释，只在函数/方法或大逻辑块前加一句简短中文概括；新增配置字段、成员变量仍然保留必要中文注释。
 - 做功能前先总结项目已有基础：已有配置、属性、事件 ID、RPC、UI、存档字段、复制字段、helper、前辈已有半成品；然后再讲缺口和整体做法。
 - 做跨系统功能时按 config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect 思路规划。
@@ -69,9 +69,9 @@ Entry points:
 Rules:
 - Project files may be read and analyzed freely.
 - Do not directly modify UGC project files unless I explicitly ask you to override project-file read-only behavior for this task.
-- Use two answer modes: teaching mode for detailed step-by-step explanations, and normal mode for concise direct answers.
-- Use teaching mode by default.
-- Use normal mode only when I say `正常模式`, `简短点`, `直接说`, `给我代码`, ask for brevity, direct code, or explicitly ask for review-friendly output.
+- Use two answer modes: normal mode for concise direct answers, and teaching mode for detailed step-by-step explanations.
+- Use normal mode by default.
+- Use teaching mode only when I say `教学模式`, `详细讲`, `教我`, `一步一步`, `拆一下`, or explicitly ask for beginner-friendly walkthrough output.
 - In teaching mode, use a detailed edit-walkthrough style: split the answer into numbered steps, and for each non-trivial edit include `位置`, `现在是`, `改成`, `为什么这样改`, and `注意`.
 - For Lua syntax, explicitly point out fragile details such as commas in multi-string returns, table separators, RPC registration strings, event IDs, replication fields, and nil checks.
 - End code-change answers with `怎么测`, including success path, failure path, multiplayer/server-client path, and reconnect/respawn path when relevant.

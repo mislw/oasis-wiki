@@ -2,7 +2,7 @@
 
 这是一个给 **绿洲启元 / 绿洲起源 / 和平精英 UGC Lua 开发** 用的 Codex Skill / AI Agent 知识包。
 
-这个仓库主要面向国内小团队自用：默认使用中文语境，默认教学模式，回答会更偏步骤、原因和整体流程；只有明确要求“正常模式 / 简短点 / 直接说 / 给我代码 / 方便 review”时才切换到简洁正常模式。
+这个仓库主要面向国内小团队自用：默认使用中文语境和正常模式，回答会更直接、简洁、方便 review；只有明确要求“教学模式 / 详细讲 / 教我 / 一步一步 / 拆一下”时才切换到详细教学模式。
 
 它会让 Codex 或其他 AI Agent 在回答 UGC Lua、RPC、UI、复制、日志、编辑器流程、项目结构、功能规划等问题前，优先搜索官方 wiki 教学文档、官方 API 手册、1.37 增量内容、官方论坛经验帖和整理过的参考资料，而不是凭记忆猜。
 
@@ -18,8 +18,8 @@
 
 ### 默认回答习惯
 
-- 默认教学模式：先讲已有基础、资料依据、整体流程，再分步骤说明怎么接。
-- 正常模式只在明确要求时使用：`正常模式`、`简短点`、`直接说`、`给我代码`、`方便 review`。
+- 默认正常模式：先给结论、依据、改哪里、最小改动、影响范围、风险、怎么测和回滚点。
+- 教学模式只在明确要求时使用：`教学模式`、`详细讲`、`教我`、`一步一步`、`拆一下`。
 - 正常模式代码注释不要太密：只在函数/方法或大逻辑块前加一句中文概括，不逐行写教学注释。
 - 做功能前先总结项目已有基础：已有配置、属性、RPC、事件、UI、存档、复制字段、helper、前辈已有代码，再规划整体怎么接。
 - 代码习惯：尊重旧命名；新配置/成员变量/方法要有中文注释；不要加一堆无意义保护判断。
@@ -97,7 +97,7 @@ The skill bundles a local Markdown export of the Oasis wiki, official API refere
 
 It also includes generic project-architecture notes for common UGC Lua workflows. Project-specific planning notes, local caches, and private docs should stay outside this public repository.
 
-The skill is designed for teaching-mode project help by default: Codex can read project files to understand them, but should explain edits instead of directly modifying UGC project files unless explicitly overridden. Concise normal mode is available when explicitly requested.
+The skill is designed for normal-mode project help by default: Codex can read project files to understand them, but should explain edits instead of directly modifying UGC project files unless explicitly overridden. Teaching mode is available when explicitly requested.
 
 ## Install
 
@@ -117,7 +117,7 @@ For agents that do not support Codex skills directly:
 2. If the agent accepts a setup prompt, paste `AGENT_PROMPT.md`.
 3. Point the agent at the `oasis-wiki/references` folder for search and citation.
 
-The important behavior is the same across agents: search the official local wiki docs and distilled references first, use teaching mode by default, and do not directly modify UGC project files unless explicitly allowed for that task.
+The important behavior is the same across agents: search the official local wiki docs and distilled references first, use normal mode by default, and do not directly modify UGC project files unless explicitly allowed for that task.
 
 Trigger expectation: if a question looks related to a 绿洲启元 / 绿洲起源 / 和平精英 UGC project, UGCProjects workspace, or UGC Lua code, the agent should use this bundle by default.
 
@@ -151,7 +151,7 @@ Temporary fallback: if a Claude Code environment does not load user skills, keep
 
 ```powershell
 Set-Location "$env:USERPROFILE\UGCProjects\YourProject"
-claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua, debugging, or log questions, search oasis-wiki/references before answering. For feature/API/system questions, search the official documentation bundle first: base wiki teaching docs, 官方API参考手册.md, 新增内容_1.37版本.md, and 论坛经验帖_绿洲启妹.md. For logs, distinguish PIE logs, Clientlog, DSlog, phone client logs, management-platform DS logs, and battle logs. Before writing Lua, read oasis-wiki/references/code-style.md. Use teaching mode by default. Use concise normal mode only when I explicitly ask for 正常模式, brevity, direct code, or review-friendly output. Keep UGC project files read-only unless I explicitly ask you to directly modify them. In normal mode code snippets, use only brief summary comments before functions/methods or major blocks; do not add line-by-line teaching comments. Prefer the smallest additive change."
+claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua, debugging, or log questions, search oasis-wiki/references before answering. For feature/API/system questions, search the official documentation bundle first: base wiki teaching docs, 官方API参考手册.md, 新增内容_1.37版本.md, and 论坛经验帖_绿洲启妹.md. For logs, distinguish PIE logs, Clientlog, DSlog, phone client logs, management-platform DS logs, and battle logs. Before writing Lua, read oasis-wiki/references/code-style.md. Use normal mode by default. Switch to teaching mode only when I explicitly ask for 教学模式, detailed explanation, step-by-step guidance, or beginner-friendly walkthrough output. Keep UGC project files read-only unless I explicitly ask you to directly modify them. In normal mode code snippets, use only brief summary comments before functions/methods or major blocks; do not add line-by-line teaching comments. Prefer the smallest additive change."
 ```
 
 ## Use
@@ -188,7 +188,7 @@ node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
 - `oasis-wiki/references/project-patterns.md`: Generic UGC project architecture and Lua patterns without private project names or local paths.
 - `oasis-wiki/references/project-cache.md`: Local computer cache workflow for reusing parsed knowledge from a specific UGC project without writing cache files into the project workspace.
 - `oasis-wiki/references/project-planning-memory.md`: Project-name/path routing workflow for uploaded planning docs, requirements, system details, and whole-project design memory.
-- `oasis-wiki/references/answer-modes.md`: Rules for default teaching mode and explicit concise normal mode.
+- `oasis-wiki/references/answer-modes.md`: Rules for default normal mode and explicit teaching mode.
 - `oasis-wiki/references/code-style.md`: Lightweight project code style for comments, config tables, variable names, member variables, and methods.
 - `oasis-wiki/references/teaching-mode.md`: Code teaching workflow and read-only project-file constraint.
 - `oasis-wiki/references/feature-development-flow.md`: End-to-end UGC feature pipeline from config through server, RPC, UI, replication, and reconnect.
