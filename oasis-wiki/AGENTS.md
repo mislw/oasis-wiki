@@ -74,7 +74,7 @@ Normal mode shape:
 <file path + function/table>
 
 最小改动:
-<focused snippet with detailed Chinese comments inside the code block>
+<focused snippet with only brief summary comments before functions/methods or major blocks>
 
 影响范围:
 <server/client/UI/save/replication/RPC/reconnect/log impact, or "only affects this local function">

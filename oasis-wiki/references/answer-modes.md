@@ -40,7 +40,7 @@ Answer shape:
 <file path + function/table>
 
 最小改动:
-<focused snippet with detailed Chinese comments inside the code block>
+<focused snippet with only brief summary comments before functions/methods or major blocks>
 
 影响范围:
 <server/client/UI/save/replication/RPC/reconnect/log impact, or "only affects this local function">
@@ -66,7 +66,7 @@ Rules:
 - Put the conclusion first, then the exact edit target. Do not open with background teaching.
 - Keep prose compact and review-friendly. Assume the reader understands the project flow unless the code shows a surprising dependency.
 - Prefer the smallest additive diff. State whether the change preserves existing behavior and call order.
-- Keep detailed Chinese comments inside code blocks, but keep explanation outside the code short.
+- In normal mode, do not add line-by-line teaching comments inside code blocks. Prefer one brief Chinese summary comment before a function/method or major logic block, like `-- 决策阶段的合成英雄`. Keep required config/member-variable comments when adding new config fields or member variables, but avoid dense explanatory comments for every branch or statement.
 - Include `影响范围` for non-trivial changes so reviewers can quickly judge blast radius.
 - Include `依据` so reviewers know whether the recommendation is confirmed from wiki, confirmed from project code, or inferred from a local pattern.
 - Include `风险` using `低`, `中`, or `高`. Raise risk for save data, replication, RPC, reconnect, inventory/reward, damage, team, ranking, settlement, or anti-cheat-sensitive changes.
