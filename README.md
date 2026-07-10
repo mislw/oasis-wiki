@@ -44,7 +44,7 @@ Copy-Item -Recurse -Force .\oasis-wiki "$env:USERPROFILE\.codex\skills\oasis-wik
 
 ```text
 用 oasis-wiki 看一下这个 UGCPlayerController 里的 RPC 怎么接。
-帮我按 RedCliff 项目已有基础规划一下装备升级功能。
+帮我按当前项目已有基础规划一下装备升级功能。
 看一下这个报错，先查 DSlog / Clientlog 相关说明。
 正常模式，给我最小改动代码。
 教学模式，带我一步一步做这个 UI -> ServerRPC -> 刷新流程。
