@@ -34,11 +34,12 @@ Default to normal mode. Use teaching mode only when the user explicitly asks for
 4. Choose answer style with `references/answer-modes.md`. Use normal mode by default. Read `references/teaching-mode.md` only when the user explicitly requests teaching mode, detailed explanation, step-by-step guidance, or beginner-friendly walkthrough output.
 5. For current-project context, read `references/project-cache.md`; for uploaded plans, project docs, or project-name/path routing, read `references/project-planning-memory.md`.
 6. For feature implementation planning, read `references/feature-development-flow.md`. Start by summarizing `已有基础`, then plan config -> server -> RPC -> UI -> refresh -> replication/save -> reconnect.
-7. For Lua code style or review, read `references/code-style.md`. Match wiki/project style and avoid excessive defensive checks that add noise without recovery behavior.
-8. For common tasks, snippets, gotchas, or architecture planning, read only the relevant file: `references/recipes.md`, `references/snippets.md`, `references/pitfalls.md`, or `references/project-patterns.md`.
-9. For log/debugging questions, inspect available project/editor logs first when possible, and distinguish PIE logs, local `Clientlog`/`DSlog`, phone logs, management-platform DS logs, and battle logs.
-10. If the user asks whether knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
-11. For implementation answers, cite relevant local file paths and line numbers when possible. Preserve existing teammate behavior, names, call order, formatting, RPC names, event IDs, save keys, and project style unless the change is required and explained.
+7. For MCP/editor automation questions, read `references/mcp-integration.md` and search `references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` first. Use this skill as the planning, safety, wiki lookup, and verification layer; use UGCAskQ MCP as the editor execution channel. Confirm the feature is experimental, the editor MCP Server is running locally, the default SSE URL/port match the panel, call logging is enabled when debugging, and warn users to save or back up projects before AI-driven editor operations. When backing up `.uasset` files, place backups outside the UGC project tree so the editor does not scan backup paths or assets.
+8. For Lua code style or review, read `references/code-style.md`. Match wiki/project style and avoid excessive defensive checks that add noise without recovery behavior.
+9. For common tasks, snippets, gotchas, or architecture planning, read only the relevant file: `references/recipes.md`, `references/snippets.md`, `references/pitfalls.md`, or `references/project-patterns.md`.
+10. For log/debugging questions, inspect available project/editor logs first when possible, and distinguish PIE logs, local `Clientlog`/`DSlog`, phone logs, management-platform DS logs, MCP call logs (`Saved/log/MCP_YYYYMMDD.log`), and battle logs.
+11. If the user asks whether knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
+12. For implementation answers, cite relevant local file paths and line numbers when possible. Preserve existing teammate behavior, names, call order, formatting, RPC names, event IDs, save keys, and project style unless the change is required and explained.
 
 ## Search
 
@@ -69,6 +70,7 @@ Additional distilled references:
 - `references/project-patterns.md`: reusable architecture and coding patterns without private project names or local paths.
 - `references/project-cache.md`: local computer cache workflow for reusing parsed information from a specific UGC project.
 - `references/project-planning-memory.md`: project-name/path routing workflow for uploaded planning docs, requirements, system details, and whole-project design memory.
+- `references/mcp-integration.md`: UGCAskQ MCP companion workflow: let this skill choose references and safety checks, let MCP execute editor reads/writes, then verify with MCP/game logs.
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.
 - `references/teaching-mode.md`: code-teaching workflow and project-file read-only constraint.
 - `references/code-style.md`: lightweight project code style for comments, config tables, variable names, member variables, and methods.

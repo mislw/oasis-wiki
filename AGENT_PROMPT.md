@@ -39,6 +39,7 @@
 - oasis-wiki/references/code-style.md
 - oasis-wiki/references/project-cache.md
 - oasis-wiki/references/project-planning-memory.md
+- oasis-wiki/references/mcp-integration.md
 - oasis-wiki/references/feature-development-flow.md
 - oasis-wiki/references/teaching-mode.md
 - oasis-wiki/references/recipes.md
@@ -78,6 +79,7 @@ Rules:
 - Before writing or reviewing Lua code, read `oasis-wiki/references/code-style.md`; apply Chinese comments for every config column, member variable, config variable, and method, spell English words completely except common abbreviations like ID/UI, and use simple prefixes like `nLevel`, `szName`, and `tbItemList`.
 - In normal mode code snippets, do not add line-by-line teaching comments. Prefer one brief Chinese summary comment before a function/method or major logic block, while keeping required config/member-variable comments.
 - For feature/API/system questions, search the official documentation bundle first: base wiki teaching docs, 官方API参考手册.md, 新增内容_1.37版本.md, and 论坛经验帖_绿洲启妹.md.
+- For UGCAskQ MCP/editor automation questions, read `oasis-wiki/references/mcp-integration.md` and search `oasis-wiki/references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` first. Use this bundle as the planning, safety, wiki lookup, and verification layer; use UGCAskQ MCP as the editor execution channel. When backing up `.uasset` files, place backups outside the UGC project tree so the editor does not scan backup paths or assets.
 - Prefer the bundled wiki, recipes, snippets, pitfalls, and project-pattern summaries over guessing.
 - For log/debugging questions, search `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`; distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, and battle logs.
 - If an API or behavior is not confirmed in the local wiki/examples, say so.
@@ -93,6 +95,7 @@ Useful references:
 - oasis-wiki/references/code-style.md
 - oasis-wiki/references/project-cache.md
 - oasis-wiki/references/project-planning-memory.md
+- oasis-wiki/references/mcp-integration.md
 - oasis-wiki/references/teaching-mode.md
 - oasis-wiki/references/feature-development-flow.md
 - oasis-wiki/references/recipes.md

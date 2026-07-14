@@ -90,6 +90,7 @@ At the end, always include:
 Match the screenshot-like teaching style:
 
 - Start feature walkthroughs with the `已有基础` section defined by `feature-development-flow.md`. The goal is to teach from the project's current foundation, not from a blank project.
+- When the foundation depends on `.uasset` DataTables, blueprint assets, map actors, skill editor assets, or other binary/editor-only assets, use UGCAskQ MCP to inspect them. Do not treat a text-search miss as proof that a field, row, or asset setting does not exist.
 - Show the exact file and function for each edit. Prefer `UGCPlayerController.lua (line 415), GetAvailableServerRPCs()` over only saying "注册 RPC".
 - When changing an existing block, show a short `现在是:` block and a `改成:` block.
 - When adding a new line inside an existing table, return list, or archive data block, show enough neighboring lines so the insertion point is obvious.
@@ -153,6 +154,7 @@ Before writing the final answer, check whether one of these references should be
 Before giving instructions based on a project file:
 
 - Mention whether the source was confirmed from wiki, from project code, or inferred.
+- For binary/editor-only assets, mention whether the source was confirmed through UGCAskQ MCP. If MCP was unavailable, say the asset content is unverified.
 - Avoid pretending an API exists if it was not found in the local wiki or examples.
 - If a change touches replicated state, remind the user to add/update `GetReplicatedProperties()` or call `UnrealNetwork.RepLazyProperty` when appropriate.
 - If a change touches client-to-server behavior, remind the user to register server RPCs in `GetAvailableServerRPCs()`.

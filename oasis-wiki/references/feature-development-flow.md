@@ -57,6 +57,8 @@ Common locations:
 - `Script/GameConfigs/EventDefine.lua`: local Lua UI/event IDs.
 - Feature manager config tables: task, item, shop, rebirth, skill, loadout, or base/house configs.
 
+If configuration lives in `.uasset` DataTables or other editor-only binary assets, use UGCAskQ MCP to inspect the table schema, row count, key fields, sample rows, and warnings before planning fields or code. Do not assume a field is absent only because text search cannot read the asset.
+
 Prefer config for values that designers or future edits may tune: costs, rewards, cooldowns, text, item IDs, maximum counts, phase requirements, distance limits.
 
 ## Step 2: Add Server Logic
