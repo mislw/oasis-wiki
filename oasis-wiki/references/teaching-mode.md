@@ -6,14 +6,16 @@ This file defines the detailed teaching style. For mode selection between concis
 
 ## Core Rule
 
-The user's project files may be read freely for understanding, search, diagnosis, and explanation. Do not directly modify the user's UGC project files unless the user explicitly overrides this rule in the current conversation.
+The user's project files may be read freely for understanding, search, diagnosis, and explanation. In teaching mode, never directly modify the user's UGC project files. This is a hard rule for teaching mode and cannot be overridden inside the same teaching-mode answer.
+
+If the user asks for direct edits while teaching mode is active, stop and explain that teaching mode is read-only. Ask the user to switch back to normal/direct mode for implementation, or provide the exact edit instructions instead.
 
 Default behavior:
 
 - Read any relevant project file, config, script, asset reference, log, or wiki note.
 - Explain what the file does and where the change belongs.
 - Provide code snippets, replacement blocks, patch-style diffs, or step-by-step edit instructions.
-- Tell the user exactly which file and function to edit.
+- Tell the user exactly which file, line number, and function/table to edit. If a precise line number cannot be known, inspect the file first; if it still cannot be determined, say why and give the nearest stable function/table anchor.
 - Do not run file-writing commands, apply patches, formatters, or bulk rewrites against the UGC project directory.
 - It is OK to edit this skill package itself when the user asks to improve the skill.
 
@@ -27,6 +29,7 @@ When the user asks how to implement something:
 4. Explain the existing flow in plain language before proposing code.
 5. Identify the edit target:
    - file path
+   - line number or nearest stable line anchor
    - function or table name
    - whether the code runs on server, client, UI, GameState, GameMode, PlayerController, Pawn, or Action
 6. Provide the smallest working code change.
@@ -91,7 +94,7 @@ Match the screenshot-like teaching style:
 
 - Start feature walkthroughs with the `已有基础` section defined by `feature-development-flow.md`. The goal is to teach from the project's current foundation, not from a blank project.
 - When the foundation depends on `.uasset` DataTables, blueprint assets, map actors, skill editor assets, or other binary/editor-only assets, use UGCAskQ MCP to inspect them. Do not treat a text-search miss as proof that a field, row, or asset setting does not exist.
-- Show the exact file and function for each edit. Prefer `UGCPlayerController.lua (line 415), GetAvailableServerRPCs()` over only saying "注册 RPC".
+- Show the exact file, line number, and function/table for each edit. Prefer `UGCPlayerController.lua (line 415), GetAvailableServerRPCs()` over only saying "注册 RPC".
 - When changing an existing block, show a short `现在是:` block and a `改成:` block.
 - When adding a new line inside an existing table, return list, or archive data block, show enough neighboring lines so the insertion point is obvious.
 - Explain why the line exists, not just what it does. Example: "存档这个字段后，玩家重登才不会重复领取".
@@ -164,4 +167,4 @@ Before giving instructions based on a project file:
 
 ## When The User Asks To Modify Directly
 
-If the user explicitly asks to directly edit files in a UGC project, confirm once that they want to override project-file read-only behavior for that specific change. After confirmation, keep edits narrow and avoid unrelated formatting or generated asset changes.
+If the user explicitly asks to directly edit files in a UGC project while teaching mode is active, do not edit. Teaching mode remains read-only. Tell the user that direct implementation requires leaving teaching mode / switching to normal direct mode, then either wait for that confirmation or provide precise file-line edit instructions.

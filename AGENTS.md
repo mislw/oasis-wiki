@@ -1,149 +1,81 @@
 # Agent Instructions
 
-This repository contains a portable knowledge bundle for Oasis / 绿洲启元 / 和平精英 UGC Lua development.
+This repository contains a portable knowledge bundle for Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua development.
 
-Codex can use `oasis-wiki/SKILL.md` as a native skill. Other AI coding agents should follow this file as the entry point.
+Codex should use `oasis-wiki/SKILL.md` as a native skill. Other AI coding agents should follow this file as the repository entry point, then read the skill folder references.
 
 ## Scope
 
-Always use this bundle when a question appears related to an Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC project, even if the user does not explicitly request it.
+Always use this bundle when a question appears related to:
 
-Use this bundle when helping with:
+- Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC projects.
+- `UGCProjects`, `ShadowTrackerExtra`, UGC Lua, project scripts, UI, RPC, replication, logs, debugging, performance, editor workflows.
+- `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UGCPlayerState`, `UGCPlayerPawn`, `UIManager`, `EventDefine`, `GlobalConfig`, `Action_*`.
+- `UnrealNetwork`, `GetAvailableServerRPCs`, `UGCEventSystem`, `UGCGameSystem`, `LuaQuickFireEvent`, `ugcprint`.
+- `UGCAskQ`, `MCP`, MCP Server, `.mcp.json`, SSE, PRV, editor automation, DataTable, WidgetBlueprint.
 
-- Oasis / 绿洲启元 / 和平精英 UGC Lua APIs.
-- Gameplay systems, UI systems, editor workflows, templates, debugging, logs, performance, release notes, and terminology.
-- UGCAskQ MCP, MCP Server, `.mcp.json`, SSE, PRV, MCP call logs, and editor automation workflows.
-- Teaching the user how to modify UGC project code.
-- Applying reusable UGC Lua project architecture patterns.
+Keep private project source, screenshots, planning docs, and local caches out of this public repository.
 
-Strong trigger signals include:
+## Required Routing
 
-- `绿洲启元`, `绿洲起源`, `起源UGC`, `和平精英UGC`, `UGC项目`, `UGCProjects`, `ShadowTrackerExtra`.
-- `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UGCPlayerState`, `UGCPlayerPawn`, `UIManager`, `EventDefine`, `Action_*`.
-- `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs`, `LuaQuickFireEvent`, `UGCEventSystem`, `UGCTimerTools`, `UGCBackPackSystem`, `UGCTeamSystem`, `ugcprint`.
-- `UGCAskQ`, `MCP`, `MCP Server`, `Model Context Protocol`, `.mcp.json`, `SSE`, `Start Server`, `Enable MCP Call Logging`, `PRV`.
-- UI, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, damage, items, game phases, debugging, logs, DSlog, Clientlog, `UGCClientLog`, `UGCServerLog`, `PIE日志面板`, `game_id`, performance, and editor workflows in a UGC context.
+1. Read `oasis-wiki/SKILL.md`.
+2. Read `oasis-wiki/references/task-router.md` and choose one primary branch, with at most one secondary branch.
+3. Search official/local references before answering. Do not load the whole wiki into context.
+4. Open real project files before giving exact code edits or line references.
 
-Do not treat a single project name as the whole domain. Keep project-specific notes, names, paths, plans, screenshots, and spreadsheets in local project memory instead of this public bundle.
+Primary branches:
 
-## Safety Rule
+- Project analysis: `project-cache.md`, `project-planning-memory.md`, targeted source files.
+- Feature development: `feature-development-flow.md`, `code-style.md` when writing/reviewing Lua.
+- Debugging/errors: logs first, then `pitfalls.md` and the symptom branch.
+- MCP operation: `mcp-integration.md`, then either `mcp-ui-widget.md` or `mcp-datatable.md`.
+- Config/balancing: table schema, code consumers, `mcp-datatable.md` when editor tables are involved.
+- UI/interaction: UIManager, `Script/UI`, existing bindings, `mcp-ui-widget.md` only for WidgetBlueprint work.
+- Project safety: `pitfalls.md`, binary asset precautions, dirty file distinction, backup rules.
 
-Default to normal answer mode, while keeping UGC project files read-only by default:
+## Answer Modes
 
-- You may read, search, inspect, and analyze project files freely.
-- Do not directly modify UGC project files unless the user explicitly overrides this rule for the current task.
-- Give exact edit instructions, snippets, replacement blocks, or patch-style guidance for the user to apply.
-- You may edit this repository when the user asks to improve the knowledge bundle.
+Read `oasis-wiki/references/answer-modes.md` before choosing mode.
 
-Read `oasis-wiki/references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Use normal mode by default. Read `oasis-wiki/references/teaching-mode.md` only when the user explicitly asks for `教学模式`, detailed explanation, step-by-step guidance, or beginner-friendly walkthrough output.
+Default to normal mode: concise, direct, review-friendly.
 
-## Required Workflow
+Use teaching mode only when the user explicitly asks for `教学模式`, `详细讲`, `教我`, `一步一步`, `拆一下`, or beginner-friendly walkthrough output.
 
-1. Search before answering. Do not load the full wiki into context.
-2. For feature/API/system questions (`怎么用`, `怎么做`, `有没有`, `支持吗`, class/API names, editor feature names, templates, systems, components), search the official documentation bundle before giving a conclusion:
-   - `oasis-wiki/references/wiki/README.md`
-   - `oasis-wiki/references/wiki/官方API参考手册.md`
-   - `oasis-wiki/references/wiki/新增内容_1.37版本.md`
-   - `oasis-wiki/references/wiki/论坛经验帖_绿洲启妹.md`
-   - matching base official wiki teaching docs under `oasis-wiki/references/wiki/*.md`
-3. Use focused indexes as needed:
-   - `oasis-wiki/references/wiki/API参考索引.md`
-   - `oasis-wiki/references/wiki/代码示例库.md`
-   - `oasis-wiki/references/wiki/术语表.md`
-4. For implementation help, load the relevant distilled references:
-   - `oasis-wiki/references/answer-modes.md`
-   - `oasis-wiki/references/teaching-mode.md`
-   - `oasis-wiki/references/code-style.md`
-   - `oasis-wiki/references/feature-development-flow.md`
-   - `oasis-wiki/references/recipes.md`
-   - `oasis-wiki/references/snippets.md`
-   - `oasis-wiki/references/pitfalls.md`
-   - `oasis-wiki/references/project-patterns.md`
-5. Before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries, read `oasis-wiki/references/code-style.md`.
-6. For UGCAskQ MCP/editor automation questions, read `oasis-wiki/references/mcp-integration.md` and search `oasis-wiki/references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` first. Use this bundle as the planning, safety, wiki lookup, and verification layer; use UGCAskQ MCP as the editor execution channel. When backing up `.uasset` files, place backups outside the UGC project tree so the editor does not scan backup paths or assets.
-7. For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, MCP call logs (`Saved/log/MCP/MCP_YYYYMMDD.log`), and battle logs.
-8. If the user asks whether a conversation, correction, or project pattern should be added to the bundle, read `oasis-wiki/references/skill-evolution.md` and use its controlled update protocol.
-9. Cite local file paths and line numbers when possible.
-10. If a Lua API or behavior is not found in the bundled wiki or examples, say it was not confirmed.
+Teaching mode is always read-only for UGC project files:
 
-## Search Commands
+- Do not directly edit project code, assets, or configs in teaching mode.
+- If direct implementation is needed, ask the user to switch to normal/direct mode.
+- For every code-change instruction, include file path, line number, and function/table name.
 
-From the repository root:
+## Code And Feature Rules
+
+- Before writing/reviewing Lua, read `oasis-wiki/references/code-style.md`.
+- Feature flow stays: existing foundation -> config -> authoritative server logic -> Server RPC -> UI/input binding -> UI refresh -> replication/save -> reconnect/recovery -> GM/log verification.
+- Preserve teammate behavior, names, call order, RPC names, event IDs, save keys, and formatting unless a change is required and explained.
+- Do not mutate DataTable/UAEDataTable row objects directly in runtime code; copy rows into normal Lua tables before changing derived values.
+- For MCP/editor asset writes, use PRV/safety rules and place `.uasset` backups outside the UGC project tree.
+
+## Useful Searches
 
 ```powershell
 rg --line-number --smart-case --glob "*.md" "UGCGameSystem" oasis-wiki/references
-powershell -ExecutionPolicy Bypass -File .\oasis-wiki\scripts\search-oasis-wiki.ps1 -Query "角色复活" -MaxResults 10
-node .\oasis-wiki\scripts\search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 10
+node oasis-wiki/scripts/search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 10
 ```
 
-## Answer Shape For Code Help
+## High-Value References
 
-Choose the answer mode first:
-
-- Normal mode: concise, practical, review-friendly, and direct. Use by default.
-- Teaching mode: detailed, step-by-step. Use only when the user asks for `教学模式`, says `详细讲` / `教我` / `一步一步` / `拆一下`, or explicitly wants beginner-friendly walkthrough output.
-
-Normal mode shape:
-
-```text
-结论:
-<short direct answer>
-
-依据:
-<confirmed from project code / confirmed from wiki / inferred from existing pattern>
-
-改哪里:
-<file path + function/table>
-
-最小改动:
-<focused snippet with only brief summary comments before functions/methods or major blocks>
-
-影响范围:
-<server/client/UI/save/replication/RPC/reconnect/log impact, or "only affects this local function">
-
-风险:
-<低/中/高 + one short reason>
-
-注意:
-<only the key risks and compatibility notes>
-
-日志:
-<DSlog/Clientlog/PIE log panel/battle log keywords to search, or "not needed">
-
-怎么测:
-<2-4 short checks>
-
-回滚:
-<the smallest revert point>
-```
-
-Teaching mode shape:
-
-For teaching-mode code changes, answer in a detailed walkthrough shape. Use numbered sections when a feature touches multiple files or systems:
-
-```text
-1. <配置 / 存档 / 服务端逻辑 / RPC 注册 / UI 按钮 / UI 刷新 / 复制 / 重连>
-
-位置:
-<file path> (line <line if known>), <function/table> 里
-
-现在是:
-<existing nearby code, when useful>
-
-改成:
-<replacement block or inserted block>
-
-为什么这样改:
-<explain the data flow and server/client responsibility>
-
-注意:
-<punctuation, comma, nil check, server/client, RPC registration, replication, event ID, config ID>
-
-怎么测:
-1. <success path>
-2. <failure path>
-3. <multiplayer/server-client path if relevant>
-4. <reconnect/respawn path if relevant>
-```
-
-In normal mode, do not add line-by-line teaching comments inside code blocks. Prefer one brief Chinese summary comment before a function/method or major logic block. When changing an existing block, show both `现在是:` and `改成:`. For fragile Lua syntax, explicitly call out commas, table separators, return-list formatting, and where comments can safely go. Keep answers practical and specific.
+- `oasis-wiki/references/task-router.md`
+- `oasis-wiki/references/answer-modes.md`
+- `oasis-wiki/references/teaching-mode.md`
+- `oasis-wiki/references/feature-development-flow.md`
+- `oasis-wiki/references/code-style.md`
+- `oasis-wiki/references/mcp-integration.md`
+- `oasis-wiki/references/mcp-ui-widget.md`
+- `oasis-wiki/references/mcp-datatable.md`
+- `oasis-wiki/references/project-cache.md`
+- `oasis-wiki/references/project-planning-memory.md`
+- `oasis-wiki/references/pitfalls.md`
+- `oasis-wiki/references/wiki/README.md`
+- `oasis-wiki/references/wiki/官方API参考手册.md`
+- `oasis-wiki/references/wiki/新增内容_1.37版本.md`
+- `oasis-wiki/references/wiki/论坛经验帖_绿洲启妹.md`

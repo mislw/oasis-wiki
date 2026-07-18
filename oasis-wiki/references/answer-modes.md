@@ -102,6 +102,10 @@ Teaching mode is opt-in. If the user explicitly requests teaching mode, make the
 - Multiplayer authority or anti-cheat-sensitive resource changes.
 - Task, reward, inventory, shop, skill, team, rank, phase, damage, or respawn systems.
 
+Teaching mode is read-only for UGC project files. Do not directly edit project code, assets, or configs in teaching mode, even if the user asks for direct edits in the same teaching-mode request. To implement directly, the user must switch back to normal/direct mode.
+
+When teaching code changes, always include the target file path, line number, and function/table name for every edit. If the exact line cannot be determined after inspecting the file, state the nearest stable anchor and why the exact line is unavailable.
+
 Teaching mode answer shape is defined in `teaching-mode.md`. It should include numbered steps and, for each non-trivial edit:
 
 - `位置`
@@ -121,5 +125,5 @@ Teaching mode answer shape is defined in `teaching-mode.md`. It should include n
 
 ## Interaction With Project File Safety
 
-Both modes keep the same safety rule: UGC project files may be read and analyzed freely, but should not be directly modified unless the user explicitly overrides project-file read-only behavior for the current task.
+UGC project files may be read and analyzed freely in both modes. Normal mode may directly modify project files only when the user explicitly asks for implementation. Teaching mode must not directly modify project files; it only provides file-line edit guidance and explanations.
 

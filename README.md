@@ -1,201 +1,233 @@
 # Oasis Wiki Codex Skill
 
-这是一个给 **绿洲启元 / 绿洲起源 / 和平精英 UGC Lua 开发** 用的 Codex Skill / AI Agent 知识包。
+这是一个给 **绿洲启元 / 绿洲起源 / 和平精英 UGC Lua 开发** 使用的 Codex Skill / AI Agent 知识包。
 
-这个仓库主要面向国内小团队自用：默认使用中文语境和正常模式，回答会更直接、简洁、方便 review；只有明确要求“教学模式 / 详细讲 / 教我 / 一步一步 / 拆一下”时才切换到详细教学模式。
+它会让 Codex 或其他 AI Agent 在处理 UGC Lua、RPC、UI、复制、日志、编辑器流程、项目结构、功能开发、配置表和 MCP 自动化问题时，优先搜索本地官方 wiki、官方 API 手册、1.37 增量内容、官方论坛经验帖和项目规则，而不是凭记忆猜。
 
-它会让 Codex 或其他 AI Agent 在回答 UGC Lua、RPC、UI、复制、日志、编辑器流程、项目结构、功能规划等问题前，优先搜索官方 wiki 教学文档、官方 API 手册、1.37 增量内容、官方论坛经验帖和整理过的参考资料，而不是凭记忆猜。
+## 适合什么场景
 
-## 中文快速说明
+- 接手或解析一个 UGC 项目。
+- 开发功能，例如按钮、奖励、升级、属性、抽奖、关卡、商店、技能、任务、存档、重连。
+- 排查报错，例如按钮没反应、RPC 没触发、UI 白色、DataTable 只读报错、资源加载失败、日志异常。
+- 查询配置表、数值表、DataTable、UAEDataTable、奖励表、属性表。
+- 使用 UGCAskQ MCP 操作编辑器、生成 Widget 蓝图、查看 UI、查表。
+- 在多个 Codex 对话里持续开发同一个项目，复用本地项目索引和功能记忆。
 
-### 这个仓库解决什么
+## 安装到 Codex
 
-- 把绿洲启元相关官方 wiki 教学文档、Lua API、代码例子、术语、日志说明、官方论坛经验帖打包成一个本地知识包。
-- 帮 AI 在回答前先查资料，减少胡编 API、乱改项目、漏注册 RPC、漏复制字段这类问题。
-- 问功能、API、系统、模板、编辑器能力时，先查官方文档包：基础官方 wiki 教学文档、`官方API参考手册.md`、`新增内容_1.37版本.md`、`论坛经验帖_绿洲启妹.md`。
-- 默认让 AI **只读项目文件并给修改建议**，不直接改 UGC 工程，除非你明确说可以直接改。
-- 支持本机项目缓存和策划案记忆：项目级资料会放到 `%USERPROFILE%\.codex\oasis-project-cache`，不会写进 UGC 项目目录，也不会提交到团队仓库。
-
-### 默认回答习惯
-
-- 默认正常模式：先给结论、依据、改哪里、最小改动、影响范围、风险、怎么测和回滚点。
-- 教学模式只在明确要求时使用：`教学模式`、`详细讲`、`教我`、`一步一步`、`拆一下`。
-- 正常模式代码注释不要太密：只在函数/方法或大逻辑块前加一句中文概括，不逐行写教学注释。
-- 做功能前先总结项目已有基础：已有配置、属性、RPC、事件、UI、存档、复制字段、helper、前辈已有代码，再规划整体怎么接。
-- 代码习惯：尊重旧命名；新配置/成员变量/方法要有中文注释；不要加一堆无意义保护判断。
-
-### 安装到 Codex
-
-把 `oasis-wiki` 文件夹复制到 Codex skills 目录：
+把仓库里的 `oasis-wiki` 文件夹复制到 Codex skills 目录：
 
 ```powershell
 Copy-Item -Recurse -Force .\oasis-wiki "$env:USERPROFILE\.codex\skills\oasis-wiki"
 ```
 
-然后重启 Codex 或刷新 skills。
+然后重启 Codex，或刷新 skills。
 
-### 安装到 Claude Code（VS Code 插件）
-
-Claude Code 的 VS Code 插件也可以读取用户级 skill。安装后不需要在 UGC 项目根目录额外放 `CLAUDE.md`，后续打开 UGC 项目时让 Claude Code 自动识别，或者手动输入 `/oasis-wiki` 调用一次。
-
-第一次安装：
-
-```powershell
-# 1. 把这个仓库克隆到一个稳定位置。
-git clone https://github.com/mislw/oasis-wiki.git "$env:USERPROFILE\oasis-wiki"
-
-# 2. 创建 Claude Code 的用户级 skills 目录。
-New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
-
-# 3. 复制 oasis-wiki skill 到 Claude Code。
-Copy-Item -Recurse -Force "$env:USERPROFILE\oasis-wiki\oasis-wiki" "$env:USERPROFILE\.claude\skills\"
-```
-
-装完后重启 VS Code，或在命令面板执行 `Developer: Reload Window`。然后在 UGC 工程里打开 Claude Code；如果它没有自动触发，就先发一句 `/oasis-wiki`，后面继续正常提问。
-
-更新 Claude Code 里的本地 skill：
-
-```powershell
-git -C "$env:USERPROFILE\oasis-wiki" pull
-Copy-Item -Recurse -Force "$env:USERPROFILE\oasis-wiki\oasis-wiki" "$env:USERPROFILE\.claude\skills\"
-```
-
-如果某个 Claude Code 环境没有加载用户级 skill，就保留这个仓库，并让 Claude Code 能访问仓库目录；然后把 `AGENTS.md` 或 `AGENT_PROMPT.md` 当作临时启动说明使用。
-
-### 更新本地安装
+## 更新本地安装
 
 ```powershell
 git pull
 Copy-Item -Recurse -Force .\oasis-wiki "$env:USERPROFILE\.codex\skills\oasis-wiki"
 ```
 
-### 常用问法
+## 触发方式
+
+一般情况下，只要问题和下面内容相关，Codex 就应该自动使用这个 skill：
+
+- `UGCProjects`
+- `绿洲启元` / `绿洲起源` / `和平精英UGC`
+- `UGCGameMode` / `UGCGameState` / `UGCPlayerController` / `UGCPlayerState` / `UGCPlayerPawn`
+- `UIManager` / `EventDefine` / `GlobalConfig`
+- `UnrealNetwork` / `GetAvailableServerRPCs` / `CallUnrealRPC`
+- `DSlog` / `Clientlog` / `PIE日志`
+- `MCP` / `UGCAskQ` / `.mcp.json`
+
+也可以显式写：
 
 ```text
-用 oasis-wiki 看一下这个 UGCPlayerController 里的 RPC 怎么接。
-帮我按当前项目已有基础规划一下某个养成功能。
-看一下这个报错，先查 DSlog / Clientlog 相关说明。
-正常模式，给我最小改动代码。
-教学模式，带我一步一步做这个 UI -> ServerRPC -> 刷新流程。
+用 oasis-wiki 看一下这个 UGC 功能怎么接。
+用 oasis-wiki 帮我查这个报错。
+用 oasis-wiki 走教学模式讲一下这个 RPC 流程。
 ```
 
-### 注意
+## 任务分类
 
-- 不要把 `%USERPROFILE%\.codex\oasis-project-cache` 里的内容提交到 GitHub。
-- 不要把具体项目策划案、Excel、截图原件直接塞进这个 skill 仓库。
-- 如果要沉淀项目资料，只写入本机项目缓存；如果要沉淀通用经验，再更新这个仓库。
+Skill 现在先按任务意图分类，再读对应 reference，避免每次加载太多无关内容。
+
+主要分类在 `oasis-wiki/references/task-router.md`：
+
+- **项目解析**：接手项目、读项目结构、策划案对应工程、生命周期、核心系统。
+- **功能开发**：配置 -> 服务端权威逻辑 -> RPC -> UI -> 刷新 -> 复制/存档 -> 重连 -> GM/日志验证。
+- **报错处理**：日志优先，定位最小断点，例如 UI 构建失败、RPC 未注册、DataTable 只读、资产路径错误。
+- **MCP 操作**：连接 UGCAskQ MCP、读工具清单、做 PRV 计划、执行和验证。
+- **配置表/数值**：查表、解释字段、追踪代码消费链路、处理权重/奖励/属性。
+- **UI/交互**：MainUI 入口、UIManager 注册、Widget 控件命名、按钮绑定、刷新链路。
+- **项目保护**：二进制资产、`.uasset` / `.umap` 脏文件、备份、队友代码保护。
+
+默认一次任务只选一个主分支，最多再选一个辅助分支。
+
+## 常规模式和教学模式
+
+默认是 **常规模式**：回答直接、简洁、方便 review。
+
+常规模式通常会给：
+
+```text
+结论
+依据
+改哪里
+最小改动
+影响范围
+风险
+怎么测
+回滚点
+```
+
+只有当用户明确说下面这些词时，才进入 **教学模式**：
+
+```text
+教学模式
+详细讲
+教我
+一步一步
+拆一下
+从底层讲
+```
+
+教学模式是强制只读模式：
+
+- 可以读项目文件、日志、配置、资源路径和 wiki。
+- 不允许直接修改 UGC 项目代码、资产或配置。
+- 即使用户在教学模式里说“你直接改”，也要先让用户切回常规/直接执行模式。
+- 每个代码改动都必须说明文件路径、行号、函数/表名。
+- 如果精确行号无法确定，必须先查文件；仍不能确定时给最近的稳定锚点并说明原因。
+
+## 多对话项目开发
+
+为了避免每次新开对话都重新扫完整项目，这个 skill 支持本地项目索引和功能记忆。
+
+项目缓存位置：
+
+```text
+%USERPROFILE%\.codex\oasis-project-cache\<project-name>-<path-hash>\
+```
+
+缓存不会写进 UGC 项目目录，也不应该提交到 GitHub。
+
+建立或刷新项目索引：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\oasis-wiki\scripts\index-oasis-project.ps1" -ProjectRoot "<UGC project root>" -Force
+```
+
+新对话可以这样提示：
+
+```text
+这是 RedCliff 项目，先按 oasis-wiki 走。
+先读本地项目缓存，不要重新全项目扫描。
+我要继续做/排查：<功能名>
+```
+
+功能完成后，如果希望后续对话复用这次功能背景，可以说：
+
+```text
+记住这个功能
+```
+
+然后 agent 应该调用：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\oasis-wiki\scripts\remember-oasis-feature.ps1" -ProjectRoot "<UGC project root>" -Title "<feature title>" -Summary "<short summary>"
+```
+
+## MCP / UGCAskQ
+
+MCP 相关规则分为三层：
+
+- `references/mcp-integration.md`：连接、`.mcp.json`、SSE、工具发现、PRV、备份、安全和证据规则。
+- `references/mcp-ui-widget.md`：查看或生成 WidgetBlueprint / UMG / UI 层级、布局、颜色、按钮交互。
+- `references/mcp-datatable.md`：查 DataTable / UAEDataTable、低 token 读表、只读 fallback、表行修改规则。
+
+常见触发：
+
+```text
+用 MCP 帮我生成这个 UI。
+用 MCP 查一下这个配置表。
+补一下 Widget 蓝图。
+这个 UI 怎么都是白色的？
+AssetRegistry.GetAssetByObjectPath failed。
+```
+
+注意：
+
+- UI 和表格是两个分支，不要无脑两个都读。
+- Widget 样式不要只靠 `widget_set_property`，需要用可靠函数写颜色并验证。
+- DataTable / UAEDataTable 行对象默认视为只读。运行时代码要复制成普通 Lua table 后再改派生值。
+- 二进制资产备份要放在 UGC 项目目录外，避免编辑器扫描备份资产。
+
+## 代码风格
+
+写或审 UGC Lua 前读 `references/code-style.md`。
+
+核心规则：
+
+- 新配置表字段要有中文注释。
+- 新成员变量、`GlobalConfig` 变量、方法要有中文注释。
+- 变量名尽量写完整英文，保留常见缩写如 `ID` / `UI`。
+- 简单变量用轻量前缀，如 `nLevel`、`szName`、`tbItemList`。
+- 保留旧代码命名、顺序、RPC 名、事件 ID、存档 key，不为了规范强行重命名。
+- 不要堆无意义的 `nil` / `UE.IsValid` 防御检查，只在真实边界做保护。
+
+## 常用问法
+
+```text
+帮我解析一下这个 UGC 项目的主流程。
+帮我做一个点击按钮升级的功能，按现有项目结构来。
+这个按钮点了没反应，帮我看日志和 RPC 链路。
+用 MCP 查一下 GemFeature 表。
+教学模式，带我一步一步看这个 UI -> ServerRPC -> 刷新流程。
+正常模式，直接给最小改动和怎么测。
+```
+
+## 仓库内容
+
+- `AGENTS.md`：给通用 AI coding agent 的仓库级说明。
+- `AGENT_PROMPT.md`：给不支持自动读取 skill 的 agent 使用的复制版提示词。
+- `oasis-wiki/SKILL.md`：Codex skill 入口和触发说明。
+- `oasis-wiki/AGENTS.md`：放在 skill 内部的通用 agent 说明。
+- `oasis-wiki/agents/openai.yaml`：Codex UI 元数据。
+- `oasis-wiki/references/wiki`：本地官方 wiki markdown 导出。
+- `oasis-wiki/references/task-router.md`：任务意图分类路由。
+- `oasis-wiki/references/answer-modes.md`：常规模式 / 教学模式规则。
+- `oasis-wiki/references/teaching-mode.md`：教学模式细则和强制只读规则。
+- `oasis-wiki/references/feature-development-flow.md`：功能开发主流程。
+- `oasis-wiki/references/code-style.md`：Lua 代码风格。
+- `oasis-wiki/references/mcp-integration.md`：MCP 通用连接和安全规则。
+- `oasis-wiki/references/mcp-ui-widget.md`：MCP UI / Widget 工作流。
+- `oasis-wiki/references/mcp-datatable.md`：MCP 配置表 / DataTable 工作流。
+- `oasis-wiki/references/project-cache.md`：本地项目索引工作流。
+- `oasis-wiki/references/project-planning-memory.md`：项目规划记忆工作流。
+- `oasis-wiki/references/pitfalls.md`：常见坑和验证提醒。
+- `oasis-wiki/references/recipes.md`：常见实现配方。
+- `oasis-wiki/references/snippets.md`：常用 Lua 模板片段。
+- `oasis-wiki/references/skill-evolution.md`：如何判断是否更新 skill。
+- `oasis-wiki/scripts`：搜索、项目索引、功能记忆脚本。
+
+## 注意事项
+
+- 不要把 `%USERPROFILE%\.codex\oasis-project-cache` 提交到 GitHub。
+- 不要把私有项目策划案、Excel、截图原件、完整源码复制进这个公开 skill 仓库。
+- 项目缓存只放本机；通用经验才沉淀回这个仓库。
+- UGC 项目源文件是最终事实来源。缓存和规划记忆只用来缩小搜索范围。
 
 ---
 
 ## English Overview
 
-This repository packages a portable AI-agent knowledge bundle for Oasis / 绿洲启元 / 和平精英 UGC Lua development.
+This repository packages a portable AI-agent knowledge bundle for Oasis / Peace Elite UGC Lua development.
 
 It is Codex-native through `oasis-wiki/SKILL.md`, and also includes generic instructions for other AI coding agents through `AGENTS.md` and `AGENT_PROMPT.md`.
 
-The skill bundles a local Markdown export of the Oasis wiki, official API reference, 1.37 incremental updates, and official forum tutorials. It instructs Codex to search official documentation before answering questions about Lua APIs, gameplay systems, UI systems, editor workflows, templates, debugging, logs, performance, release notes, and terminology.
+The skill bundles a local Markdown export of the Oasis wiki, official API reference, 1.37 updates, official forum tutorials, and distilled workflow references. It is designed to help agents search official/local references before answering questions about Lua APIs, gameplay systems, UI, editor workflows, MCP/UGCAskQ, debugging, logs, performance, project analysis, and feature development.
 
-It also includes generic project-architecture notes for common UGC Lua workflows. Project-specific planning notes, local caches, and private docs should stay outside this public repository.
-
-The skill is designed for normal-mode project help by default: Codex can read project files to understand them, but should explain edits instead of directly modifying UGC project files unless explicitly overridden. Teaching mode is available when explicitly requested.
-
-## Install
-
-Copy the `oasis-wiki` folder into your Codex skills directory:
-
-```powershell
-Copy-Item -Recurse -Force .\oasis-wiki "$env:USERPROFILE\.codex\skills\oasis-wiki"
-```
-
-Restart Codex or refresh skills after copying.
-
-## Use With Other AI Agents
-
-For agents that do not support Codex skills directly:
-
-1. Open `AGENTS.md` as the repository-level instruction file.
-2. If the agent accepts a setup prompt, paste `AGENT_PROMPT.md`.
-3. Point the agent at the `oasis-wiki/references` folder for search and citation.
-
-The important behavior is the same across agents: search the official local wiki docs and distilled references first, use normal mode by default, and do not directly modify UGC project files unless explicitly allowed for that task.
-
-Trigger expectation: if a question looks related to a 绿洲启元 / 绿洲起源 / 和平精英 UGC project, UGCProjects workspace, or UGC Lua code, the agent should use this bundle by default.
-
-### Claude Code
-
-Claude Code can use this bundle as a user-level skill, so you do not need to add `CLAUDE.md` or any other helper file to a UGC project root.
-
-Install once:
-
-```powershell
-# 1. Clone the bundle somewhere stable.
-git clone https://github.com/mislw/oasis-wiki.git "$env:USERPROFILE\oasis-wiki"
-
-# 2. Create Claude Code's user skills directory.
-New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
-
-# 3. Copy the skill folder into Claude Code's user skills directory.
-Copy-Item -Recurse -Force "$env:USERPROFILE\oasis-wiki\oasis-wiki" "$env:USERPROFILE\.claude\skills\"
-```
-
-After installing, restart VS Code or run `Developer: Reload Window`, then open Claude Code from your UGC project as usual. In most cases, questions about Oasis / 绿洲启元 / 和平精英 UGC, `UGCProjects`, UGC Lua, RPC, replication, UI, logs, `DSlog`, or `Clientlog` should trigger the skill from the conversation context. If Claude Code does not pick it up automatically, call it explicitly once with `/oasis-wiki`, then continue the conversation normally.
-
-Update the installed skill:
-
-```powershell
-git -C "$env:USERPROFILE\oasis-wiki" pull
-Copy-Item -Recurse -Force "$env:USERPROFILE\oasis-wiki\oasis-wiki" "$env:USERPROFILE\.claude\skills\"
-```
-
-Temporary fallback: if a Claude Code environment does not load user skills, keep the repository cloned and start Claude Code with access to the bundle directory:
-
-```powershell
-Set-Location "$env:USERPROFILE\UGCProjects\YourProject"
-claude --add-dir "$env:USERPROFILE\oasis-wiki" "Use the Oasis Wiki bundle at $env:USERPROFILE\oasis-wiki. Read AGENTS.md first. For Oasis / 绿洲启元 / 绿洲起源 / 和平精英 UGC Lua, debugging, or log questions, search oasis-wiki/references before answering. For feature/API/system questions, search the official documentation bundle first: base wiki teaching docs, 官方API参考手册.md, 新增内容_1.37版本.md, and 论坛经验帖_绿洲启妹.md. For logs, distinguish PIE logs, Clientlog, DSlog, phone client logs, management-platform DS logs, and battle logs. Before writing Lua, read oasis-wiki/references/code-style.md. Use normal mode by default. Switch to teaching mode only when I explicitly ask for 教学模式, detailed explanation, step-by-step guidance, or beginner-friendly walkthrough output. Keep UGC project files read-only unless I explicitly ask you to directly modify them. In normal mode code snippets, use only brief summary comments before functions/methods or major blocks; do not add line-by-line teaching comments. Prefer the smallest additive change."
-```
-
-## Use
-
-Ask Codex questions such as:
-
-```text
-Use $oasis-wiki to explain how to revive a player in Oasis.
-Use $oasis-wiki to find UGCGameSystem examples.
-Use $oasis-wiki to write Lua code for toggling damage.
-```
-
-## Search The Bundled Wiki
-
-From inside the `oasis-wiki` folder:
-
-```powershell
-rg --line-number --smart-case --glob "*.md" "UGCGameSystem" .\references\wiki
-powershell -ExecutionPolicy Bypass -File .\scripts\search-oasis-wiki.ps1 -Query "角色复活" -MaxResults 10
-node .\scripts\search-oasis-wiki.mjs "角色复活" --max 10
-```
-
-## Contents
-
-- `AGENTS.md`: Generic instructions for AI coding agents.
-- `AGENT_PROMPT.md`: Copy-paste prompt for agents that do not auto-read repository instructions.
-- `oasis-wiki/AGENTS.md`: Generic instructions kept inside the portable skill folder.
-- `oasis-wiki/SKILL.md`: Codex skill instructions and trigger metadata.
-- `oasis-wiki/agents/openai.yaml`: UI metadata.
-- `oasis-wiki/references/wiki`: Markdown wiki export.
-- `oasis-wiki/references/wiki/官方API参考手册.md`: Official API reference for classes, enums, functions, and parameters.
-- `oasis-wiki/references/wiki/新增内容_1.37版本.md`: Official 1.37 incremental feature and behavior updates.
-- `oasis-wiki/references/wiki/论坛经验帖_绿洲启妹.md`: Official forum tutorials and practical implementation examples.
-- `oasis-wiki/references/project-patterns.md`: Generic UGC project architecture and Lua patterns without private project names or local paths.
-- `oasis-wiki/references/project-cache.md`: Local computer cache workflow for reusing parsed knowledge from a specific UGC project without writing cache files into the project workspace.
-- `oasis-wiki/references/project-planning-memory.md`: Project-name/path routing workflow for uploaded planning docs, requirements, system details, and whole-project design memory.
-- `oasis-wiki/references/answer-modes.md`: Rules for default normal mode and explicit teaching mode.
-- `oasis-wiki/references/code-style.md`: Lightweight project code style for comments, config tables, variable names, member variables, and methods.
-- `oasis-wiki/references/teaching-mode.md`: Code teaching workflow and read-only project-file constraint.
-- `oasis-wiki/references/feature-development-flow.md`: End-to-end UGC feature pipeline from config through server, RPC, UI, replication, and reconnect.
-- `oasis-wiki/references/recipes.md`: Common implementation recipes for UGC coding tasks.
-- `oasis-wiki/references/snippets.md`: Small Lua templates for RPCs, UI, replication, actions, resources, and loadouts.
-- `oasis-wiki/references/pitfalls.md`: Gotchas and verification reminders for UGC Lua work.
-- `oasis-wiki/references/skill-evolution.md`: Controlled protocol for deciding when and how to update the skill.
-- `oasis-wiki/scripts`: Search helpers.
-
-The bundled wiki export was generated on 2026-06-16 and contains 58 base Markdown files, plus official 2026-07-10 updates: `新增内容_1.37版本.md`, `论坛经验帖_绿洲启妹.md`, and `官方API参考手册.md`.
+Project-specific caches and planning notes should stay outside this public repository, under `%USERPROFILE%\.codex\oasis-project-cache`.
