@@ -118,6 +118,7 @@ Then branch:
 
 - UI branch adds `py:workflow blueprint`, `py:workflow lua`, and widget APIs from `mcp-ui-widget.md`.
 - DataTable branch adds `py:list datatable`, `py:guide datatable`, and table schema reads from `mcp-datatable.md`.
+- Config-driven UI branch reads `mcp-config-driven-ui.md` first, then loads only the UI/DataTable API details required by the current layer.
 
 Use the first reads to identify:
 
@@ -203,18 +204,21 @@ Do not infer table fields from Lua code alone when the authoritative config is a
 - Do not put backup `.uasset` files inside the UGC project tree. The editor can scan backup folders and reject backup names or paths, so use an external location such as `C:/Users/Administrator/Documents/CodexBackups/<ProjectName>/...`.
 - Keep project-specific memories and caches outside the global skill and outside the team project unless explicitly requested.
 - After table mutation, re-read row counts, key fields, missing rows, and unexpected warnings.
+- For a new Oasis table, prefer `ue.create_asset` with `UAEDataTable` plus `UGCDataTableFactory`, then `data_table_empty_row`/`data_table_add_row`; do not repeatedly retry a blocking CSV import modal.
+- For Lua-driven Widgets, verify every referenced control has `bIsVariable=true` and appears in the generated class before debugging the table or RPC again.
 - After gameplay mutation, search DSlog and Clientlog for both success markers and error markers.
 
 ## Chinese Text Encoding
 
 UGCAskQ MCP logs or JSON-RPC wrappers may display Chinese text as mojibake or `?`, especially when `ue_py` requests pass literal Chinese through PowerShell, JSON, or the editor log. Treat the log display as unreliable until the asset is re-read.
 
-When writing Chinese text to DataTable rows through MCP:
+When writing Chinese text to DataTable rows or Widget text through MCP:
 
 1. Prefer an ASCII-only `ue_py` script that constructs Chinese strings from Unicode code points with `chr(...)`.
-2. Write fields with DataTable APIs such as `data_table_modify_row(row_name, field_name, value)`.
-3. Save the asset package.
-4. Re-read the same rows and verify the real string using `value.encode('unicode_escape').decode('ascii')`.
+2. For DataTable rows, write fields with DataTable APIs such as `data_table_modify_row(row_name, field_name, value)`.
+3. For Widget TextBlocks, call `TextBlock.SetText(text)` from the codepoint-built string. Do not pass literal Chinese through PowerShell or JSON when the previous readback showed `?`.
+4. Save the asset package.
+5. Re-read the same rows or TextBlocks and verify the real string using `value.encode('unicode_escape').decode('ascii')`.
 
 ## Evidence Pattern
 

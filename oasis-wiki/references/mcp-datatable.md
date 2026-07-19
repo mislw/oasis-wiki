@@ -128,6 +128,46 @@ matches = [rn for rn in row_names if keyword.lower() in str(rn).lower()]
 __askq_result = {'matches': matches[:20], 'truncated': len(matches) > 20}
 ```
 
+## Create A New Oasis DataTable
+
+For a new config table, prefer direct creation and row insertion. Read `mcp-config-driven-ui.md` as well when the table drives a generated Widget.
+
+1. Back up any existing target `.uasset` outside the project tree.
+2. Resolve and load the exact `UserDefinedStruct` asset.
+3. Create `UGCDataTableFactory` and assign `factory.Struct`.
+4. Create a `UAEDataTable` with `ue.create_asset`.
+5. For each row, call `data_table_empty_row`, set exact fields, then call `data_table_add_row`.
+6. Save, reload, and verify rows and values.
+
+```python
+row_struct = ue.load_object(ue.find_class('UserDefinedStruct'), struct_load_path)
+factory = ue.new_object(ue.find_class('UGCDataTableFactory'))
+factory.Struct = row_struct
+
+table = ue.create_asset(
+    table_name,
+    package_path,
+    ue.find_class('UAEDataTable'),
+    factory,
+)
+
+row = table.data_table_empty_row()
+row.set_field('Level', 1)
+row.set_field('Value', 45)
+table.data_table_add_row('Level1', row)
+table.save_package()
+```
+
+Important behavior in current Oasis editor builds:
+
+- `ue.import_asset(csv_path, destination)` can block on the `DataTable Options` modal.
+- Supplying `UGCDataTableFactory` to `ue.import_asset` can still return `None`; do not repeatedly retry it.
+- `data_table_add_row` may serialize its successful return as `null`. The authoritative check is persisted row readback, not the return token.
+- Documentation may describe `row_data` as a dict, while the runtime binding requires the `UScriptStruct` returned by `data_table_empty_row`. Follow the runtime error and use the struct instance.
+- Confirm the row fields with `row.as_dict()` before inserting all rows.
+
+For Chinese values, construct strings with Unicode escapes or `chr(...)`, save, then verify the changed fields with `unicode_escape`.
+
 ## UAEDataTable Fallback
 
 Some Oasis tables are `UAEDataTable`, not ordinary Unreal `DataTable`.
@@ -176,3 +216,4 @@ For config-driven UI or gameplay tasks, read only the config table rows that dri
 
 Use runtime Lua/code lookup only to explain how the table is consumed. For example, a table may define `FeatureKey` rows while values live in code-side config such as `GemFeatureValueConfig`; report that distinction instead of implying all gameplay values come from the table.
 
+For table-driven UI, do not stop after row verification. Continue with `mcp-config-driven-ui.md` and prove the Lua load, authoritative state transition, Widget variable binding, and runtime refresh.

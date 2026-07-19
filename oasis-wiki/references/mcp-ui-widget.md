@@ -54,6 +54,9 @@ Check:
 - button names match Lua fields;
 - slots show expected position/size;
 - Lua creates the UI through the existing UIManager or project pattern.
+- text rendering uses a proven local font setting; for Chinese labels, copy `FontObject`, `TypefaceFontName`, size style, and material from a working TextBlock instead of guessing a font by asset name.
+
+When `WidgetTree.AllWidgets` is empty for older or generated assets, walk from `bp.WidgetTree.RootWidget` with `GetChildrenCount` and `GetChildAt` to inspect nested TextBlocks and Button content. This is useful for finding the exact font used by working labels such as side-menu buttons.
 
 ## Create WidgetBlueprint Correctly
 
@@ -105,6 +108,27 @@ btn.Slot.SetSize(FVector2D(290.0, 58.0))
 btn.Slot.ZOrder = 4
 ```
 
+If direct slot fields or methods do not persist, call slot functions explicitly:
+
+```python
+from unreal_engine import FVector2D
+
+slot = widgets['Button_Upgrade'].Slot
+slot.call_function('SetPosition', FVector2D(800.0, 516.0))
+slot.call_function('SetSize', FVector2D(290.0, 58.0))
+slot.call_function('SetZOrder', 4)
+```
+
+For popup-style UI, treat the visible screen-size dashed frame in the designer as the centering target, not only a guessed 1280x720 origin. After a screenshot or designer check, move all top-level Canvas children by the same delta to preserve internal spacing. Then fix internal overlaps separately.
+
+When tuning an imitated UI:
+
+- Keep the outer backdrop, top bar, close button, title plate, content groups, and CTA button as separate named controls.
+- Move whole groups first, then adjust local rows, backgrounds, and icons.
+- Ensure text and symbolic shapes have clear vertical gaps; rank/name text should not overlap icon heads or decorative body shapes.
+- Background boxes must cover every row they visually group; enlarge the box before moving text outside it.
+- Verify positions by reopening or reloading the WidgetBlueprint and reading `ue.widget_inspect(bp)`.
+
 ## Text And Styling
 
 `widget_set_property` may fail for struct/style properties such as `ColorAndOpacity`, `Font.Size`, `BackgroundColor`, or slate brushes. The symptom is a correct widget tree with default white or pale gray visuals.
@@ -125,6 +149,16 @@ Reliable choices:
 - `Button.SetBackgroundColor(FLinearColor(r, g, b, a))` for button background tint.
 - `Button.SetColorAndOpacity(FLinearColor(1, 1, 1, 1))` if button content appears dimmed.
 
+In some UGC/UMG previews, unbrushed `Image` controls render as large white or pale blocks in PIE even when their widget tree looks correct. If this happens, replace passive color panels with disabled `Button` controls and tint them with `Button.SetBackgroundColor`. Keep real interactive buttons enabled; set decorative panel buttons disabled.
+
+For generated widget Chinese text:
+
+- Do not assume a font asset with a Chinese-looking name can render Chinese in UMG. It may display placeholder glyph boxes for Chinese, or `A` placeholder boxes for Latin letters.
+- Do not assume the editor property text field proves runtime glyph rendering. The text value can be correct while the canvas/PIE glyphs are placeholders.
+- Prefer copying the exact `FontObject`, `TypefaceFontName`, `FontMaterial`, and size from a working project TextBlock. In this UGC environment, working Chinese labels may use `/Engine/EngineFonts/Roboto.Roboto` with `TypefaceFontName='Bold'` because the fallback chain is tied to that setting.
+- If Chinese values written through MCP read back as `?`, rewrite them from Unicode code points in an ASCII-only `ue_py` script and verify with `GetText().encode('unicode_escape').decode('ascii')`.
+- After changing font settings, compile, save, close/reopen the WidgetBlueprint tab, and rerun PIE if the open preview may be cached.
+
 Minimal style write test before styling the whole UI:
 
 ```python
@@ -136,6 +170,45 @@ bp.save_package()
 ```
 
 Refresh or reopen the WidgetBlueprint. If the three controls changed color, apply the full palette. If not, inspect functions/properties again before bulk styling.
+
+A compact TextBlock font copy pattern:
+
+```python
+from unreal_engine.classes import Font
+
+font = ue.load_object(Font, '/Engine/EngineFonts/Roboto.Roboto')
+for name, widget in widgets.items():
+    if hasattr(widget, 'Font'):
+        f = widget.Font
+        f.FontObject = font
+        f.FontMaterial = None
+        f.TypefaceFontName = 'Bold'
+        f.Size = size_by_name.get(name, 18)
+        widget.call_function('SetFont', f)
+```
+
+## Runtime Variable Binding
+
+`ue.widget_inspect(bp)` proving that a named control exists does not prove Lua can access it as `self.ControlName`.
+
+Before binding Lua behavior:
+
+1. List every control referenced as `self.<WidgetName>`.
+2. Traverse the WidgetTree from `RootWidget` when `AllWidgets` is empty.
+3. Set `bIsVariable = true` on every referenced control.
+4. Compile and save.
+5. Confirm those names appear in `bp.GeneratedClass.properties()`.
+6. Restart PIE so the new generated class is instantiated.
+
+The diagnostic signature is:
+
+```text
+attempt to index a nil value (field 'TextBlock_*')
+```
+
+If runtime state/logs show the correct new value immediately before this exception, do not change the DataTable or RPC again. Fix the Widget variable binding.
+
+For config-driven UIs, read `mcp-config-driven-ui.md` and follow its layer-by-layer gates.
 
 ## Interaction Binding
 
@@ -169,6 +242,7 @@ Verification must confirm:
 - important slots show expected position/size;
 - entry buttons in existing UI have matching Lua bindings;
 - no wrong top-level asset path was created.
+- every Lua-referenced Widget has `bIsVariable=true` and a generated class property;
+- a fresh PIE session has no `nil TextBlock` exception after `Refresh`.
 
 Do not treat `widget_inspect` as proof of color. Use it for hierarchy/layout, then use editor-visible refresh or direct property/function readback for style confidence.
-

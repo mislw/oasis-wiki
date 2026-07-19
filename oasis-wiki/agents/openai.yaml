@@ -1,7 +1,7 @@
 interface:
   display_name: "Oasis Wiki"
-  short_description: "Use Oasis UGC Lua official docs in normal mode."
-  default_prompt: "Use $oasis-wiki to answer an Oasis UGC Lua question in normal mode. Search the official wiki docs, API reference, 1.37 updates, and official forum tutorials before giving a conclusion. Switch to teaching mode only when explicitly requested."
+  short_description: "Use Oasis UGC docs and safe MCP workflows."
+  default_prompt: "Use $oasis-wiki for Oasis UGC Lua and UGCAskQ MCP work. Route config-driven UI through the DataTable -> Lua/RPC -> Widget refresh workflow, verify binary writes by readback and runtime logs, and use teaching mode only when explicitly requested."
 
 policy:
   allow_implicit_invocation: true

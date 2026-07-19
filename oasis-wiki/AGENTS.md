@@ -17,7 +17,7 @@ If a path, current workspace, or uploaded filename contains a known project name
 - Search `references/` before answering.
 - Read `references/task-router.md` first for UGC project work. Classify the request as project analysis, feature development, debugging/errors, MCP operation, config/balancing, UI/interaction, or project safety. Choose one primary branch and at most one secondary branch before loading detailed references.
 - For feature/API/system questions (`怎么用`, `怎么做`, `有没有`, `支持吗`, class/API names, editor feature names, templates, systems, components), search the official documentation bundle before giving a conclusion. This includes the base official wiki teaching docs in `references/wiki/*.md`, plus `references/wiki/官方API参考手册.md`, `references/wiki/新增内容_1.37版本.md`, and `references/wiki/论坛经验帖_绿洲启妹.md`.
-- For MCP/editor automation questions, search `references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` when setup or official behavior is uncertain and read `references/mcp-integration.md`. Then branch: use `references/mcp-ui-widget.md` for UI/Widget/UMG/Blueprint viewing or generation, and `references/mcp-datatable.md` for config tables/DataTable/UAEDataTable work. Use both only for genuinely mixed UI+table tasks. Confirm the feature is experimental, the editor MCP Server is running locally, the SSE URL/port match the panel, `.mcp.json` or client MCP settings are configured correctly, call logging is enabled when debugging, and users save or back up the project before AI-driven editor operations.
+- For MCP/editor automation questions, search `references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` when setup or official behavior is uncertain and read `references/mcp-integration.md`. Use `references/mcp-ui-widget.md` for UI/Widget work, `references/mcp-datatable.md` for DataTable/UAEDataTable work, and `references/mcp-config-driven-ui.md` when a table-backed UI must change through Lua/RPC. Confirm the editor MCP Server, SSE URL/port, call logging, and external `.uasset` backup before writes.
 - Read `references/answer-modes.md` before choosing concise normal mode or detailed teaching mode. Default to normal mode.
 - Read `references/teaching-mode.md` only when the user explicitly asks for `教学模式`, detailed explanation, step-by-step guidance, or beginner-friendly walkthrough output. Teaching mode is always read-only for UGC project files; do not directly edit project code, assets, or configs in teaching mode.
 - Read `references/code-style.md` before writing or reviewing Lua code, especially config tables, member variables, methods, or `GlobalConfig` entries.
@@ -55,6 +55,7 @@ If a path, current workspace, or uploaded filename contains a known project name
 - `references/mcp-integration.md`: shared UGCAskQ MCP connection, setup, branch routing, safety, and evidence workflow.
 - `references/mcp-ui-widget.md`: MCP UI/Widget/UMG/Blueprint viewing and generation workflow.
 - `references/mcp-datatable.md`: MCP config table/DataTable/UAEDataTable workflow.
+- `references/mcp-config-driven-ui.md`: combined DataTable -> Lua/RPC -> Widget refresh workflow and failure matrix.
 - `references/skill-evolution.md`: controlled protocol for updating the knowledge bundle.
 
 ## Search

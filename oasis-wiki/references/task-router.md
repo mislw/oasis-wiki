@@ -105,9 +105,9 @@ Then branch:
 
 - UI / Widget / UMG / Blueprint viewing or generation: read `references/mcp-ui-widget.md`
 - Config tables / DataTable / UAEDataTable: read `references/mcp-datatable.md`
-- Mixed feature: read the smallest feature/config/UI branch needed after MCP routing
+- Config-driven UI that crosses DataTable, Lua state/RPC, and Widget refresh: read `references/mcp-config-driven-ui.md`, then only the specific table/UI branch needed for API detail
 
-Do not use both MCP UI and MCP DataTable branches unless the task truly needs both.
+Do not use both MCP UI and MCP DataTable branches unless the task truly needs both. A table-backed upgrade panel whose values must change after a click is a genuinely mixed task.
 
 ### Config And Balancing
 
@@ -185,4 +185,3 @@ Use these pairings for common mixed tasks:
 - `接手新项目并准备开发`: Project Analysis + Feature Development.
 
 If a secondary branch would only restate obvious engineering knowledge, skip it.
-

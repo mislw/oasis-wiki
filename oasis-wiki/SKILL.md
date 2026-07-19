@@ -1,6 +1,6 @@
 ---
 name: oasis-wiki
-description: Always use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, UGC Lua code, or UGCAskQ MCP/editor automation questions, even if the skill is not named. Trigger on 绿洲启元, 绿洲起源, 起源UGC, 和平精英UGC, UGC项目, 策划案, 玩法案, 需求文档, 项目方案, 系统设计, 全局规划, 版本规划, 数值表, UI流程, 关卡流程, 经济系统, 养成系统, UGC Lua, UGCAskQ, MCP Server, Model Context Protocol, .mcp.json, SSE, 33444, GameMode, GameState, PlayerController, PlayerState, PlayerPawn, UIManager, EventDefine, Action_*, UnrealNetwork, LuaQuickFireEvent, GetAvailableServerRPCs, UGCGameSystem, UGCEventSystem, GameplayStatics, replication, RPC, UI, logs, DSlog, Clientlog, UGCClientLog, UGCServerLog, PIE日志面板, ugcprint, game_id, countdowns, skills, respawn, reconnect, debugging, performance, templates, and editor workflows. When a path, current workspace, or uploaded file can be associated with a known project name, route through that project's local planning memory and cache before answering. Search the bundled local wiki and distilled project references before giving technical guidance or code. Default to concise normal mode; use teaching mode only when the user explicitly asks for teaching mode, detailed explanation, step-by-step guidance, or beginner-friendly walkthrough output. Read project files freely, but do not directly modify UGC project files unless explicitly overridden.
+description: Use when working on Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, UGC Lua, or UGCAskQ MCP/editor automation. Trigger on UGCGameMode, GameState, PlayerController, UIManager, EventDefine, UnrealNetwork, UGCGameSystem, RPC, replication, UI/WidgetBlueprint, DataTable/UAEDataTable, 数值表, 配置表, table-backed UI, DSlog, Clientlog, PIE日志, debugging, project planning, and editor workflows. Search the bundled wiki and distilled references before giving technical guidance or code. Route known project paths through local project memory/cache. Default to concise normal mode; use teaching mode only when explicitly requested. Read project files freely, but modify them only when the user explicitly authorizes edits.
 ---
 
 # Oasis Wiki
@@ -38,7 +38,7 @@ Default to normal mode. Use teaching mode only when the user explicitly asks for
    - Project analysis: `references/project-cache.md`, `references/project-planning-memory.md`, and targeted project files.
    - Feature development: `references/feature-development-flow.md`, plus `references/code-style.md` when editing or reviewing Lua.
    - Debugging/errors: available logs first, then `references/pitfalls.md` and only the branch tied to the symptom.
-   - MCP operation: `references/mcp-integration.md`, then either `references/mcp-ui-widget.md` or `references/mcp-datatable.md`; use both only for genuinely mixed UI+table tasks.
+   - MCP operation: `references/mcp-integration.md`, then either `references/mcp-ui-widget.md` or `references/mcp-datatable.md`. For table-backed UI whose visible values change through Lua/RPC, read `references/mcp-config-driven-ui.md` first and use the branch references only for API detail.
    - Config/balancing: table schema/usage lookup, `references/mcp-datatable.md` when editor tables are involved, and project code consumers.
    - UI/interaction: UIManager, `Script/UI`, existing button bindings, and `references/mcp-ui-widget.md` only for WidgetBlueprint work.
    - Project safety: `references/pitfalls.md`, binary asset precautions, dirty file distinction, and backup rules.
@@ -80,6 +80,7 @@ Additional distilled references:
 - `references/mcp-integration.md`: UGCAskQ MCP shared connection, setup, branch routing, safety checks, PRV, and evidence workflow.
 - `references/mcp-ui-widget.md`: MCP branch for viewing/generating UI, WidgetBlueprint/UMG hierarchy, layout, colors, and click interaction.
 - `references/mcp-datatable.md`: MCP branch for config tables, DataTable/UAEDataTable lookup, low-token row reads, row mutation, and table-backed gameplay/UI.
+- `references/mcp-config-driven-ui.md`: end-to-end MCP workflow for row-struct creation, UAEDataTable population, Lua/RPC state flow, Widget variable binding, Chinese/style/layout handling, runtime logs, and failure diagnosis.
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.
 - `references/teaching-mode.md`: code-teaching workflow and project-file read-only constraint.
 - `references/code-style.md`: lightweight project code style for comments, config tables, variable names, member variables, and methods.
