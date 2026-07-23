@@ -17,7 +17,7 @@ Treat these as strong signals:
 - Workspace/path wording: `UGCProjects`, `ShadowTrackerExtra`, `Script/Blueprint`, `Script/gamemode`, `Script/GameConfigs`, `Script/UI`.
 - Common code names: `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UGCPlayerState`, `UGCPlayerPawn`, `UIManager`, `EventDefine`, `GlobalConfig`, `Action_*`.
 - Common APIs/patterns: `UGCGameSystem`, `UnrealNetwork`, `GetAvailableServerRPCs`, `LuaQuickFireEvent`, `UGCEventSystem`, `UGCTimerTools`, `UGCBackPackSystem`, `UGCTeamSystem`, `GameplayStatics`, `UE.LoadClass`, `UE.LoadObject`, `AddToViewport`, `RepLazyProperty`, `ugcprint`.
-- MCP/editor automation wording: `UGCAskQ`, `MCP`, `MCP Server`, `Model Context Protocol`, `.mcp.json`, `mcpServers`, `SSE`, `Port 33444`, `Start Server`, `Enable MCP Call Logging`, editor AI automation, AI reads selected actors, or AI operates the editor.
+- MCP/editor automation wording: `UGCAskQ`, `MCP`, `MCP Server`, `Model Context Protocol`, `.mcp.json`, `mcpServers`, `SSE`, `Port 33444`, `Start Server`, `Enable MCP Call Logging`, editor AI automation, AI reads selected actors, AI operates the editor, `长连接 MCP`, `MCP 代理`, `绕过直连 MCP`, `让 Codex 用 MCP`, or `直接修改编辑器`.
 - Logs and debugging wording: `日志`, `调试日志`, `PIE日志面板`, `战斗日志`, `日志提取`, `DS日志`, `客户端日志`, `服务端日志`, `DSlog`, `Clientlog`, `FullLog`, `UGCClientLog`, `UGCServerLog`, `game_id`.
 - Planning and project-level wording: `策划案`, `玩法案`, `需求文档`, `项目方案`, `系统设计`, `全局规划`, `版本规划`, `数值表`, `UI流程`, `关卡流程`, `经济系统`, `养成系统`, `项目细节`, `项目记忆`.
 - Gameplay tasks: UI buttons, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, damage, items, widgets, game phases, debugging, logs, performance.
@@ -42,7 +42,7 @@ Default to normal mode. Use teaching mode only when the user explicitly asks for
    - Config/balancing: table schema/usage lookup, `references/mcp-datatable.md` when editor tables are involved, and project code consumers.
    - UI/interaction: UIManager, `Script/UI`, existing button bindings, and `references/mcp-ui-widget.md` only for WidgetBlueprint work.
    - Project safety: `references/pitfalls.md`, binary asset precautions, dirty file distinction, and backup rules.
-7. For MCP/editor automation, search `references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` when setup or official behavior is uncertain. Confirm the editor MCP Server is running locally, the SSE URL/port match the panel, call logging is enabled when debugging, and backups for `.uasset` files live outside the UGC project tree.
+7. For MCP/editor automation, search `references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` when setup or official behavior is uncertain. Confirm the editor MCP Server is running locally, the SSE URL/port match the panel, call logging is enabled when debugging, and backups for `.uasset` files live outside the UGC project tree. If Codex direct MCP registration fails with `stream disconnected before completion: stream closed before response.completed`, or the user asks for `长连接 MCP` / `MCP 代理` / `绕过直连 MCP` / `让 Codex 用 MCP`, use the local HTTP proxy workflow in `references/mcp-integration.md` instead of repeatedly retrying native MCP.
 8. For log/debugging questions, inspect available project/editor logs first when possible, and distinguish PIE logs, local `Clientlog`/`DSlog`, phone logs, management-platform DS logs, MCP call logs (`Saved/log/MCP_YYYYMMDD.log`), and battle logs.
 9. If the user asks whether knowledge should be added to this skill, read `references/skill-evolution.md` and follow the controlled update protocol.
 10. For implementation answers, cite relevant local file paths and line numbers when possible. Preserve existing teammate behavior, names, call order, formatting, RPC names, event IDs, save keys, and project style unless the change is required and explained.
@@ -77,7 +77,7 @@ Additional distilled references:
 - `references/project-patterns.md`: reusable architecture and coding patterns without private project names or local paths.
 - `references/project-cache.md`: local computer cache workflow for reusing parsed information from a specific UGC project.
 - `references/project-planning-memory.md`: project-name/path routing workflow for uploaded planning docs, requirements, system details, and whole-project design memory.
-- `references/mcp-integration.md`: UGCAskQ MCP shared connection, setup, branch routing, safety checks, PRV, and evidence workflow.
+- `references/mcp-integration.md`: UGCAskQ MCP shared connection, setup, local long-lived HTTP proxy for Codex, branch routing, safety checks, PRV, and evidence workflow.
 - `references/mcp-ui-widget.md`: MCP branch for viewing/generating UI, WidgetBlueprint/UMG hierarchy, layout, colors, and click interaction.
 - `references/mcp-datatable.md`: MCP branch for config tables, DataTable/UAEDataTable lookup, low-token row reads, row mutation, and table-backed gameplay/UI.
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.

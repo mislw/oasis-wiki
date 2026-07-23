@@ -11,6 +11,7 @@
 - 排查报错，例如按钮没反应、RPC 没触发、UI 白色、DataTable 只读报错、资源加载失败、日志异常。
 - 查询配置表、数值表、DataTable、UAEDataTable、奖励表、属性表。
 - 使用 UGCAskQ MCP 操作编辑器、生成 Widget 蓝图、查看 UI、查表。
+- 当 Codex 直连 MCP 因 Responses tool streaming 兼容问题断流时，通过本地长连接 HTTP 代理继续使用 UGCAskQ 读写编辑器。
 - 在多个 Codex 对话里持续开发同一个项目，复用本地项目索引和功能记忆。
 
 ## 安装到 Codex
@@ -142,6 +143,35 @@ powershell -ExecutionPolicy Bypass -File ".\oasis-wiki\scripts\remember-oasis-fe
 
 ## MCP / UGCAskQ
 
+如果 Codex 直连 UGCAskQ MCP 出现 `stream disconnected before completion: stream closed before response.completed`，优先使用本仓库提供的本地长连接 HTTP 代理，而不是反复重试 native MCP 注册。
+
+默认文件：
+
+```text
+oasis-wiki/scripts/ugcaskq-proxy-server.js
+oasis-wiki/scripts/ugcaskq-cli.js
+```
+
+启动代理：
+
+```powershell
+$node = "C:\Users\ASUS\.workbuddy\binaries\node\versions\22.22.2\node.exe"
+& $node ".\oasis-wiki\scripts\ugcaskq-proxy-server.js"
+```
+
+默认代理地址是 `http://127.0.0.1:18763`，上游编辑器 SSE 地址是 `http://127.0.0.1:12463/sse`。常用接口：
+
+```text
+GET  /health
+GET  /tools
+GET  /read?uri=ctx:
+POST /call
+POST /py
+POST /plan
+```
+
+这个代理不是新的 MCP Server，而是长期连接编辑器 UGCAskQ MCP，再把 `ue_read`、`ue_py`、`ue_plan_submit` 等工具转成普通 HTTP 调用，方便 Codex 或其他本地工具绕过 Responses tool streaming 兼容问题。
+
 MCP 相关规则分为三层：
 
 - `references/mcp-integration.md`：连接、`.mcp.json`、SSE、工具发现、PRV、备份、安全和证据规则。
@@ -202,7 +232,7 @@ AssetRegistry.GetAssetByObjectPath failed。
 - `oasis-wiki/references/teaching-mode.md`：教学模式细则和强制只读规则。
 - `oasis-wiki/references/feature-development-flow.md`：功能开发主流程。
 - `oasis-wiki/references/code-style.md`：Lua 代码风格。
-- `oasis-wiki/references/mcp-integration.md`：MCP 通用连接和安全规则。
+- `oasis-wiki/references/mcp-integration.md`：MCP 通用连接、长连接 HTTP 代理和安全规则。
 - `oasis-wiki/references/mcp-ui-widget.md`：MCP UI / Widget 工作流。
 - `oasis-wiki/references/mcp-datatable.md`：MCP 配置表 / DataTable 工作流。
 - `oasis-wiki/references/project-cache.md`：本地项目索引工作流。
@@ -211,7 +241,7 @@ AssetRegistry.GetAssetByObjectPath failed。
 - `oasis-wiki/references/recipes.md`：常见实现配方。
 - `oasis-wiki/references/snippets.md`：常用 Lua 模板片段。
 - `oasis-wiki/references/skill-evolution.md`：如何判断是否更新 skill。
-- `oasis-wiki/scripts`：搜索、项目索引、功能记忆脚本。
+- `oasis-wiki/scripts`：搜索、项目索引、功能记忆、UGCAskQ MCP 长连接代理脚本。
 
 ## 注意事项
 

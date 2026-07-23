@@ -54,6 +54,7 @@ If a task touches both, read this file first, then `mcp-datatable.md` for config
 - `.mcp.json` should contain an SSE server whose URL matches the editor panel, for example `http://127.0.0.1:<port>/sse`.
 - The editor MCP Server should show `Running` and the same port.
 - If a direct MCP tool namespace is not exposed, use a small local JSON-RPC/SSE bridge only as execution plumbing.
+- If Codex direct MCP registration disconnects before `response.completed`, use the local long-lived HTTP proxy branch below instead of repeatedly retrying native MCP registration.
 - Treat UGCAskQ MCP as local-only and experimental; save or back up before mutation.
 
 ### Missing `.mcp.json` Bootstrap
@@ -88,6 +89,94 @@ Bootstrap rules:
 - Treat the connection as usable only after `tools/list` returns `ue_read`, `ue_py`, and `ue_plan_submit`.
 - If connection fails, tell the user the exact URL tried and ask them to start the editor MCP Server or provide the panel port. Do not guess multiple ports in a long loop.
 - Once connected through a manual SSE bridge, keep using the same read-plan-write-verify workflow as a direct MCP namespace.
+
+## Local HTTP Proxy For Codex
+
+Use this branch when the user says `绕过直连 MCP`, `长连接 MCP`, `MCP 代理`, `让 Codex 用 MCP`, or `直接修改编辑器`, or when Codex native MCP fails with:
+
+```text
+stream disconnected before completion: stream closed before response.completed
+```
+
+The proxy is not a new MCP Server. It keeps a long-lived connection to the upstream UGCAskQ SSE endpoint and exposes ordinary HTTP endpoints that Codex, PowerShell, curl, or local scripts can call without registering UGCAskQ as a native Codex MCP server.
+
+Default files in this repository:
+
+```text
+oasis-wiki/scripts/ugcaskq-proxy-server.js
+oasis-wiki/scripts/ugcaskq-cli.js
+```
+
+Known local install paths used during development:
+
+```text
+C:\Users\ASUS\.codex\ugcaskq-proxy-server.js
+C:\Users\ASUS\.codex\ugcaskq-cli.js
+```
+
+Default endpoints:
+
+```text
+Proxy:        http://127.0.0.1:18763
+Upstream SSE: http://127.0.0.1:12463/sse
+Log file:     C:\Users\ASUS\.codex\tmp\ugcaskq-proxy-server.log
+```
+
+Start the proxy with Node:
+
+```powershell
+$node = "C:\Users\ASUS\.workbuddy\binaries\node\versions\22.22.2\node.exe"
+& $node ".\oasis-wiki\scripts\ugcaskq-proxy-server.js"
+```
+
+Check whether it is already running:
+
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:18763/health" -Method GET | ConvertTo-Json -Depth 6
+```
+
+Expected core tools from `/tools`:
+
+```text
+ue_plan_submit
+ue_read
+ue_py
+```
+
+Common calls:
+
+```powershell
+# Read current editor context
+$r = Invoke-RestMethod -Uri "http://127.0.0.1:18763/read?uri=ctx%3A" -Method GET
+$r.text
+
+# Read multiple resources
+$r = Invoke-RestMethod -Uri "http://127.0.0.1:18763/read?uri=ctx%3A&uri=py%3Aindex" -Method GET
+$r.text
+
+# Execute editor Python through UGCAskQ
+$body = @{ code = "print('hello from UGCAskQ proxy')" } | ConvertTo-Json -Depth 5
+Invoke-RestMethod -Uri "http://127.0.0.1:18763/py" -Method POST -ContentType "application/json" -Body $body
+
+# Submit a PRV/plan-style editor operation
+$body = @{ plan = "intent: inspect`nasset_path: /RedCliff/Asset/UI/Building/Popup`nmutations: []" } | ConvertTo-Json -Depth 5
+Invoke-RestMethod -Uri "http://127.0.0.1:18763/plan" -Method POST -ContentType "application/json" -Body $body
+```
+
+Raw tool call shape:
+
+```powershell
+$body = @{ name = "ue_read"; arguments = @{ queries = @("ctx:") } } | ConvertTo-Json -Depth 10
+Invoke-RestMethod -Uri "http://127.0.0.1:18763/call" -Method POST -ContentType "application/json" -Body $body
+```
+
+Proxy safety rules:
+
+- Check `/health` before doing editor work.
+- If `/health` returns `initialized: false`, confirm the Oasis editor MCP Server panel is running and the SSE URL/port match `UGCASKQ_SSE_URL` or the default upstream URL.
+- Keep using the same read -> small plan -> write -> verify workflow as direct MCP.
+- Prefer `/plan` for asset, WidgetBlueprint, DataTable, map, or CDO mutations.
+- If a mutation fails or the editor reports a cancelled transaction, stop and inspect state before retrying.
 
 ## MCP Tool Roles
 
