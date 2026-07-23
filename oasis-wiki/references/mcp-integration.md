@@ -53,6 +53,7 @@ If a task touches both, read this file first, then `mcp-datatable.md` for config
 
 - `.mcp.json` should contain an SSE server whose URL matches the editor panel, for example `http://127.0.0.1:<port>/sse`.
 - The editor MCP Server should show `Running` and the same port.
+- Port rule: the editor UGCAskQ MCP SSE port is not guaranteed to be permanently fixed; always prefer the port shown in the editor MCP Server panel. `12463` is only the known/default example. The local HTTP proxy port `18763` is the script default and can be changed with `UGCASKQ_PROXY_PORT`.
 - If a direct MCP tool namespace is not exposed, use a small local JSON-RPC/SSE bridge only as execution plumbing.
 - If Codex direct/native MCP registration enters a reconnect loop (`正在重新连接 1/5`, `正在重新连接 4/5`, `reconnecting`) or disconnects before `response.completed`, use the local long-lived HTTP proxy branch below instead of repeatedly retrying native MCP registration.
 - Treat UGCAskQ MCP as local-only and experimental; save or back up before mutation.
@@ -124,6 +125,12 @@ Proxy:        http://127.0.0.1:18763
 Upstream SSE: http://127.0.0.1:12463/sse
 Log file:     C:\Users\ASUS\.codex\tmp\ugcaskq-proxy-server.log
 ```
+
+Port notes:
+
+- `Upstream SSE` must match the Oasis editor MCP Server panel. `12463` is the known/default example, not a permanent guarantee.
+- `Proxy` uses `18763` by default from the proxy script. Override it with `UGCASKQ_PROXY_PORT` if that port is occupied or the user config requires another port.
+- If `/health` shows a different `sseUrl`, trust `/health` and the editor panel over hardcoded examples.
 
 Start the proxy with Node:
 
