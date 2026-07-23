@@ -54,7 +54,7 @@ If a task touches both, read this file first, then `mcp-datatable.md` for config
 - `.mcp.json` should contain an SSE server whose URL matches the editor panel, for example `http://127.0.0.1:<port>/sse`.
 - The editor MCP Server should show `Running` and the same port.
 - If a direct MCP tool namespace is not exposed, use a small local JSON-RPC/SSE bridge only as execution plumbing.
-- If Codex direct MCP registration disconnects before `response.completed`, use the local long-lived HTTP proxy branch below instead of repeatedly retrying native MCP registration.
+- If Codex direct/native MCP registration enters a reconnect loop (`正在重新连接 1/5`, `正在重新连接 4/5`, `reconnecting`) or disconnects before `response.completed`, use the local long-lived HTTP proxy branch below instead of repeatedly retrying native MCP registration.
 - Treat UGCAskQ MCP as local-only and experimental; save or back up before mutation.
 
 ### Missing `.mcp.json` Bootstrap
@@ -92,9 +92,12 @@ Bootstrap rules:
 
 ## Local HTTP Proxy For Codex
 
-Use this branch when the user says `绕过直连 MCP`, `长连接 MCP`, `MCP 代理`, `让 Codex 用 MCP`, or `直接修改编辑器`, or when Codex native MCP fails with:
+Use this branch when the user says `绕过直连 MCP`, `长连接 MCP`, `MCP 代理`, `让 Codex 用 MCP`, or `直接修改编辑器`, or when Codex native MCP enters reconnect loops or fails with:
 
 ```text
+正在重新连接 1/5
+正在重新连接 4/5
+reconnecting
 stream disconnected before completion: stream closed before response.completed
 ```
 

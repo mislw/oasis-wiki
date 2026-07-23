@@ -143,7 +143,7 @@ powershell -ExecutionPolicy Bypass -File ".\oasis-wiki\scripts\remember-oasis-fe
 
 ## MCP / UGCAskQ
 
-如果 Codex 直连 UGCAskQ MCP 出现 `stream disconnected before completion: stream closed before response.completed`，优先使用本仓库提供的本地长连接 HTTP 代理，而不是反复重试 native MCP 注册。
+如果 Codex 直连 UGCAskQ MCP 出现 `正在重新连接 1/5`、`正在重新连接 4/5`、`reconnecting`、`stream disconnected before completion` 或 `stream closed before response.completed`，立即停止重试 native MCP，优先使用本仓库提供的本地长连接 HTTP 代理。
 
 默认文件：
 
