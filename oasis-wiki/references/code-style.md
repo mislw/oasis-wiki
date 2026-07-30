@@ -13,7 +13,8 @@ Use this reference whenever writing or reviewing Oasis/绿洲启元/和平精英
    - `tbItemList`: table/list
 4. Every member variable and every `GlobalConfig` config variable must have a Chinese comment.
 5. Every method must have a Chinese comment explaining its purpose.
-6. Do not add excessive defensive validity checks. Only guard real boundary risks such as user input, missing config, RPC/network payloads, async UI lifecycle, destroyed actors, or optional data. For internal code with trusted required values, keep the flow direct; if an impossible invalid value appears and there is no clear recovery path, let it error so the real bug is exposed instead of hiding it behind noisy `if` branches. In particular, do not repeatedly wrap each block with checks like `if CauserActor and UE.IsValid(CauserActor) then` when the same actor/context is required by the whole calculation flow.
+6. Keep defensive code narrow. Only guard real boundary risks such as user input, missing config, RPC/network payloads, async UI lifecycle, destroyed actors, or optional data. For internal code with trusted required values, keep the flow direct; if an impossible invalid value appears and there is no clear recovery path, let it error so the real bug is exposed instead of hiding it behind noisy `if` branches. In particular, do not repeatedly wrap each block with checks like `if CauserActor and UE.IsValid(CauserActor) then` when the same actor/context is required by the whole calculation flow.
+7. Match HeQirui-style change size for RedCliff-like code: bug fixes should usually be a few changed lines, ordinary feature hooks should stay close to the existing entry point, and larger diffs need a real feature reason rather than extra protection layers. Prefer direct project-style code over generic guard/wrapper scaffolding.
 
 ## How To Apply
 
@@ -21,6 +22,7 @@ Use this reference whenever writing or reviewing Oasis/绿洲启元/和平精英
 - For config tables, comment the meaning of each column, not only the table itself.
 - For methods, explain what the method is responsible for and which side it runs on when relevant, such as server, client, UI, GameState, GameMode, PlayerController, Pawn, or Action.
 - When adding behavior to an existing file, prefer a new helper, a new config entry, a new event/RPC hook, or a small appended branch over replacing the original function body.
+- Add helpers only when they remove real repeated code or match an existing project pattern. Do not create helper layers just to make one small change look more systematic.
 - Keep existing project naming when editing old code. Apply this style most strongly to new code, new config fields, new member variables, and newly added methods.
 - Do not rename old fields only to satisfy style unless the user explicitly asks for cleanup, because renaming config keys, RPC names, event IDs, or save keys can break existing behavior.
 - Avoid boilerplate nil/validity checks at every step when the value is a required invariant. Add a guard only when the code can make a useful decision after the guard, such as logging a clear config error, returning from a UI callback after a widget was closed, rejecting bad client input, or using a documented fallback.

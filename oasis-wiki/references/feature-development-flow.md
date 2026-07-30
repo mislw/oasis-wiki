@@ -39,6 +39,7 @@ Look for:
 - Existing data owners: whether the state currently lives in `GlobalConfig`, `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UGCPlayerState`, `UGCPlayerPawn`, UI scripts, feature managers, or Actions.
 - Existing helper APIs: resource add/remove helpers, backpack helpers, task helpers, attribute helpers, UI refresh helpers, save/load helpers, and project-specific manager methods.
 - Existing partial implementations from teammates. Treat them as protected by default. Do not rewrite their structure, reorder their flow, wrap their blocks, rename their fields, or refactor them for cleanliness. Preserve their names, call order, formatting, and behavior; add the smallest compatible hook beside or after the existing flow.
+- Prefer the nearest existing entry point over building a new layer. If a current UI button, RPC, data owner, or helper already matches the feature, hook into it directly and keep the diff small. Only introduce a new helper or branch when the existing path cannot express the behavior cleanly.
 
 Then answer with:
 
