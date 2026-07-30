@@ -38,7 +38,7 @@ Look for:
 - Existing entry points: UI buttons, `GetAvailableServerRPCs()`, ClientRPCs, `UGCEventSystem` listeners, `OnRep_*`, request-data/reconnect methods, Action flow hooks, and manager init functions.
 - Existing data owners: whether the state currently lives in `GlobalConfig`, `UGCGameMode`, `UGCGameState`, `UGCPlayerController`, `UGCPlayerState`, `UGCPlayerPawn`, UI scripts, feature managers, or Actions.
 - Existing helper APIs: resource add/remove helpers, backpack helpers, task helpers, attribute helpers, UI refresh helpers, save/load helpers, and project-specific manager methods.
-- Existing partial implementations from teammates. Treat them as protected by default; preserve their names, call order, and behavior unless the user asks to refactor them.
+- Existing partial implementations from teammates. Treat them as protected by default. Do not rewrite their structure, reorder their flow, wrap their blocks, rename their fields, or refactor them for cleanliness. Preserve their names, call order, formatting, and behavior; add the smallest compatible hook beside or after the existing flow.
 
 Then answer with:
 

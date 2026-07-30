@@ -4,6 +4,7 @@ Use this reference whenever writing or reviewing Oasis/绿洲启元/和平精英
 
 ## Core Rules
 
+0. Existing teammate/predecessor code is protected. Do not directly rewrite, restructure, wrap, rename, reorder, or refactor existing blocks for cleanliness. Keep the original structure intact and add the narrowest compatible new logic beside or after it. If an existing block truly must change, explain why it is unavoidable before editing and limit the edit to the exact affected lines.
 1. New config tables must include Chinese comments for every column.
 2. English words in config table column names and variable names should be spelled out completely. Only use very common abbreviations such as `ID` and `UI`.
 3. Simple typed variables should use lightweight type prefixes:
@@ -19,6 +20,7 @@ Use this reference whenever writing or reviewing Oasis/绿洲启元/和平精英
 - Put comments close to the variable, table field, or method they explain.
 - For config tables, comment the meaning of each column, not only the table itself.
 - For methods, explain what the method is responsible for and which side it runs on when relevant, such as server, client, UI, GameState, GameMode, PlayerController, Pawn, or Action.
+- When adding behavior to an existing file, prefer a new helper, a new config entry, a new event/RPC hook, or a small appended branch over replacing the original function body.
 - Keep existing project naming when editing old code. Apply this style most strongly to new code, new config fields, new member variables, and newly added methods.
 - Do not rename old fields only to satisfy style unless the user explicitly asks for cleanup, because renaming config keys, RPC names, event IDs, or save keys can break existing behavior.
 - Avoid boilerplate nil/validity checks at every step when the value is a required invariant. Add a guard only when the code can make a useful decision after the guard, such as logging a clear config error, returning from a UI callback after a widget was closed, rejecting bad client input, or using a documented fallback.
