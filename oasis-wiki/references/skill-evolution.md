@@ -45,6 +45,7 @@ Avoid:
 - Long prose copied from conversation history.
 - Project-specific names unless the reference is explicitly about that project.
 - Massive examples that consume context without improving future answers.
+- Extra top-level documentation files such as `README.md`, `CHANGELOG.md`, `QUICK_REFERENCE.md`, or ad-hoc notes. Keep root-level agent instructions in `SKILL.md` or `AGENTS.md`; put necessary supporting material under `references/`.
 
 ## Approval Rule
 
@@ -79,6 +80,7 @@ After editing:
 
 - `SKILL.md` frontmatter still has `name` and `description`.
 - New reference files are linked from `SKILL.md`.
+- `scripts/check-skill-hygiene.ps1` passes, and there are no extra top-level Markdown files or unrelated generated notes.
 - Search terms find the new material.
 - No raw private project source was copied unnecessarily.
 - Teaching-only mode remains intact for UGC project files.
