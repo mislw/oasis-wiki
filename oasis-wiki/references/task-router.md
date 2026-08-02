@@ -130,6 +130,27 @@ Read:
 
 Rule: DataTable/UAEDataTable rows are treated as source data. Runtime logic must not mutate returned row objects directly; copy the row into a normal Lua table before changing derived values.
 
+### UI Design System
+
+Use when the user asks to analyze UI screenshots, extract or correct reusable controls, build a project-specific style/component library, optimize a UI mockup, plan a complete UI Tree, or generate a new page from an existing control library.
+
+Trigger examples:
+
+- `分析这张 UI 参考图`
+- `提取控件库/设计规范`
+- `控件修正/确认控件/拒绝控件`
+- `按照项目风格生成 UI`
+- `先渲染这个 UI`
+- `检查层级/遮挡/复用率`
+
+Read:
+
+- `references/game-ui-design-system.md`
+- Only the task-specific file under `references/game-ui/` selected by that router
+- Secondary branch: `MCP Operation` only when inspecting or changing real WidgetBlueprint assets
+
+This branch owns visual-system decisions and the mandatory UI Tree gate. `UI And Interaction` owns runtime Lua bindings, RPC/event flow, and refresh behavior. Use both only when the request spans design and runtime implementation.
+
 ### UI And Interaction
 
 Use when the user asks where a UI lives, how a button opens a panel, how a Widget should be named/bound, or how UI refresh should happen.
