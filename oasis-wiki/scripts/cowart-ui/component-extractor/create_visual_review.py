@@ -5,10 +5,16 @@ import hashlib
 import json
 import re
 import shutil
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 from PIL import Image
+
+GAME_UI_SCRIPT_DIR = Path(__file__).resolve().parents[2] / "game-ui"
+sys.path.insert(0, str(GAME_UI_SCRIPT_DIR))
+
+from generation_pipeline import GenerationPipelineError, validate_generation_result  # noqa: E402
 
 
 def slug(value: str) -> str:
@@ -29,11 +35,29 @@ def main() -> int:
     parser.add_argument("--image", required=True, type=Path)
     parser.add_argument("--name", required=True)
     parser.add_argument("--output-root", type=Path, default=Path.home() / ".codex" / "ui-visual-reviews")
+    parser.add_argument("--source-type", choices=("ai_generated", "external_source"), default="external_source")
+    parser.add_argument("--generation-package", type=Path)
     args = parser.parse_args()
 
     image_path = args.image.resolve()
     if not image_path.is_file():
         raise FileNotFoundError(image_path)
+    generation = None
+    if args.source_type == "ai_generated":
+        if args.generation_package is None:
+            raise SystemExit("ERROR: --generation-package is required for ai_generated visual review")
+        try:
+            context = validate_generation_result(args.generation_package, expected_image=image_path)
+        except GenerationPipelineError as exc:
+            raise SystemExit(f"ERROR: {exc}") from exc
+        generation = {
+            "status": context["result"]["status"],
+            "package": str(context["package"]),
+            "request_file": "generation-request.json",
+            "result_file": "generation-result.json",
+            "reference_manifest": "reference-manifest.json",
+            "output_sha256": context["result"]["output_sha256"],
+        }
     with Image.open(image_path) as image:
         width, height = image.size
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -47,6 +71,8 @@ def main() -> int:
         "workflow_stage": "visual_review",
         "title": args.name,
         "status": "pending_visual_review",
+        "source_type": args.source_type,
+        "generation": generation,
         "candidate_image": {
             "file": candidate_name,
             "source_name": image_path.name,
@@ -64,7 +90,7 @@ def main() -> int:
             "required_shape_meta": {
                 "workflowStage": "visual_review",
                 "reviewStatus": "pending_visual_review",
-                "sourceRole": "ui_preview",
+                "sourceRole": "generated_ui" if args.source_type == "ai_generated" else "external_ui",
             }
         },
         "next_action": "Automatically insert into native Cowart, refine the visual candidate, then explicitly approve the final bitmap.",

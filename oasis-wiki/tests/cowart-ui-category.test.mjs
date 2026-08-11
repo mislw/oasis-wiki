@@ -17,6 +17,13 @@ const requiredFiles = [
   "scripts/cowart-ui/component-extractor/create_ui_workbench.py",
   "scripts/cowart-ui/component-extractor/create_cowart_blank_snapshot.mjs",
   "scripts/cowart-ui/component-extractor/apply_component_decisions.py",
+  "scripts/game-ui/generation_pipeline.py",
+  "scripts/game-ui/build_generation_prompt.py",
+  "scripts/game-ui/build_generation_package.py",
+  "scripts/game-ui/validate_generation_package.py",
+  "scripts/game-ui/prepare_image_generation.py",
+  "scripts/game-ui/record_generation_result.py",
+  "scripts/game-ui/create_style_review.py",
   "scripts/cowart-ui/delivery/build_delivery_plan.py",
   "scripts/cowart-ui/delivery/validate_delivery_plan.py",
   "assets/cowart-ui/ui-spec-template.json",
@@ -49,6 +56,9 @@ test("Cowart UI category describes upstream design and automatic Cowart handoff"
   const content = readFileSync(join(wikiRoot, "references/cowart-ui-workflow.md"), "utf8");
   assert.match(content, /Game UI Design System|游戏 UI 设计系统/);
   assert.match(content, /自动.*Cowart|Cowart.*自动/s);
+  assert.match(content, /IMAGE_GENERATION_UNAVAILABLE/);
+  assert.match(content, /禁止使用 HTML\/CSS\/Chromium screenshot fallback/);
+  assert.match(content, /build_generation_package\.py/);
   assert.match(content, /scripts\/cowart-ui\/delivery/);
 });
 

@@ -22,14 +22,34 @@ python scripts/cowart-ui/component-extractor/build_ui_tree.py --spec <ui-spec.js
 
 3. Keep text, values, counters, progress, and interactive hit targets as `asset_policy: native`. Static skins, art, icons, and decoration may use `layer`.
 
+## Stage 0.5: reference-driven image generation
+
+1. Resolve every original image into `style` or `layout` metadata. At least one readable Style Image is mandatory; Style Profile and art direction do not satisfy this gate.
+2. Build the self-contained package:
+
+```powershell
+python scripts/game-ui/build_generation_package.py --ui-tree <ui-tree.json> --style-profile <profile.json> --references <references.json> --output <generation-package>
+python scripts/game-ui/validate_generation_package.py <generation-package>
+```
+
+3. Pass all files in `generation-request.json.style_references`, all files in `layout_references`, and `generation-prompt.txt` to the active session's real image-generation tool.
+4. If that capability is absent, output `IMAGE_GENERATION_UNAVAILABLE` and stop. Do not generate final artwork with HTML/CSS/Chromium.
+5. After a real output exists, record it and create the pending style review:
+
+```powershell
+python scripts/game-ui/record_generation_result.py --package <generation-package> --output-image <real-generated-image.png>
+python scripts/game-ui/create_style_review.py --package <generation-package>
+```
+
 ## Two-stage workflow
 
 ### Stage 1: Cowart visual review
 
-1. Generate a complete UI preview and create a review package:
+1. Generate a complete UI preview and create a review package. Formal AI output must use `ai_generated`; a user-supplied existing image may use `external_source`:
 
 ```powershell
-python scripts/cowart-ui/component-extractor/create_visual_review.py --image <ui-preview.png> --name "<page name>"
+python scripts/cowart-ui/component-extractor/create_visual_review.py --image <ui-preview.png> --name "<page name>" --source-type ai_generated --generation-package <generation-package>
+python scripts/cowart-ui/component-extractor/create_visual_review.py --image <external-ui.png> --name "<page name>" --source-type external_source
 ```
 
 2. Read the active project with `get_cowart_canvas_state` before insertion.

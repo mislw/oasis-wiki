@@ -20,13 +20,22 @@
 ## 3. New page generation
 
 1. Parse page name, purpose, scene, operations, information, ratio, references, and requested deliverables.
-2. Classify controls as direct reuse, state extension, or new candidate.
-3. Create new controls as `pending_review` and state why existing controls cannot satisfy the need.
-4. Build the UI Tree.
-5. Describe layout, proportions, visual focus, operation path, spacing, and information priority.
-6. Validate hierarchy and style.
-7. Generate only the requested prompt, image, structure, Figma component notes, Unity hierarchy, Unreal UMG hierarchy, or code.
-8. Finish with the automatic check report.
+2. Resolve each original image as a structured `style` or `layout` reference. Layout references default to `copy_visual_style: false`.
+3. Classify controls as direct reuse, state extension, or new candidate.
+4. Create new controls as `pending_review` and state why existing controls cannot satisfy the need.
+5. Build the complete UI Tree.
+6. Build and validate a Generation Package containing the original reference files, their dimensions and SHA-256, the UI Tree, Style Profile, compiled prompt, and generation request.
+7. Invoke real image generation with every listed Style Image, every listed Layout Image, and the compiled prompt. If the capability is unavailable, stop with `IMAGE_GENERATION_UNAVAILABLE`.
+8. Record only a real output with `record_generation_result.py`, then create a qualitative style review.
+9. Send the validated result to Cowart as `ai_generated`; use `external_source` only for an existing image supplied directly by the user.
+10. Finish with the automatic check report.
+
+Hard rules:
+
+- Style Profile is supplementary. It MUST NOT replace real Style Reference images when the user supplied them.
+- Layout references control information hierarchy and approximate placement only. They MUST NOT provide visual styling.
+- HTML/CSS/Chromium screenshots are not Final Game UI Visual Generation.
+- No valid Style Image means generation must fail even when `art_direction`, a prompt, or a project profile exists.
 
 ## 4. Developer commands
 

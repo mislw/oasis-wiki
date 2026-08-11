@@ -19,6 +19,10 @@ Use this branch for UI screenshots, component extraction/correction, project sty
 
 - Search the resolved project library before creating a control or page.
 - Build a complete UI Tree before prompts, images, Figma notes, UMG hierarchies, or code.
+- Store user references as structured objects with `source`, `role`, and numeric `priority`; `role` is only `style` or `layout`.
+- When the user supplies visual references, copy the original files into a Generation Package and pass them to the final image-generation call. The Style Profile is supplementary and must not replace them.
+- Require at least one readable Style Image with recorded dimensions and SHA-256. Layout references must set `copy_visual_style: false`.
+- Stop with `IMAGE_GENERATION_UNAVAILABLE` when the active session has no real image-generation capability. Never silently fall back to HTML/CSS/Chromium screenshots.
 - Give every control one parent and one numeric layer.
 - Store uncertain recognition as `candidate` with confidence and reason.
 - Store new controls as `pending_review`; only explicit developer confirmation may set `active`.
@@ -32,6 +36,7 @@ Use this branch for UI screenshots, component extraction/correction, project sty
 - Use `references/feature-development-flow.md` for Lua, RPC, events, data ownership, and runtime refresh.
 - Read project files freely. Modify UGC code, `.uasset`, `.umap`, or project-local profiles only with explicit authorization.
 - Keep writable component profiles under `%USERPROFILE%/.codex/game-ui-design-system/projects/<slug>/profile.json` by default.
+- Use `scripts/game-ui/build_generation_package.py` and `scripts/game-ui/validate_generation_package.py` before formal bitmap generation. Use `record_generation_result.py` and `create_style_review.py` before an `ai_generated` Cowart handoff.
 
 ## Save validation
 

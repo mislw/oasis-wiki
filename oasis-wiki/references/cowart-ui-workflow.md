@@ -13,13 +13,31 @@
 
 1. **设计约束**：先读 `references/game-ui-design-system.md`，解析项目风格档案和已有组件，确定 UI Tree、原生文本/数值控件与位图资源边界。
 2. **UI 规格**：从 `assets/cowart-ui/ui-spec-template.json` 创建并验证 `ui-spec.json`，再生成完整 `ui-tree.json`。
-3. **生成 UI 图**：按已解析的游戏风格生成完整候选图。图像生成是当前 Codex 会话动作，本地控制台不伪装成图像生成器。
-4. **自动交给 Cowart**：创建视觉评审包，读取 Cowart 状态；空画布时自动生成并保存有效空快照，插入候选图，回读验证后自动打开原生 Cowart。详见 `references/cowart-ui/component-extractor.md`。
-5. **视觉确认**：保留旧候选，把修订图放在来源图旁边。只有开发者明确确认后才锁定最终图。
-6. **组件化**：优先使用真实图层导出；验证图层清单、建立 Cowart shape plan 和可编辑工作台。扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
-7. **组件确认**：只把明确批准的组件写入用户级项目风格档案，并运行 `scripts/game-ui/validate_library.py`。
-8. **交付计划**：运行 `scripts/cowart-ui/delivery/build_delivery_plan.py` 与 `scripts/cowart-ui/delivery/validate_delivery_plan.py`，生成 UMG 层级、Lua 绑定、数据归属和验收要求。详见 `references/cowart-ui/delivery.md`。
-9. **工程实施**：只有用户明确授权后，才返回 Oasis Wiki 的 MCP UI/功能开发分支修改 WidgetBlueprint、Lua、DataTable 或其他 UGC 资产。
+3. **解析原始参考图**：把用户给出的独立原图分类为 `style` 或 `layout`。聊天截图、浏览器截图、Cowart 截图和多图 collage 默认拒绝，除非用户明确授权。
+4. **构建 Generation Package**：运行 `scripts/game-ui/build_generation_package.py`，把原图复制进包内，并记录尺寸、SHA-256、角色和优先级。
+5. **编译 Prompt**：同时编译项目 Style Profile、已有组件、UI Tree、原生/位图边界和负面约束；Style Profile 只作补充，不能替代 Style Image。
+6. **真实图片生成**：当前 Codex 会话必须把 Style Images、Layout Images 和 Compiled Prompt 一起传给真实图片生成能力。无能力时输出 `IMAGE_GENERATION_UNAVAILABLE` 并停止。
+7. **Style Validation**：运行 `scripts/game-ui/create_style_review.py`，建立定性对比记录，状态保持 `pending_developer_review`，不得伪造相似度百分比。
+8. **自动交给 Cowart**：`ai_generated` 来源必须通过 Generation Result、输出 SHA 和候选图一致性检查；`external_source` 仍允许用户直接导入已有 UI 图。
+9. **组件化**：优先使用真实图层导出；扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
+10. **组件确认**：只把明确批准的组件写入用户级项目风格档案，并运行 `scripts/game-ui/validate_library.py`。
+11. **交付**：先生成并验证 RedCliff 交付计划；只有用户明确授权后，才修改 WidgetBlueprint、Lua、DataTable 或其他 UGC 资产。
+
+## Generation Package
+
+```powershell
+python scripts/game-ui/build_generation_package.py `
+  --ui-tree <ui-tree.json> `
+  --style-profile <profile.json> `
+  --references <references.json> `
+  --output <generation-package> `
+  --page-purpose "<page purpose>"
+
+python scripts/game-ui/validate_generation_package.py <generation-package>
+python scripts/game-ui/prepare_image_generation.py --package <generation-package> --capability image_generation
+```
+
+`prepare_image_generation.py` 只执行能力门禁并输出真实调用所需的 prompt/reference 路径，不会伪装成图片生成器。没有 `image_generation` capability 时，它以退出码 `3` 输出 `IMAGE_GENERATION_UNAVAILABLE`。
 
 ## 快速入口
 
@@ -42,6 +60,9 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 
 ## 强制边界
 
+- 正式 AI Game UI 视觉稿禁止使用 HTML/CSS/Chromium screenshot fallback。HTML 仅可用于 debug、layout prototype、workbench 或失败诊断。
+- 用户给出视觉参考图时，最终图片生成调用必须实际接收这些原始文件。只传 Style Profile、art direction 或 prompt 属于门禁失败。
+- 不得手写或伪造 `generation-result.json`；只能通过 `record_generation_result.py` 对真实存在且可读取的输出图片记录结果。
 - Cowart 视觉评审通过，不等于组件已确认；组件已确认，也不等于编辑器或 PIE 已验收。
 - 文本、数值、倒计时、进度、交互热区和状态必须保留为原生控件，不烘焙进 PNG。
 - 不覆盖或删除 Cowart 中既有图形；修订图保留版本关系。
