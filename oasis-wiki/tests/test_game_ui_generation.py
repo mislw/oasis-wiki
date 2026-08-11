@@ -235,7 +235,9 @@ class GameUiGenerationTests(unittest.TestCase):
         request = json.loads((package / "generation-request.json").read_text(encoding="utf-8"))
         self.assertEqual(request["style_references"], ["references/style-01.png"])
         self.assertEqual(request["layout_references"], ["references/layout-01.png"])
-        self.assertEqual(request["required_capability"], "image_generation")
+        self.assertEqual(request["required_capability"], "codex_builtin_image_gen")
+        self.assertEqual(request["generation_backend"], "codex_builtin")
+        self.assertEqual(request["credential_mode"], "codex_managed")
         self.assertEqual(request["fallback_policy"], "forbid_html_screenshot")
         prompt = (package / request["prompt_file"]).read_text(encoding="utf-8")
         self.assertIn("STYLE REFERENCES", prompt)
@@ -272,6 +274,27 @@ class GameUiGenerationTests(unittest.TestCase):
         self.assertEqual(result.stdout.strip(), "IMAGE_GENERATION_UNAVAILABLE")
         self.assertNotIn("html", result.stdout.lower())
         self.assertFalse((package / "generation-result.json").exists())
+
+    def test_prepare_generation_uses_only_codex_builtin_image_gen(self) -> None:
+        package = self.build_valid_package()
+        result = self.run_script(
+            "scripts/game-ui/prepare_image_generation.py",
+            "--package",
+            package,
+            "--available-tool",
+            "image_gen",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["generation_backend"], "codex_builtin")
+        self.assertEqual(payload["tool"], "image_gen")
+        self.assertEqual(payload["credential_mode"], "codex_managed")
+        self.assertEqual(len(payload["style_references"]), 1)
+        self.assertEqual(len(payload["layout_references"]), 1)
+        serialized = json.dumps(payload).lower()
+        self.assertNotIn("openai_api_key", serialized)
+        self.assertNotIn("gpt-image", serialized)
+        self.assertNotIn("cli", serialized)
 
     def test_generation_result_requires_a_real_output_image(self) -> None:
         package = self.build_valid_package()

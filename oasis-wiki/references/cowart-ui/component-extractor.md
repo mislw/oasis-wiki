@@ -32,8 +32,8 @@ python scripts/game-ui/build_generation_package.py --ui-tree <ui-tree.json> --st
 python scripts/game-ui/validate_generation_package.py <generation-package>
 ```
 
-3. Pass all files in `generation-request.json.style_references`, all files in `layout_references`, and `generation-prompt.txt` to the active session's real image-generation tool.
-4. If that capability is absent, output `IMAGE_GENERATION_UNAVAILABLE` and stop. Do not generate final artwork with HTML/CSS/Chromium.
+3. Pass all files in `generation-request.json.style_references`, all files in `layout_references`, and `generation-prompt.txt` to the active session's Codex built-in `image_gen` tool. Codex manages credentials locally; do not request a user Key or switch to a CLI/API backend.
+4. If the built-in tool is absent, output `IMAGE_GENERATION_UNAVAILABLE` and stop. Do not generate final artwork with HTML/CSS/Chromium.
 5. After a real output exists, record it and create the pending style review:
 
 ```powershell

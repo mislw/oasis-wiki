@@ -16,7 +16,7 @@
 3. **解析原始参考图**：把用户给出的独立原图分类为 `style` 或 `layout`。聊天截图、浏览器截图、Cowart 截图和多图 collage 默认拒绝，除非用户明确授权。
 4. **构建 Generation Package**：运行 `scripts/game-ui/build_generation_package.py`，把原图复制进包内，并记录尺寸、SHA-256、角色和优先级。
 5. **编译 Prompt**：同时编译项目 Style Profile、已有组件、UI Tree、原生/位图边界和负面约束；Style Profile 只作补充，不能替代 Style Image。
-6. **真实图片生成**：当前 Codex 会话必须把 Style Images、Layout Images 和 Compiled Prompt 一起传给真实图片生成能力。无能力时输出 `IMAGE_GENERATION_UNAVAILABLE` 并停止。
+6. **真实图片生成**：当前 Codex 会话必须把 Style Images、Layout Images 和 Compiled Prompt 一起传给 Codex 内置 `image_gen`。不要求用户配置外部 Key，也不允许切换到 CLI/API 后端。内置工具不可用时输出 `IMAGE_GENERATION_UNAVAILABLE` 并停止。
 7. **Style Validation**：运行 `scripts/game-ui/create_style_review.py`，建立定性对比记录，状态保持 `pending_developer_review`，不得伪造相似度百分比。
 8. **自动交给 Cowart**：`ai_generated` 来源必须通过 Generation Result、输出 SHA 和候选图一致性检查；`external_source` 仍允许用户直接导入已有 UI 图。
 9. **组件化**：优先使用真实图层导出；扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
@@ -34,10 +34,10 @@ python scripts/game-ui/build_generation_package.py `
   --page-purpose "<page purpose>"
 
 python scripts/game-ui/validate_generation_package.py <generation-package>
-python scripts/game-ui/prepare_image_generation.py --package <generation-package> --capability image_generation
+python scripts/game-ui/prepare_image_generation.py --package <generation-package> --available-tool image_gen
 ```
 
-`prepare_image_generation.py` 只执行能力门禁并输出真实调用所需的 prompt/reference 路径，不会伪装成图片生成器。没有 `image_generation` capability 时，它以退出码 `3` 输出 `IMAGE_GENERATION_UNAVAILABLE`。
+`prepare_image_generation.py` 只接受 Codex 当前工具清单中的内置 `image_gen`，并输出真实调用所需的 prompt/reference 路径。凭据由 Codex 管理；脚本不读取用户 Key，也没有 CLI/API fallback。工具缺失时以退出码 `3` 输出 `IMAGE_GENERATION_UNAVAILABLE`。
 
 ## 快速入口
 
@@ -61,6 +61,7 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 ## 强制边界
 
 - 正式 AI Game UI 视觉稿禁止使用 HTML/CSS/Chromium screenshot fallback。HTML 仅可用于 debug、layout prototype、workbench 或失败诊断。
+- 正式后端固定为 Codex 内置 `image_gen`，凭据模式固定为 `codex_managed`；不得要求用户提供 Key 或改走 CLI/API。
 - 用户给出视觉参考图时，最终图片生成调用必须实际接收这些原始文件。只传 Style Profile、art direction 或 prompt 属于门禁失败。
 - 不得手写或伪造 `generation-result.json`；只能通过 `record_generation_result.py` 对真实存在且可读取的输出图片记录结果。
 - Cowart 视觉评审通过，不等于组件已确认；组件已确认，也不等于编辑器或 PIE 已验收。

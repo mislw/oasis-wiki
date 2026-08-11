@@ -57,8 +57,10 @@ test("Cowart UI category describes upstream design and automatic Cowart handoff"
   assert.match(content, /Game UI Design System|游戏 UI 设计系统/);
   assert.match(content, /自动.*Cowart|Cowart.*自动/s);
   assert.match(content, /IMAGE_GENERATION_UNAVAILABLE/);
+  assert.match(content, /Codex 内置.*image_gen|image_gen.*Codex 内置/s);
   assert.match(content, /禁止使用 HTML\/CSS\/Chromium screenshot fallback/);
   assert.match(content, /build_generation_package\.py/);
+  assert.doesNotMatch(content, /OPENAI_API_KEY|gpt-image|CLI fallback/i);
   assert.match(content, /scripts\/cowart-ui\/delivery/);
 });
 

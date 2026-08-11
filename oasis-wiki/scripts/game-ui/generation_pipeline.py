@@ -306,7 +306,10 @@ def build_generation_package(
         "reference_manifest": "reference-manifest.json",
         "style_references": [item["file"] for item in manifest_items if item["role"] == "style"],
         "layout_references": [item["file"] for item in manifest_items if item["role"] == "layout"],
-        "required_capability": "image_generation",
+        "required_capability": "codex_builtin_image_gen",
+        "generation_backend": "codex_builtin",
+        "tool": "image_gen",
+        "credential_mode": "codex_managed",
         "fallback_policy": "forbid_html_screenshot",
         "status": "ready_for_image_generation",
     }
@@ -356,8 +359,12 @@ def validate_generation_package(package_dir: Path) -> dict[str, Any]:
     layout_files = [item["file"] for item in references if item.get("role") == "layout"]
     if request.get("style_references") != style_files or request.get("layout_references") != layout_files:
         raise GenerationPipelineError("generation request reference lists do not match reference-manifest.json")
-    if request.get("required_capability") != "image_generation":
-        raise GenerationPipelineError("generation request must require image_generation")
+    if request.get("required_capability") != "codex_builtin_image_gen":
+        raise GenerationPipelineError("generation request must require the Codex built-in image_gen tool")
+    if request.get("generation_backend") != "codex_builtin" or request.get("tool") != "image_gen":
+        raise GenerationPipelineError("generation request must use the Codex built-in image_gen backend")
+    if request.get("credential_mode") != "codex_managed":
+        raise GenerationPipelineError("generation request credentials must be managed by Codex")
     if request.get("fallback_policy") != "forbid_html_screenshot":
         raise GenerationPipelineError("generation request must forbid HTML screenshot fallback")
     return {"package": package, "manifest": manifest, "request": request}

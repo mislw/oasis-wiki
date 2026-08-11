@@ -25,7 +25,7 @@
 4. Create new controls as `pending_review` and state why existing controls cannot satisfy the need.
 5. Build the complete UI Tree.
 6. Build and validate a Generation Package containing the original reference files, their dimensions and SHA-256, the UI Tree, Style Profile, compiled prompt, and generation request.
-7. Invoke real image generation with every listed Style Image, every listed Layout Image, and the compiled prompt. If the capability is unavailable, stop with `IMAGE_GENERATION_UNAVAILABLE`.
+7. Invoke the Codex built-in `image_gen` tool with every listed Style Image, every listed Layout Image, and the compiled prompt. Codex manages credentials; do not request a user Key or use a CLI/API fallback. If the tool is unavailable, stop with `IMAGE_GENERATION_UNAVAILABLE`.
 8. Record only a real output with `record_generation_result.py`, then create a qualitative style review.
 9. Send the validated result to Cowart as `ai_generated`; use `external_source` only for an existing image supplied directly by the user.
 10. Finish with the automatic check report.
