@@ -32,8 +32,15 @@ python scripts/game-ui/build_generation_package.py --ui-tree <ui-tree.json> --st
 python scripts/game-ui/validate_generation_package.py <generation-package>
 ```
 
-3. Pass all files in `generation-request.json.style_references`, all files in `layout_references`, and `generation-prompt.txt` to the active session's Codex built-in `image_gen` tool. Codex manages credentials locally; do not request a user Key or switch to a CLI/API backend.
-4. If the built-in tool is absent, output `IMAGE_GENERATION_UNAVAILABLE` and stop. Do not generate final artwork with HTML/CSS/Chromium.
+3. Pass all files in `generation-request.json.style_references`, all files in `layout_references`, and `generation-prompt.txt` to the active session's Codex built-in `image_gen` tool. Codex manages credentials locally; do not request a user Key or use a generic CLI fallback.
+4. If the built-in tool is absent, output `IMAGE_GENERATION_UNAVAILABLE` and stop unless the user explicitly authorizes the `codex_provider_direct` runner. The runner may resolve a channel-prefixed `gpt-image-2` model from the current Codex provider and use Codex-managed authentication. Do not generate final artwork with HTML/CSS/Chromium.
+
+Explicitly authorized provider-direct fallback:
+
+```powershell
+python scripts/game-ui/prepare_image_generation.py --package <generation-package> --allow-provider-direct
+python scripts/game-ui/generate_with_codex_provider.py --package <generation-package> --user-authorized-provider-direct
+```
 5. After a real output exists, record it and create the pending style review:
 
 ```powershell

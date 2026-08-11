@@ -370,7 +370,13 @@ def validate_generation_package(package_dir: Path) -> dict[str, Any]:
     return {"package": package, "manifest": manifest, "request": request}
 
 
-def record_generation_result(package_dir: Path, output_image: Path, generated_at: str | None = None) -> Path:
+def record_generation_result(
+    package_dir: Path,
+    output_image: Path,
+    generated_at: str | None = None,
+    generation_backend: str | None = None,
+    model: str | None = None,
+) -> Path:
     context = validate_generation_package(package_dir)
     package = context["package"]
     source = output_image.resolve()
@@ -391,6 +397,10 @@ def record_generation_result(package_dir: Path, output_image: Path, generated_at
         "prompt_sha256": request["prompt_sha256"],
         "generated_at": generated_at or datetime.now(timezone.utc).isoformat(),
     }
+    if generation_backend:
+        result["generation_backend"] = generation_backend
+    if model:
+        result["model"] = model
     result_path = package / "generation-result.json"
     write_json(result_path, result)
     return result_path

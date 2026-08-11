@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import subprocess
 import sys
@@ -295,6 +296,55 @@ class GameUiGenerationTests(unittest.TestCase):
         self.assertNotIn("openai_api_key", serialized)
         self.assertNotIn("gpt-image", serialized)
         self.assertNotIn("cli", serialized)
+
+    def test_prepare_generation_allows_explicit_codex_provider_direct_fallback(self) -> None:
+        package = self.build_valid_package()
+        result = self.run_script(
+            "scripts/game-ui/prepare_image_generation.py",
+            "--package",
+            package,
+            "--allow-provider-direct",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["generation_backend"], "codex_provider_direct")
+        self.assertEqual(payload["credential_mode"], "codex_managed")
+        self.assertEqual(payload["model_suffix"], "gpt-image-2")
+        self.assertTrue(payload["user_authorized"])
+        serialized = json.dumps(payload).lower()
+        self.assertNotIn("openai_api_key", serialized)
+        self.assertNotIn("bearer", serialized)
+
+    def test_provider_direct_resolves_channel_prefixed_image_model(self) -> None:
+        script = WIKI_ROOT / "scripts" / "game-ui" / "generate_with_codex_provider.py"
+        sys.path.insert(0, str(script.parent))
+        spec = importlib.util.spec_from_file_location("generate_with_codex_provider", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(
+            module.resolve_provider_model(
+                ["[EXPRESS]gemini-3-pro-image", "[l]gpt-image-2"],
+                "gpt-image-2",
+            ),
+            "[l]gpt-image-2",
+        )
+        with self.assertRaisesRegex(ValueError, "ambiguous"):
+            module.resolve_provider_model(
+                ["[a]gpt-image-2", "[b]gpt-image-2"],
+                "gpt-image-2",
+            )
+
+    def test_provider_direct_runner_requires_explicit_user_authorization(self) -> None:
+        package = self.build_valid_package()
+        result = self.run_script(
+            "scripts/game-ui/generate_with_codex_provider.py",
+            "--package",
+            package,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("explicit user authorization", result.stderr)
 
     def test_generation_result_requires_a_real_output_image(self) -> None:
         package = self.build_valid_package()

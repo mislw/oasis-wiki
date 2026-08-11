@@ -22,8 +22,8 @@ Use this branch for UI screenshots, component extraction/correction, project sty
 - Store user references as structured objects with `source`, `role`, and numeric `priority`; `role` is only `style` or `layout`.
 - When the user supplies visual references, copy the original files into a Generation Package and pass them to the final image-generation call. The Style Profile is supplementary and must not replace them.
 - Require at least one readable Style Image with recorded dimensions and SHA-256. Layout references must set `copy_visual_style: false`.
-- Use only the Codex built-in `image_gen` backend with `codex_managed` credentials. Never request a user Key or switch to CLI/API generation.
-- Stop with `IMAGE_GENERATION_UNAVAILABLE` when the active session has no built-in `image_gen` tool. Never silently fall back to HTML/CSS/Chromium screenshots.
+- Prefer the Codex built-in `image_gen` backend with `codex_managed` credentials. Never request a user Key or use a generic CLI fallback.
+- When the active session has no built-in `image_gen`, stop with `IMAGE_GENERATION_UNAVAILABLE` unless the user explicitly authorizes the `codex_provider_direct` fallback. That fallback resolves the current Codex provider's channel-prefixed `gpt-image-2` model and uses Codex-managed authentication without printing or persisting credentials. Never fall back to HTML/CSS/Chromium screenshots.
 - Give every control one parent and one numeric layer.
 - Store uncertain recognition as `candidate` with confidence and reason.
 - Store new controls as `pending_review`; only explicit developer confirmation may set `active`.

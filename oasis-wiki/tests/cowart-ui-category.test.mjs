@@ -22,6 +22,7 @@ const requiredFiles = [
   "scripts/game-ui/build_generation_package.py",
   "scripts/game-ui/validate_generation_package.py",
   "scripts/game-ui/prepare_image_generation.py",
+  "scripts/game-ui/generate_with_codex_provider.py",
   "scripts/game-ui/record_generation_result.py",
   "scripts/game-ui/create_style_review.py",
   "scripts/cowart-ui/delivery/build_delivery_plan.py",
@@ -58,9 +59,11 @@ test("Cowart UI category describes upstream design and automatic Cowart handoff"
   assert.match(content, /自动.*Cowart|Cowart.*自动/s);
   assert.match(content, /IMAGE_GENERATION_UNAVAILABLE/);
   assert.match(content, /Codex 内置.*image_gen|image_gen.*Codex 内置/s);
+  assert.match(content, /codex_provider_direct/);
+  assert.match(content, /明确授权|显式授权/);
   assert.match(content, /禁止使用 HTML\/CSS\/Chromium screenshot fallback/);
   assert.match(content, /build_generation_package\.py/);
-  assert.doesNotMatch(content, /OPENAI_API_KEY|gpt-image|CLI fallback/i);
+  assert.doesNotMatch(content, /OPENAI_API_KEY/);
   assert.match(content, /scripts\/cowart-ui\/delivery/);
 });
 
