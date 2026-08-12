@@ -1,9 +1,13 @@
 ---
 name: oasis-wiki
-description: Always use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, UGC Lua code, UGCAskQ MCP/editor automation questions, Codex MCP reconnect failures, local HTTP MCP proxy, even if the skill is not named. Trigger on 绿洲启元, 绿洲起源, 起源UGC, 和平精英UGC, UGC项目, 策划案, 玩法案, 需求文档, 项目方案, 系统设计, 全局规划, 版本规划, 数值表, UI流程, 关卡流程, 经济系统, 养成系统, UGC Lua, UGCAskQ, MCP Server, Model Context Protocol, .mcp.json, SSE, 33444, GameMode, GameState, PlayerController, PlayerState, PlayerPawn, UIManager, EventDefine, Action_*, UnrealNetwork, LuaQuickFireEvent, GetAvailableServerRPCs, UGCGameSystem, UGCEventSystem, GameplayStatics, replication, RPC, UI, logs, DSlog, Clientlog, UGCClientLog, UGCServerLog, PIE日志面板, ugcprint, game_id, countdowns, skills, respawn, reconnect, debugging, performance, templates, and editor workflows. When a path, current workspace, or uploaded file can be associated with a known project name, route through that project's local planning memory and cache before answering. Search the bundled local wiki and distilled project references before giving technical guidance or code. Default to concise normal mode; use teaching mode only when the user explicitly asks for teaching mode, detailed explanation, step-by-step guidance, or beginner-friendly walkthrough output. Read project files freely, but do not directly modify UGC project files unless explicitly overridden.
+description: Use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, UGC Lua, UGCAskQ MCP/editor automation, DataTable/WidgetBlueprint, logs/debugging, project planning, game UI design systems, Cowart UI generation and editable component extraction. Trigger on common UGC classes and APIs including GameMode, GameState, PlayerController, UIManager, EventDefine, UnrealNetwork, LuaQuickFireEvent, UGCGameSystem, RPC and replication. Search bundled references before technical guidance or code, route known projects through local memory/profile data, default to concise normal mode, and modify project files only when explicitly authorized.
 ---
 
 # Oasis Wiki
+
+For game UI reference analysis, reusable control libraries, project-specific style routing, UI Tree planning, or screenshot-to-UI work, use the integrated Game UI Design System branch in `references/game-ui-design-system.md` before MCP WidgetBlueprint operations.
+
+For AI UI generation, automatic native Cowart handoff, editable layer extraction, component confirmation, or RedCliff delivery planning, use the separate Cowart UI Production branch in `references/cowart-ui-workflow.md`.
 
 Use this skill for Oasis/绿洲启元 and 和平精英 UGC development questions. The bundled wiki is the source of truth for Lua APIs, editor workflows, gameplay systems, UI, templates, troubleshooting, and examples. The project-pattern references summarize generic UGC Lua architecture habits without private project names, local paths, or planning details.
 
@@ -41,6 +45,8 @@ Default to normal mode. Use teaching mode only when the user explicitly asks for
    - MCP operation: `references/mcp-integration.md`, then either `references/mcp-ui-widget.md` or `references/mcp-datatable.md`; use both only for genuinely mixed UI+table tasks.
    - Config/balancing: table schema/usage lookup, `references/mcp-datatable.md` when editor tables are involved, and project code consumers.
    - UI/interaction: UIManager, `Script/UI`, existing button bindings, and `references/mcp-ui-widget.md` only for WidgetBlueprint work.
+   - UI design system: `references/game-ui-design-system.md`, then only the required file under `references/game-ui/`. Resolve the project profile before extracting controls or generating a page.
+   - Cowart UI production: `references/cowart-ui-workflow.md`, then `references/cowart-ui/component-extractor.md` or `references/cowart-ui/delivery.md` for the active stage. Use the UI design system as its upstream style and UI Tree gate.
    - Project safety: `references/pitfalls.md`, binary asset precautions, dirty file distinction, and backup rules.
 7. For MCP/editor automation, search `references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` when setup or official behavior is uncertain. Confirm the editor MCP Server is running locally, the SSE URL/port match the panel, call logging is enabled when debugging, and backups for `.uasset` files live outside the UGC project tree. If Codex direct/native MCP registration enters reconnect loops (`正在重新连接 1/5`, `正在重新连接 4/5`, `reconnecting`) or fails with stream-completion errors (`stream disconnected before completion`, missing `response.completed`), immediately stop retrying native MCP and use the local HTTP proxy workflow in `references/mcp-integration.md` instead. Also use the proxy when the user asks for `长连接 MCP` / `MCP 代理` / `绕过直连 MCP` / `让 Codex 用 MCP`.
 8. For log/debugging questions, inspect available project/editor logs first when possible, and distinguish PIE logs, local `Clientlog`/`DSlog`, phone logs, management-platform DS logs, MCP call logs (`Saved/log/MCP_YYYYMMDD.log`), and battle logs.
@@ -83,6 +89,8 @@ Additional distilled references:
 - `references/mcp-integration.md`: UGCAskQ MCP shared connection, setup, local long-lived HTTP proxy for Codex, branch routing, safety checks, PRV, and evidence workflow.
 - `references/mcp-ui-widget.md`: MCP branch for viewing/generating UI, WidgetBlueprint/UMG hierarchy, layout, colors, and click interaction.
 - `references/mcp-datatable.md`: MCP branch for config tables, DataTable/UAEDataTable lookup, low-token row reads, row mutation, and table-backed gameplay/UI.
+- `references/game-ui-design-system.md`: project-routed screenshot analysis, reusable control-library maintenance, UI Tree gates, generation workflow, and automatic UI validation.
+- `references/cowart-ui-workflow.md`: separate AI UI generation, automatic Cowart opening, editable component extraction, layer-manifest, confirmation, and RedCliff delivery category.
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.
 - `references/teaching-mode.md`: code-teaching workflow and project-file read-only constraint.
 - `references/code-style.md`: lightweight project code style for comments, config tables, variable names, member variables, and methods.

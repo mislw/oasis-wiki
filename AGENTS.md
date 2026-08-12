@@ -31,6 +31,7 @@ Primary branches:
 - MCP operation: `mcp-integration.md`, then either `mcp-ui-widget.md` or `mcp-datatable.md`.
 - Config/balancing: table schema, code consumers, `mcp-datatable.md` when editor tables are involved.
 - UI/interaction: UIManager, `Script/UI`, existing bindings, `mcp-ui-widget.md` only for WidgetBlueprint work.
+- Cowart UI production: `cowart-ui-workflow.md`, with Game UI Design System as the upstream style/UI Tree gate; no UGC project mutation before explicit authorization.
 - Project safety: `pitfalls.md`, binary asset precautions, dirty file distinction, backup rules.
 
 ## Answer Modes
@@ -65,6 +66,7 @@ node oasis-wiki/scripts/search-oasis-wiki.mjs "GetAvailableServerRPCs" --max 10
 ## High-Value References
 
 - `oasis-wiki/references/task-router.md`
+- `oasis-wiki/references/cowart-ui-workflow.md`
 - `oasis-wiki/references/answer-modes.md`
 - `oasis-wiki/references/teaching-mode.md`
 - `oasis-wiki/references/feature-development-flow.md`

@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
+  <title>控件提取工作台</title>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <style>
+    :root { --bg:#edf0ee; --panel:#ffffff; --line:#d9dfdb; --ink:#19231f; --muted:#65716c; --teal:#108b83; --teal-soft:#d6f0ec; --amber:#ca7d16; --amber-soft:#fff0d3; --red:#c44b42; --shadow:0 10px 28px rgba(23,42,34,.09); }
+    * { box-sizing:border-box; }
+    body { margin:0; min-width:1100px; min-height:760px; overflow:hidden; font-family:"Microsoft YaHei","Noto Sans SC",sans-serif; color:var(--ink); background:var(--bg); }
+    button,input,select { font:inherit; }
+    button:disabled { opacity:.42; cursor:not-allowed; }
+    .app { height:100vh; display:grid; grid-template-rows:58px minmax(0,1fr) 174px; }
+    .topbar { display:flex; align-items:center; gap:16px; padding:0 20px; background:#fff; border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:9px; min-width:210px; font-size:15px; font-weight:800; }
+    .brand-mark { width:26px; height:26px; display:grid; place-items:center; color:#fff; background:var(--teal); border-radius:6px; }
+    .brand-mark svg { width:16px; }
+    .crumb { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:13px; }
+    .crumb strong { color:var(--ink); font-weight:700; }
+    .top-actions { margin-left:auto; display:flex; align-items:center; gap:8px; }
+    .icon-button { width:32px; height:32px; display:grid; place-items:center; color:#3b4842; background:#fff; border:1px solid var(--line); border-radius:5px; cursor:pointer; }
+    .icon-button:hover { background:#f1f6f4; border-color:#a7c5bd; }
+    .icon-button svg { width:16px; }
+    .primary { height:34px; display:flex; align-items:center; gap:7px; padding:0 13px; color:#fff; background:var(--teal); border:1px solid #08736c; border-radius:5px; font-size:13px; font-weight:700; cursor:pointer; }
+    .primary svg { width:16px; }
+
+    .workspace { min-height:0; display:grid; grid-template-columns:250px minmax(500px,1fr) 308px; gap:12px; padding:12px 14px; }
+    .panel { min-height:0; background:var(--panel); border:1px solid var(--line); border-radius:7px; box-shadow:var(--shadow); overflow:hidden; }
+    .panel-header { height:46px; display:flex; align-items:center; gap:8px; padding:0 14px; border-bottom:1px solid var(--line); font-size:13px; font-weight:800; }
+    .panel-header .count { margin-left:auto; color:var(--muted); font-size:12px; font-weight:600; }
+    .left { display:flex; flex-direction:column; }
+    .source-row { display:flex; align-items:center; gap:9px; margin:10px 10px 7px; padding:8px; background:#f4f7f5; border:1px solid #e0e6e2; border-radius:5px; }
+    .source-thumb { width:37px; height:28px; object-fit:cover; border:1px solid #8c9b93; border-radius:3px; }
+    .source-info { min-width:0; }
+    .source-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:700; }
+    .source-meta { margin-top:2px; color:var(--muted); font-size:10px; }
+    .filter-row { display:grid; grid-template-columns:minmax(0,1fr) 88px; gap:6px; padding:0 10px 8px; }
+    .filter-row input,.filter-row select { min-width:0; height:30px; padding:0 8px; color:var(--ink); background:#fff; border:1px solid #cbd5d0; border-radius:4px; font-size:11px; }
+    .tree-toolbar { display:flex; align-items:center; gap:5px; padding:0 10px 7px; color:var(--muted); font-size:10px; }
+    .tree-toolbar strong { color:var(--ink); font-size:11px; }
+    .tree-toolbar button { width:26px; height:26px; display:grid; place-items:center; margin-left:2px; color:#4d5b55; background:#fff; border:1px solid #d3dcd7; border-radius:4px; cursor:pointer; }
+    .tree-toolbar button:first-of-type { margin-left:auto; }
+    .tree-toolbar svg { width:14px; }
+    .control-list { overflow:auto; padding:4px 7px 8px; }
+    .control-row { position:relative; display:flex; gap:6px; align-items:center; min-height:42px; margin-left:calc(var(--depth,0) * 10px); padding:4px 6px 4px 2px; border:1px solid transparent; border-radius:5px; cursor:pointer; }
+    .control-row:hover { background:#f5f8f6; }
+    .control-row.selected { background:var(--teal-soft); border-color:#8dcfc5; }
+    .tree-expander { width:18px; height:24px; display:grid; flex:0 0 auto; place-items:center; padding:0; color:#66736d; background:transparent; border:0; cursor:pointer; }
+    .tree-expander.placeholder { visibility:hidden; }
+    .tree-expander svg { width:13px; }
+    .control-row .mini { width:27px; height:27px; display:grid; flex:0 0 auto; place-items:center; color:#fff; background:#4e7168; border:1px solid #d6af67; border-radius:4px; }
+    .control-row .mini.orange { background:#a9702e; }
+    .control-row .mini.gray { background:#6e736f; }
+    .control-row .mini svg { width:15px; }
+    .control-main { min-width:0; }
+    .control-id { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:700; }
+    .control-kind { margin-top:3px; color:var(--muted); font-size:10px; }
+    .layer-chip { min-width:25px; padding:2px 3px; flex:0 0 auto; color:#45524c; background:#edf2ef; border:1px solid #d4ddd8; border-radius:3px; font-size:9px; font-weight:800; text-align:center; }
+    .child-count { color:#88948e; font-size:9px; }
+    .status-dot { position:absolute; right:10px; top:11px; width:7px; height:7px; border-radius:50%; background:#e1a434; }
+    .status-dot.ready { background:#29a078; }
+    .add-control { display:flex; align-items:center; justify-content:center; gap:6px; height:36px; margin:0 10px 11px; color:#55635d; background:#fff; border:1px dashed #9cadA5; border-radius:5px; font-size:12px; font-weight:700; }
+    .add-control svg { width:15px; }
+
+    .stage { position:relative; display:flex; flex-direction:column; }
+    .canvas-tools { height:46px; display:flex; align-items:center; padding:0 11px; border-bottom:1px solid var(--line); }
+    .tool-group { display:flex; align-items:center; gap:5px; padding-right:10px; margin-right:10px; border-right:1px solid #e2e7e4; }
+    .tool-group:last-child { border-right:0; }
+    .tool-button { width:29px; height:29px; display:grid; place-items:center; color:#48554f; border:1px solid transparent; border-radius:4px; background:transparent; cursor:pointer; }
+    .tool-button.active { color:#087971; background:var(--teal-soft); border-color:#9bd3ca; }
+    .tool-button svg { width:16px; }
+    .zoom { margin-left:auto; color:var(--muted); font-size:12px; }
+    .viewport { position:relative; flex:1; min-height:0; overflow:hidden; display:grid; place-items:center; background:repeating-conic-gradient(#eef1ef 0% 25%,#e6ebe8 0% 50%) 50%/24px 24px; }
+    .image-frame { position:relative; width:min(75%, 690px); aspect-ratio:16/9; overflow:hidden; background:#29312e; border:1px solid #65736d; box-shadow:0 16px 34px rgba(22,35,28,.25); }
+    .image-frame > img { width:100%; height:100%; object-fit:cover; display:block; transition:opacity .18s ease,filter .18s ease; }
+    .image-frame.component-mode > img { opacity:0; filter:none; }
+    .region { position:absolute; border:1px solid rgba(16,139,131,.72); background:transparent; box-shadow:0 0 0 1px rgba(255,255,255,.42) inset; cursor:move; touch-action:none; }
+    .region[data-layer="0"],.region[data-layer="10"],.region[data-layer="20"] { border-color:rgba(16,139,131,.7); }
+    .region[data-layer="30"] { border-color:rgba(54,107,175,.82); }
+    .region[data-layer="40"] { border-color:rgba(48,132,89,.86); }
+    .region[data-layer="50"] { border-color:rgba(111,82,156,.86); }
+    .region[data-layer="60"] { border-color:rgba(217,132,20,.94); }
+    .region[data-layer="70"] { border-color:rgba(196,75,66,.92); }
+    .region[data-category="panel"],.region[data-category="grid"],.region[data-category="row"] { border-style:dashed; }
+    .region.selected { border-color:#f4a331; background:transparent; }
+    .component-crop { position:absolute; inset:0; background-position:center; background-repeat:no-repeat; background-size:100% 100%; pointer-events:none; }
+    .image-frame:not(.component-mode) .component-crop { display:none; }
+    .region .label { position:absolute; display:none; z-index:3; top:-23px; left:-2px; padding:3px 6px; color:#fff; background:#108b83; border-radius:3px 3px 0 0; font:700 10px/1.2 "Microsoft YaHei",sans-serif; white-space:nowrap; }
+    .region:hover .label,.region.selected .label { display:block; }
+    .viewport.is-interacting .region.selected .label { display:none; }
+    .region.selected .label { background:#d98414; }
+    .resize-handle { position:absolute; z-index:2; width:9px; height:9px; background:#fff; border:2px solid #d98414; border-radius:2px; }
+    .resize-handle[data-dir="nw"] { left:-6px; top:-6px; cursor:nwse-resize; }
+    .resize-handle[data-dir="n"] { left:50%; top:-6px; transform:translateX(-50%); cursor:ns-resize; }
+    .resize-handle[data-dir="ne"] { right:-6px; top:-6px; cursor:nesw-resize; }
+    .resize-handle[data-dir="e"] { right:-6px; top:50%; transform:translateY(-50%); cursor:ew-resize; }
+    .resize-handle[data-dir="se"] { right:-6px; bottom:-6px; cursor:nwse-resize; }
+    .resize-handle[data-dir="s"] { left:50%; bottom:-6px; transform:translateX(-50%); cursor:ns-resize; }
+    .resize-handle[data-dir="sw"] { left:-6px; bottom:-6px; cursor:nesw-resize; }
+    .resize-handle[data-dir="w"] { left:-6px; top:50%; transform:translateY(-50%); cursor:ew-resize; }
+    .region:not(.selected) .resize-handle { display:none; }
+    .viewport.draw-mode .image-frame { cursor:crosshair; }
+    .viewport.is-interacting, .viewport.is-interacting * { user-select:none; }
+    .draft-region { pointer-events:none; border-style:dashed; }
+    .empty-note { position:absolute; left:18px; bottom:15px; color:#60716a; font-size:11px; }
+    .layer-legend { position:absolute; z-index:5; left:12px; top:10px; display:flex; flex-wrap:wrap; gap:5px; max-width:calc(100% - 24px); pointer-events:none; }
+    .layer-legend span { padding:3px 5px; color:#3b4742; background:rgba(255,255,255,.9); border:1px solid #d6ded9; border-radius:3px; box-shadow:0 2px 8px rgba(25,40,32,.08); font-size:9px; font-weight:700; }
+
+    .inspector { display:flex; flex-direction:column; }
+    .inspector-body { overflow:auto; padding:14px; }
+    .field { margin-bottom:15px; }
+    .field-label { display:flex; align-items:center; margin-bottom:6px; color:#62706a; font-size:11px; font-weight:700; }
+    .field-label span { margin-left:auto; color:#b68a20; font-size:10px; }
+    .text-field,.select-field { width:100%; height:34px; padding:0 9px; color:#24312b; background:#fff; border:1px solid #cbd5d0; border-radius:4px; outline:none; font-size:12px; }
+    .text-field:focus,.select-field:focus { border-color:var(--teal); box-shadow:0 0 0 2px rgba(16,139,131,.12); }
+    .segmented { display:grid; grid-template-columns:repeat(3,1fr); overflow:hidden; border:1px solid #cbd5d0; border-radius:4px; }
+    .segment { height:31px; display:grid; place-items:center; color:#65716c; background:#fff; border-right:1px solid #cbd5d0; font-size:11px; cursor:pointer; }
+    .segment:last-child { border-right:0; }
+    .segment.active { color:#086f68; background:var(--teal-soft); font-weight:800; }
+    .mask-preview { height:100px; display:grid; place-items:center; overflow:hidden; background:repeating-conic-gradient(#eff2f0 0% 25%,#e3e9e5 0% 50%) 50%/18px 18px; border:1px solid #d5ddd8; border-radius:5px; }
+    .mask-preview div { width:74px; height:50px; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#e6a33d,#95611f); border:2px solid #6e441b; border-radius:5px; box-shadow:0 4px 0 rgba(79,47,15,.55); }
+    .mask-preview div.actual-crop { width:86%; height:82%; background-color:transparent; background-position:center; background-repeat:no-repeat; background-size:contain; border:0; border-radius:0; box-shadow:none; }
+    .mask-preview div.preview-message { width:auto; height:auto; padding:10px; color:var(--muted); background:transparent; border:0; box-shadow:none; font-size:11px; text-align:center; }
+    .mask-preview svg { width:26px; }
+    .stepper { display:flex; align-items:center; width:100%; height:34px; border:1px solid #cbd5d0; border-radius:4px; overflow:hidden; }
+    .stepper button { width:34px; height:100%; display:grid; place-items:center; color:#506059; background:#f7f9f8; border:0; border-right:1px solid #d8dfda; }
+    .stepper button:last-child { border-right:0; border-left:1px solid #d8dfda; }
+    .stepper span { flex:1; text-align:center; font-size:12px; font-weight:700; }
+    .coordinate-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+    .coordinate-grid label { display:grid; grid-template-columns:18px minmax(0,1fr); align-items:center; gap:5px; color:var(--muted); font-size:10px; }
+    .coordinate-grid input { width:100%; height:30px; padding:0 7px; border:1px solid #cbd5d0; border-radius:4px; color:var(--ink); }
+    .path-field { padding:8px; color:#425149; background:#f4f7f5; border:1px solid #d8e0dc; border-radius:4px; font-size:10px; line-height:1.55; overflow-wrap:anywhere; }
+    .inspector-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+    .secondary-action,.danger-action { height:34px; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:5px; background:#fff; cursor:pointer; font-size:11px; font-weight:700; }
+    .secondary-action { color:#38534a; border:1px solid #b9c8c1; }
+    .danger-action { color:var(--red); border:1px solid #e0aaa5; }
+    .warning { display:flex; gap:7px; margin-top:15px; padding:9px; color:#85551b; background:var(--amber-soft); border:1px solid #edcc8e; border-radius:4px; font-size:11px; line-height:1.45; }
+    .warning svg { width:15px; flex:0 0 auto; }
+
+    .results { display:grid; grid-template-columns:250px minmax(0,1fr) 308px; gap:12px; padding:0 14px 14px; }
+    .summary { display:flex; flex-direction:column; justify-content:center; padding:0 15px; }
+    .summary strong { font-size:28px; line-height:1; }
+    .summary span { margin-top:6px; color:var(--muted); font-size:12px; }
+    .result-panel { display:flex; flex-direction:column; }
+    .result-head { height:38px; display:flex; align-items:center; padding:0 12px; border-bottom:1px solid var(--line); color:#52615a; font-size:12px; font-weight:800; }
+    .result-head span { margin-left:auto; color:var(--muted); font-weight:500; }
+    .result-tabs,.result-filters,.visual-tabs { display:flex; align-items:center; gap:4px; }
+    .result-tabs { margin-right:10px; }
+    .result-tab,.result-filter,.visual-tab { height:26px; padding:0 9px; color:#5f6d66; background:#fff; border:1px solid #ccd6d0; border-radius:4px; cursor:pointer; font-size:10px; font-weight:700; }
+    .result-tab.active,.result-filter.active,.visual-tab.active { color:#08736c; background:var(--teal-soft); border-color:#8fcac1; }
+    .result-filters { padding:6px 9px 0; overflow-x:auto; }
+    .result-list { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(160px,1fr); gap:8px; padding:9px; overflow-x:auto; overflow-y:hidden; }
+    .result-item { display:flex; align-items:center; gap:8px; min-width:0; padding:6px; border:1px solid #d9e1dc; border-radius:4px; }
+    .result-thumb { width:46px; height:38px; display:grid; place-items:center; flex:0 0 auto; color:#fff; background:repeating-conic-gradient(#eff2f0 0% 25%,#e3e9e5 0% 50%) 50%/10px 10px; border:1px solid #bdc9c2; }
+    .result-thumb i { width:31px; height:24px; display:grid; place-items:center; background:#b97524; border:1px solid #704117; }
+    .result-thumb i.actual-result { width:100%; height:100%; background-color:transparent; background-position:center; background-repeat:no-repeat; background-size:contain; border:0; }
+    .result-thumb svg { width:15px; }
+    .result-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; font-weight:700; }
+    .result-meta { margin-top:3px; color:#718078; font-size:9px; }
+    .result-item.selected { border-color:#d99a37; background:#fff8e9; }
+    .result-item.structure .result-thumb { color:#4f625a; background:#f2f5f3; }
+    .semantic-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .semantic-grid .path-field { min-height:48px; white-space:pre-line; }
+    .source-toggle { display:flex; align-items:center; gap:5px; color:var(--muted); font-size:10px; }
+    .source-toggle input { accent-color:var(--teal); }
+    .region[data-node-kind="composite"] { border-width:2px; border-style:dashed; background:rgba(16,139,131,.08); }
+    .region[data-node-kind="native"] { border-style:dotted; background:rgba(111,82,156,.06); }
+    .region[data-render-mode="ghost"] .component-crop { opacity:.18; }
+    .export-panel { display:flex; align-items:center; justify-content:center; gap:9px; padding:0 12px; }
+    .export-panel .primary { width:100%; justify-content:center; }
+    .toast { position:fixed; left:50%; bottom:20px; z-index:100; transform:translate(-50%,12px); padding:9px 14px; color:#fff; background:#26332e; border-radius:5px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.18s ease; font-size:12px; }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark"><i data-lucide="scissors"></i></span>控件提取工作台</div>
+      <div class="crumb"><span>RedCliff</span><i data-lucide="chevron-right" style="width:14px"></i><strong>特惠商店.png</strong></div>
+      <div class="top-actions"><button class="icon-button" id="importLayersButton" title="导入 Canva 图层包" aria-label="导入 Canva 图层包"><i data-lucide="folder-input"></i></button><input id="layerFolderInput" type="file" webkitdirectory multiple hidden><button class="icon-button" id="undoButton" title="撤销" aria-label="撤销"><i data-lucide="undo-2"></i></button><button class="icon-button" id="redoButton" title="重做" aria-label="重做"><i data-lucide="redo-2"></i></button><button class="primary" id="extractButton"><i data-lucide="wand-sparkles"></i>全部提取</button></div>
+    </header>
+    <main class="workspace">
+      <aside class="panel left">
+        <div class="panel-header">待提取控件 <span class="count" id="selectionCount">3 个选区</span></div>
+        <div class="source-row"><img class="source-thumb" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="UI 源图"><div class="source-info"><div class="source-name">UI source.png</div><div class="source-meta">1280 × 720</div></div></div>
+        <div class="filter-row"><input id="controlSearch" type="search" placeholder="搜索控件 ID"><select id="categoryFilter"><option value="all">全部类型</option><option value="panel">容器</option><option value="card">商品卡</option><option value="button">按钮</option><option value="icon">图标</option><option value="text">文本</option><option value="badge">角标</option></select></div>
+        <div class="tree-toolbar"><strong>UI Tree</strong><span>父级 → 子级</span><button id="expandAll" title="展开全部" aria-label="展开全部"><i data-lucide="list-tree"></i></button><button id="collapseAll" title="折叠全部" aria-label="折叠全部"><i data-lucide="rows-3"></i></button></div>
+        <div class="control-list" id="controlList"></div>
+        <button class="add-control" id="addControl"><i data-lucide="plus"></i>添加选区</button>
+      </aside>
+      <section class="panel stage">
+        <div class="canvas-tools"><div class="tool-group"><button class="tool-button active" id="selectTool" title="选择" aria-label="选择"><i data-lucide="mouse-pointer-2"></i></button><button class="tool-button" id="rectTool" title="矩形选区" aria-label="矩形选区"><i data-lucide="square-dashed-mouse-pointer"></i></button><button class="tool-button" id="lassoTool" title="手绘选区" aria-label="手绘选区"><i data-lucide="lasso-select"></i></button><button class="tool-button active" id="componentLayerButton" title="显示可移动组件图层" aria-label="显示可移动组件图层"><i data-lucide="layers-3"></i></button></div><div class="tool-group"><button class="tool-button" id="zoomIn" title="放大" aria-label="放大"><i data-lucide="zoom-in"></i></button><button class="tool-button" id="zoomOut" title="缩小" aria-label="缩小"><i data-lucide="zoom-out"></i></button><button class="tool-button" id="fitCanvas" title="适应画布" aria-label="适应画布"><i data-lucide="scan"></i></button><button class="tool-button" id="resetLayout" title="组件回到源图位置" aria-label="组件回到源图位置"><i data-lucide="rotate-ccw"></i></button><button class="tool-button" id="deleteTool" title="删除选区" aria-label="删除选区"><i data-lucide="trash-2"></i></button></div><label class="source-toggle"><input id="showSourceCrops" type="checkbox">显示 Source Crop</label><span class="zoom" id="zoomValue">82%</span></div>
+        <div class="viewport" id="viewport"><div class="layer-legend"><span>L0 背景</span><span>L10 主窗口</span><span>L20 容器</span><span>L30 卡片</span><span>L40 图标</span><span>L50 文本</span><span>L60 操作</span><span>L70 状态</span></div><div class="image-frame component-mode" id="imageFrame"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="UI 源图" id="sourceImage"><div id="regionLayer"></div></div><span class="empty-note">组件模式 · 拖动图像本体；拖父节点会带动全部子节点</span></div>
+      </section>
+      <aside class="panel inspector">
+        <div class="panel-header">控件属性 <span class="count" id="activeSelection">选区 01</span></div>
+        <div class="inspector-body">
+          <div class="field"><div class="field-label">控件 ID <span>必填</span></div><input class="text-field" id="controlId" value="button.purchase.compact"></div>
+          <div class="field"><div class="field-label">分类</div><select class="select-field" id="controlCategory"><option>background</option><option>panel</option><option>grid</option><option>row</option><option>card</option><option>button</option><option>icon</option><option>badge</option><option>slot</option><option>text</option></select></div>
+          <div class="field"><div class="field-label">状态</div><div class="segmented" id="stateControl"><button class="segment active" data-state="default">默认</button><button class="segment" data-state="disabled">禁用</button><button class="segment" data-state="selected">选中</button></div></div>
+          <div class="field"><div class="field-label">父级与层级</div><div class="coordinate-grid"><label style="grid-column:1/-1">P<input id="controlParent" readonly></label><label>L<input type="number" id="controlLayer" min="0" max="100" step="10"></label><label>S<input id="controlStatus" readonly></label></div></div>
+          <div class="field"><div class="field-label">完整层级路径</div><div class="path-field" id="hierarchyPath"></div></div>
+          <div class="field"><div class="field-label">位置与尺寸 <span>画布坐标</span></div><div class="coordinate-grid"><label>X<input type="number" id="rectX" min="0" max="1279"></label><label>Y<input type="number" id="rectY" min="0" max="719"></label><label>W<input type="number" id="rectW" min="8" max="1280"></label><label>H<input type="number" id="rectH" min="8" max="720"></label></div><div class="path-field" id="sourceRectInfo" style="margin-top:7px"></div></div>
+          <div class="field"><div class="field-label">资产视图</div><div class="visual-tabs"><button class="visual-tab active" id="viewSource" data-view="source">Source</button><button class="visual-tab" id="viewClean" data-view="clean">Clean</button><button class="visual-tab" id="viewAssembly" data-view="assembly">Assembly</button></div><div class="mask-preview" style="margin-top:7px"><div id="maskPreview"><i data-lucide="shopping-bag"></i></div></div></div>
+          <div class="field"><div class="field-label">组件语义</div><div class="semantic-grid"><div class="path-field" id="nodeKindInfo"></div><div class="path-field" id="renderModeInfo"></div><div class="path-field" id="childrenInfo"></div><div class="path-field" id="assetStatusInfo"></div></div></div>
+          <div class="field"><div class="field-label">透明边距</div><div class="stepper"><button id="paddingMinus" title="减少边距"><i data-lucide="minus"></i></button><span id="paddingValue">4 px</span><button id="paddingPlus" title="增加边距"><i data-lucide="plus"></i></button></div></div>
+          <div class="warning"><i data-lucide="triangle-alert"></i><span>蒙版边缘需复核</span></div>
+          <div class="inspector-actions"><button class="secondary-action" id="cleanParentButton"><i data-lucide="wand-sparkles"></i>净化母版</button><button class="secondary-action" id="duplicateButton"><i data-lucide="copy"></i>复制选区</button><button class="danger-action" id="deleteButton"><i data-lucide="trash-2"></i>删除选区</button></div>
+        </div>
+      </aside>
+    </main>
+    <footer class="results">
+      <section class="panel summary"><strong id="summaryCount">3</strong><span>已标记控件</span></section>
+      <section class="panel result-panel"><div class="result-head"><div class="result-tabs"><button class="result-tab active" id="assetTab" data-tab="assets">Assets</button><button class="result-tab" id="structureTab" data-tab="structure">Structure</button></div><span id="resultCount">preview-sheet</span></div><div class="result-filters" id="resultFilters"><button class="result-filter active" data-filter="all">全部</button><button class="result-filter" data-filter="skin">Skin</button><button class="result-filter" data-filter="artwork">Artwork</button><button class="result-filter" data-filter="composite">Composite</button><button class="result-filter" data-filter="native">Native</button><button class="result-filter" data-filter="needs_cleanup">Needs Cleanup</button><button class="result-filter" data-filter="ready">Ready</button></div><div class="result-list" id="resultList"></div></section>
+      <section class="panel export-panel"><button class="primary" id="exportButton"><i data-lucide="folder-output"></i>导出 PNG + JSON</button></section>
+    </footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    let SOURCE = { width: 1280, height: 720 };
+    let SOURCE_NAME = 'UI source.png';
+    let EXPORT_SLUG = 'ui-workbench';
+    const exportSlug = value => String(value || 'ui-workbench').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'ui-workbench';
+    const handles = ['nw','n','ne','e','se','s','sw','w'];
+    const categoryNames = { background:'背景', panel:'面板', grid:'网格', row:'行容器', card:'商品卡', button:'按钮', icon:'图标', artwork:'美术', badge:'角标', slot:'槽位', text:'文本', counter:'动态数值', tabs:'页签组' };
+    const stateNames = { default:'默认', disabled:'禁用', selected:'选中' };
+    const makeControl = (uid, id, category, rect, parent, layer, options = {}) => ({
+      uid, id, category, rect:{ ...rect }, sourceRect:{ ...rect }, parent, layer, state:'default', padding:2,
+      icon:options.icon || ({ background:'image', panel:'panels-top-left', grid:'grid-3x3', row:'rows-3', card:'layout-template', button:'rectangle-horizontal', icon:'image', badge:'badge-percent', text:'text-cursor-input' }[category] || 'box-select'),
+      tone:options.tone || '', ready:false, status:options.status || 'pending_review',
+      confidence:options.confidence ?? 0.96, reason:options.reason || null, reuse:options.reuse || null,
+      nodeKind:options.nodeKind || null, renderMode:options.renderMode || null,
+      visualAssets:options.visualAssets || { source_crop:'__source__', clean_asset:null, assembly_preview:null },
+      sourceCropUrl:options.sourceCropUrl || null, cleanAssetUrl:options.cleanAssetUrl || null, assemblyAssetUrl:options.assemblyAssetUrl || null,
+      cleanupStatus:options.cleanupStatus || null, reusableBitmap:Boolean(options.reusableBitmap),
+      ...(options.state ? { state:options.state } : {})
+    });
+    const productColumns = [174, 364, 553, 743, 933];
+    const productData = [
+      { n:1, row:0, col:0, icon:'castle', discount:'8-off', quantity:true, oldPrice:true, price:'110' },
+      { n:2, row:0, col:1, icon:'circle-dot-dashed', discount:'6-off', quantity:true, oldPrice:true, price:'100' },
+      { n:3, row:0, col:2, icon:'shield', discount:'5-off', quantity:true, oldPrice:true, price:'110' },
+      { n:4, row:0, col:3, icon:'user-round', discount:'4-off', quantity:true, oldPrice:true, price:'120' },
+      { n:5, row:0, col:4, icon:'trees', discount:'8-off', quantity:true, oldPrice:true, price:'80' },
+      { n:6, row:1, col:0, icon:'gem', quantity:true, price:'85' },
+      { n:7, row:1, col:1, icon:'puzzle', quantity:true, price:'100' },
+      { n:8, row:1, col:2, icon:'shirt', quantity:true, price:'90' },
+      { n:9, row:1, col:3, icon:'wheat', quantity:true, price:'110' },
+      { n:10, row:1, col:4, icon:'package', quantity:false, disabled:true }
+    ];
+    const baseControls = [
+      makeControl('scene','background.shop.scene','background',{x:0,y:0,w:1280,h:720},'root',0,{confidence:1}),
+      makeControl('window','panel.shop.window','panel',{x:143,y:89,w:994,h:539},'background.shop.scene',10),
+      makeControl('header','bar.shop.header','panel',{x:143,y:89,w:994,h:74},'panel.shop.window',20,{icon:'panel-top'}),
+      makeControl('title','text.shop.title','text',{x:562,y:112,w:157,h:31},'bar.shop.header',50),
+      makeControl('close','button.close.default','button',{x:1080,y:104,w:42,h:45},'bar.shop.header',60,{icon:'x',reuse:'button.close.default'}),
+      makeControl('content','panel.shop.content','panel',{x:143,y:163,w:994,h:465},'panel.shop.window',20),
+      makeControl('promo-bar','bar.promo.limited','panel',{x:143,y:163,w:994,h:55},'panel.shop.content',30,{icon:'panel-top'}),
+      makeControl('refresh-button','button.refresh.gold','button',{x:169,y:177,w:81,h:30},'bar.promo.limited',60,{icon:'refresh-cw'}),
+      makeControl('refresh-label','text.refresh.count.label','text',{x:262,y:181,w:62,h:18},'bar.promo.limited',50),
+      makeControl('refresh-value','text.refresh.count.value','text',{x:328,y:181,w:32,h:18},'bar.promo.limited',50),
+      makeControl('balance-icon','icon.currency.balance','icon',{x:266,y:201,w:14,h:14},'bar.promo.limited',40,{icon:'coins'}),
+      makeControl('balance-value','text.currency.balance','text',{x:286,y:199,w:39,h:18},'bar.promo.limited',50),
+      makeControl('balance-name','text.currency.name','text',{x:329,y:200,w:32,h:16},'bar.promo.limited',50),
+      makeControl('promo-text','text.promo.limited','text',{x:397,y:183,w:64,h:18},'bar.promo.limited',50),
+      makeControl('promo-subtitle','text.promo.subtitle','text',{x:397,y:202,w:87,h:14},'bar.promo.limited',50),
+      makeControl('timer-icon','icon.refresh.timer','icon',{x:1004,y:183,w:16,h:17},'bar.promo.limited',40,{icon:'clock-3'}),
+      makeControl('timer-text','text.refresh.timer','text',{x:1024,y:182,w:89,h:20},'bar.promo.limited',50),
+      makeControl('product-grid','grid.product.limited','grid',{x:165,y:225,w:953,h:389},'panel.shop.content',20),
+      makeControl('product-row-top','row.product.top','row',{x:165,y:228,w:953,h:190},'grid.product.limited',20),
+      makeControl('product-row-bottom','row.product.bottom','row',{x:165,y:421,w:953,h:191},'grid.product.limited',20),
+      makeControl('footer-signature','text.footer.signature','text',{x:1027,y:609,w:96,h:10},'panel.shop.content',50,{status:'candidate',confidence:.62,reason:'small decorative text is partially unreadable'})
+    ];
+    const productControls = productData.flatMap(product => {
+      const x = productColumns[product.col];
+      const y = product.row === 0 ? 233 : 427;
+      const buttonY = y + 146;
+      const parentRow = product.row === 0 ? 'row.product.top' : 'row.product.bottom';
+      const index = String(product.n).padStart(2,'0');
+      const cardId = `card.product.offer.${index}`;
+      const buttonId = product.disabled ? `button.availability.disabled.${index}` : `button.primary.gold.${index}`;
+      const controls = [
+        makeControl(`card-${index}`,cardId,'card',{x,y,w:176,h:181},parentRow,30),
+        makeControl(`stock-${index}`,`text.product.stock.${index}`,'text',{x:x+7,y:y+9,w:58,h:14},cardId,50),
+        makeControl(`icon-${index}`,`icon.product.${index}`,'icon',{x:x+52,y:y+17,w:70,h:70},cardId,40,{icon:product.icon}),
+        makeControl(`name-${index}`,`text.product.name.${index}`,'text',{x:x+20,y:y+92,w:136,h:20},cardId,50),
+        makeControl(`button-${index}`,buttonId,'button',{x:x+5,y:buttonY,w:165,h:29},cardId,60,{state:product.disabled?'disabled':'default',reuse:product.disabled?null:'button.primary.gold',icon:product.disabled?'lock':'coins'})
+      ];
+      if (product.quantity) controls.push(makeControl(`quantity-${index}`,`text.product.quantity.${index}`,'text',{x:x+98,y:y+62,w:45,h:16},`icon.product.${index}`,50));
+      if (product.discount) controls.push(makeControl(`discount-${index}`,`badge.discount.${product.discount}.${index}`,'badge',{x:x+137,y:y-3,w:41,h:21},cardId,70));
+      if (product.oldPrice) controls.push(makeControl(`old-price-${index}`,`text.product.original-price.${index}`,'text',{x:x+58,y:y+112,w:60,h:13},cardId,50,{status:'candidate',confidence:.75,reason:'small strikethrough value requires OCR review'}));
+      if (!product.disabled) {
+        controls.push(makeControl(`currency-${index}`,`icon.currency.${index}`,'icon',{x:x+61,y:buttonY+8,w:17,h:13},buttonId,70,{icon:'coins'}));
+        controls.push(makeControl(`price-${index}`,`text.product.price.${index}`,'text',{x:x+83,y:buttonY+5,w:40,h:19},buttonId,70));
+      }
+      return controls;
+    });
+    const initialItems = [...baseControls, ...productControls];
+
+    let items = structuredClone(initialItems);
+    let selectedUid = items[0].uid;
+    let mode = 'select';
+    let zoom = 82;
+    let history = [];
+    let future = [];
+    let interaction = null;
+    let editStartSnapshot = null;
+    let toastTimer = null;
+    let searchTerm = '';
+    let categoryFilter = 'all';
+    let resultTab = 'assets';
+    let resultFilter = 'all';
+    let selectedVisualMode = 'source';
+    let sourceCropsVisible = false;
+    let collapsed = new Set(initialItems.filter(item => item.category === 'card').map(item => item.id));
+    let componentLayersVisible = true;
+    const componentCache = new Map();
+    const sourceCropCache = new Map();
+
+    const $ = selector => document.querySelector(selector);
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const snapshot = () => JSON.stringify({ items, selectedUid });
+    const selectedItem = () => items.find(item => item.uid === selectedUid) || items[0];
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+
+    function semanticDefaults(item, hasChildren) {
+      const nativeCategories = new Set(['text','label','value','price','counter','progress','timer','input','hit_target']);
+      const artworkCategories = new Set(['artwork','icon','portrait','hero','equipment','gem','illustration','decoration']);
+      const structureCategories = new Set(['grid','row','tabs','group','container','layout','composite']);
+      let nodeKind = item.nodeKind;
+      if (!['composite','skin','artwork','native'].includes(nodeKind)) {
+        if (nativeCategories.has(item.category)) nodeKind = 'native';
+        else if (artworkCategories.has(item.category)) nodeKind = 'artwork';
+        else if (hasChildren || structureCategories.has(item.category)) nodeKind = 'composite';
+        else nodeKind = 'skin';
+      }
+      item.nodeKind = nodeKind;
+      item.renderMode = ['bitmap','outline','ghost','assembly','hidden'].includes(item.renderMode)
+        ? item.renderMode : ({ composite:'outline', skin:'bitmap', artwork:'bitmap', native:'outline' }[nodeKind]);
+      item.visualAssets ||= { source_crop:'__source__', clean_asset:null, assembly_preview:null };
+      if (!('source_crop' in item.visualAssets)) item.visualAssets.source_crop = '__source__';
+      if (!('clean_asset' in item.visualAssets)) item.visualAssets.clean_asset = null;
+      if (!('assembly_preview' in item.visualAssets)) item.visualAssets.assembly_preview = null;
+      item.cleanupStatus = ['composite','native'].includes(nodeKind) ? 'not_applicable'
+        : (item.cleanAssetUrl || item.visualAssets.clean_asset ? 'clean' : (item.cleanupStatus || 'needs_cleanup'));
+      item.reusableBitmap = ['skin','artwork'].includes(nodeKind) && item.cleanupStatus === 'clean' && Boolean(item.cleanAssetUrl || item.visualAssets.clean_asset);
+      item.ready = item.reusableBitmap;
+      return item;
+    }
+
+    function hydrateSemantics() {
+      const parents = new Set(items.map(item => item.parent));
+      items.forEach(item => semanticDefaults(item, parents.has(item.id)));
+    }
+
+    function defaultAssetItems(sourceItems = items) {
+      return sourceItems.filter(item => item.nodeKind === 'skin' || item.nodeKind === 'artwork');
+    }
+
+    function restore(serialized) {
+      const state = JSON.parse(serialized);
+      items = state.items;
+      selectedUid = state.selectedUid;
+      buildComponentCrops();
+      render();
+    }
+
+    function pushHistory(before = snapshot()) {
+      history.push(before);
+      if (history.length > 60) history.shift();
+      future = [];
+      updateHistoryButtons();
+    }
+
+    function undo() {
+      if (!history.length) return;
+      future.push(snapshot());
+      restore(history.pop());
+      updateHistoryButtons();
+    }
+
+    function redo() {
+      if (!future.length) return;
+      history.push(snapshot());
+      restore(future.pop());
+      updateHistoryButtons();
+    }
+
+    function updateHistoryButtons() {
+      $('#undoButton').disabled = !history.length;
+      $('#redoButton').disabled = !future.length;
+    }
+
+    function showToast(message) {
+      const toast = $('#toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function createUid() {
+      return `region-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    }
+
+    function createItem(rect, category = 'button') {
+      const index = items.length + 1;
+      return {
+        uid:createUid(), id:`${category}.candidate.${String(index).padStart(2,'0')}`, category,
+        state:'default', padding:4, icon:category === 'icon' ? 'image' : 'box-select',
+        tone:'', ready:false, status:'pending_review', confidence:.8,
+        reason:'manual selection requires developer review', parent:'grid.product.limited', layer:60,
+        rect:{ ...rect }, sourceRect:{ ...rect }
+      };
+    }
+
+    function removeFlatBackground(context, width, height) {
+      const pixels = context.getImageData(0, 0, width, height);
+      const data = pixels.data;
+      const border = [];
+      const addSample = (x, y) => {
+        const offset = (y * width + x) * 4;
+        if (data[offset + 3] > 0) border.push([data[offset], data[offset + 1], data[offset + 2]]);
+      };
+      for (let x = 0; x < width; x++) { addSample(x, 0); addSample(x, height - 1); }
+      for (let y = 1; y < height - 1; y++) { addSample(0, y); addSample(width - 1, y); }
+      if (!border.length) return;
+      const bins = new Map();
+      border.forEach(color => {
+        const key = `${color[0] >> 4},${color[1] >> 4},${color[2] >> 4}`;
+        if (!bins.has(key)) bins.set(key, []);
+        bins.get(key).push(color);
+      });
+      const dominant = [...bins.values()].sort((a, b) => b.length - a.length)[0];
+      const background = [0, 1, 2].map(channel => dominant.reduce((sum, color) => sum + color[channel], 0) / dominant.length);
+      const borderDistances = dominant.map(color => Math.hypot(color[0] - background[0], color[1] - background[1], color[2] - background[2])).sort((a, b) => a - b);
+      const spread = Math.max(7, borderDistances[Math.floor(borderDistances.length / 2)] * 2.5 + 4);
+      for (let offset = 0; offset < data.length; offset += 4) {
+        if (!data[offset + 3]) continue;
+        const distance = Math.hypot(data[offset] - background[0], data[offset + 1] - background[1], data[offset + 2] - background[2]);
+        const mask = clamp((distance - spread * .7) / (spread * 1.8), 0, 1);
+        data[offset + 3] = Math.round(data[offset + 3] * mask);
+      }
+      context.putImageData(pixels, 0, 0);
+    }
+
+    function buildComponentCrops() {
+      const image = $('#sourceImage');
+      hydrateSemantics();
+      componentCache.clear();
+      sourceCropCache.clear();
+      items.forEach(item => {
+        if (item.cleanAssetUrl && item.reusableBitmap) componentCache.set(item.uid, item.cleanAssetUrl);
+        if (item.sourceCropUrl) sourceCropCache.set(item.uid, item.sourceCropUrl);
+      });
+      if (!image.complete || !image.naturalWidth) return;
+      items.forEach(item => {
+        if (sourceCropCache.has(item.uid)) return;
+        const source = item.sourceRect || item.rect;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(source.w));
+        canvas.height = Math.max(1, Math.round(source.h));
+        const context = canvas.getContext('2d');
+        context.drawImage(image, source.x, source.y, source.w, source.h, 0, 0, canvas.width, canvas.height);
+        sourceCropCache.set(item.uid, canvas.toDataURL('image/png'));
+      });
+    }
+
+    function firstValue(source, keys, fallback = null) {
+      for (const key of keys) if (source && source[key] !== undefined && source[key] !== null) return source[key];
+      return fallback;
+    }
+
+    function importedBounds(element) {
+      const value = firstValue(element, ['bounds','layout_rect','layoutRect','source_rect','sourceRect','rect','frame'], element) || {};
+      return {
+        x:Number(firstValue(value, ['x','left'], 0)),
+        y:Number(firstValue(value, ['y','top'], 0)),
+        w:Number(firstValue(value, ['width','w'], firstValue(element, ['width','w'], 0))),
+        h:Number(firstValue(value, ['height','h'], firstValue(element, ['height','h'], 0)))
+      };
+    }
+
+    function findImportedFile(files, fileName) {
+      if (!fileName) return null;
+      const normalized = String(fileName).replace(/\\/g, '/');
+      return files.find(file => (file.webkitRelativePath || file.name).replace(/\\/g, '/').endsWith(normalized) || file.name === normalized.split('/').pop()) || null;
+    }
+
+    async function importLayerFolder(fileList) {
+      const files = [...fileList];
+      const manifestFile = files.find(file => /(^|\/)(layer-manifest|manifest|export|metadata)\.json$/i.test(file.webkitRelativePath || file.name)) || files.find(file => file.name.endsWith('.json'));
+      if (!manifestFile) { showToast('未找到图层 JSON'); return; }
+      let manifest;
+      try { manifest = JSON.parse(await manifestFile.text()); }
+      catch (error) { showToast('图层 JSON 解析失败'); return; }
+      const rawElements = firstValue(manifest, ['components','elements','layers','items'], []);
+      if (!Array.isArray(rawElements) || !rawElements.length) { showToast('JSON 中没有图层节点'); return; }
+      const size = firstValue(manifest.source || {}, ['page_size','pageSize'], firstValue(manifest, ['page_size','pageSize','source_size','canvas','page'], {})) || {};
+      const width = Number(firstValue(size, ['width','w'], 0));
+      const height = Number(firstValue(size, ['height','h'], 0));
+      if (!width || !height) { showToast('图层包缺少页面尺寸'); return; }
+
+      const idMap = new Map();
+      rawElements.forEach((element, index) => {
+        const elementId = String(firstValue(element, ['element_id','elementId','id','uuid'], `element-${index + 1}`));
+        const componentId = String(firstValue(element, ['component_id','componentId','control_id','controlId','name'], `layer.item.${String(index + 1).padStart(3,'0')}`));
+        idMap.set(elementId, componentId);
+        idMap.set(componentId, componentId);
+      });
+      const imported = rawElements.map((element, index) => {
+        const rect = importedBounds(element);
+        const elementId = String(firstValue(element, ['element_id','elementId','id','uuid'], `element-${index + 1}`));
+        const id = idMap.get(elementId);
+        const parentRaw = firstValue(element, ['parent_id','parentId','group_id','groupId','parent'], 'root');
+        const visualAssets = element.visual_assets || element.visualAssets || {};
+        const cleanName = visualAssets.clean_asset || firstValue(element, ['file','fileName','filename','asset','image']);
+        const cleanFile = typeof cleanName === 'string' ? findImportedFile(files, cleanName) : null;
+        return makeControl(`import-${index + 1}`, id, String(element.category || element.type || 'unknown').toLowerCase(), rect, idMap.get(String(parentRaw)) || 'root', Number(firstValue(element, ['layer','semantic_layer','semanticLayer'], 30)), {
+          status:element.status === 'candidate' || (['skin','artwork'].includes(element.node_kind) && !cleanFile) ? 'candidate' : 'pending_review',
+          confidence:cleanFile || ['composite','native'].includes(element.node_kind) ? .98 : .5,
+          reason:cleanFile || ['composite','native'].includes(element.node_kind) ? element.reason || null : 'clean asset PNG missing from selected directory',
+          nodeKind:element.node_kind || element.nodeKind,
+          renderMode:element.render_mode || element.renderMode,
+          visualAssets,
+          cleanupStatus:(element.review || {}).cleanup_status,
+          reusableBitmap:Boolean(element.reusable_bitmap)
+        });
+      });
+      rawElements.forEach((element, index) => {
+        const visualAssets = element.visual_assets || element.visualAssets || {};
+        const sourceFile = typeof visualAssets.source_crop === 'string' ? findImportedFile(files, visualAssets.source_crop) : null;
+        const cleanName = visualAssets.clean_asset || firstValue(element, ['file','fileName','filename','asset','image']);
+        const cleanFile = typeof cleanName === 'string' ? findImportedFile(files, cleanName) : null;
+        const assemblyFile = typeof visualAssets.assembly_preview === 'string' ? findImportedFile(files, visualAssets.assembly_preview) : null;
+        if (sourceFile) imported[index].sourceCropUrl = URL.createObjectURL(sourceFile);
+        if (cleanFile) imported[index].cleanAssetUrl = URL.createObjectURL(cleanFile);
+        if (assemblyFile) imported[index].assemblyAssetUrl = URL.createObjectURL(assemblyFile);
+      });
+
+      pushHistory();
+      items = imported.filter(item => item.rect.w > 0 && item.rect.h > 0);
+      SOURCE = { width, height };
+      SOURCE_NAME = String(firstValue(manifest, ['source_name', 'title', 'name'], 'UI source.png'));
+      EXPORT_SLUG = exportSlug(SOURCE_NAME);
+      $('#imageFrame').style.aspectRatio = `${width}/${height}`;
+       const rootAsset = items.find(item => item.parent === 'root' && item.sourceCropUrl) || items.find(item => item.sourceCropUrl);
+       if (rootAsset) $('#sourceImage').src = rootAsset.sourceCropUrl;
+      selectedUid = items[0]?.uid || null;
+      componentLayersVisible = true;
+      buildComponentCrops();
+      render();
+      showToast(`已导入 ${items.length} 个独立图层`);
+    }
+
+    async function loadWorkbenchSession() {
+      let response;
+      try { response = await fetch('session.json', { cache:'no-store' }); }
+      catch (error) { return false; }
+      if (!response.ok) return false;
+      let session;
+      try { session = await response.json(); }
+      catch (error) { showToast('session.json 解析失败'); return false; }
+      const rawElements = firstValue(session, ['controls','components','elements','layers','items'], []);
+      const size = firstValue(session, ['source_size','page_size','pageSize'], {}) || {};
+      const width = Number(firstValue(size, ['width','w'], 0));
+      const height = Number(firstValue(size, ['height','h'], 0));
+      if (!Array.isArray(rawElements) || !rawElements.length || !width || !height) {
+        showToast('工作台会话缺少控件或页面尺寸');
+        return false;
+      }
+      const idMap = new Map();
+      rawElements.forEach((element, index) => {
+        const elementId = String(firstValue(element, ['element_id','elementId','id','uuid'], `element-${index + 1}`));
+        const componentId = String(firstValue(element, ['component_id','componentId','control_id','controlId','name'], `layer.item.${String(index + 1).padStart(3,'0')}`));
+        idMap.set(elementId, componentId);
+        idMap.set(componentId, componentId);
+      });
+      items = rawElements.map((element, index) => {
+        const rect = importedBounds(element);
+        const elementId = String(firstValue(element, ['element_id','elementId','id','uuid'], `element-${index + 1}`));
+        const id = idMap.get(elementId);
+        const parentRaw = firstValue(element, ['parent_id','parentId','group_id','groupId','parent'], 'root');
+        const item = makeControl(`session-${index + 1}`, id, String(element.category || element.type || 'unknown').toLowerCase(), rect, idMap.get(String(parentRaw)) || 'root', Number(firstValue(element, ['layer','semantic_layer','semanticLayer'], 30)), {
+          status:element.status === 'candidate' ? 'candidate' : 'pending_review',
+          confidence:Number(element.confidence ?? .96),
+          reason:element.reason || null,
+          state:element.state || 'default',
+          nodeKind:element.node_kind || element.nodeKind,
+          renderMode:element.render_mode || element.renderMode,
+          visualAssets:element.visual_assets || element.visualAssets,
+          cleanupStatus:(element.review || {}).cleanup_status,
+          reusableBitmap:Boolean(element.reusable_bitmap)
+        });
+        const visualAssets = element.visual_assets || element.visualAssets || {};
+        if (typeof visualAssets.source_crop === 'string' && visualAssets.source_crop !== '__source__') item.sourceCropUrl = visualAssets.source_crop;
+        if (typeof visualAssets.clean_asset === 'string') item.cleanAssetUrl = visualAssets.clean_asset;
+        if (typeof visualAssets.assembly_preview === 'string') item.assemblyAssetUrl = visualAssets.assembly_preview;
+        if (!item.cleanAssetUrl && typeof element.file === 'string' && ['skin','artwork'].includes(item.nodeKind)) item.cleanAssetUrl = element.file;
+        return item;
+      }).filter(item => item.rect.w > 0 && item.rect.h > 0);
+      SOURCE = { width, height };
+      SOURCE_NAME = session.source_name || 'UI source.png';
+      EXPORT_SLUG = exportSlug(session.title || SOURCE_NAME);
+      const sourceUrl = session.source_image || 'source.png';
+      $('#sourceImage').src = sourceUrl;
+      $('.source-thumb').src = sourceUrl;
+      $('.source-name').textContent = session.source_name || 'UI source.png';
+      $('.crumb strong').textContent = session.source_name || 'UI source.png';
+      $('.source-meta').textContent = `${width} × ${height}`;
+      $('#imageFrame').style.aspectRatio = `${width}/${height}`;
+      selectedUid = items[0]?.uid || null;
+      history = [];
+      future = [];
+      componentLayersVisible = true;
+      buildComponentCrops();
+      render();
+      return true;
+    }
+
+    function render() {
+      if (!items.some(item => item.uid === selectedUid)) selectedUid = items[0]?.uid || null;
+      $('#imageFrame').classList.toggle('component-mode', componentLayersVisible);
+      $('#componentLayerButton').classList.toggle('active', componentLayersVisible);
+      $('#showSourceCrops').checked = sourceCropsVisible;
+      renderList();
+      renderRegions();
+      renderInspector();
+      renderResults();
+      updateHistoryButtons();
+      updateZoom();
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function hierarchyPathFor(item) {
+      if (!item) return [];
+      const byId = new Map(items.map(entry => [entry.id, entry]));
+      const path = [item.id];
+      let parent = item.parent;
+      const visited = new Set(path);
+      while (parent && parent !== 'root' && byId.has(parent) && !visited.has(parent)) {
+        path.unshift(parent);
+        visited.add(parent);
+        parent = byId.get(parent).parent;
+      }
+      path.unshift('root');
+      return path;
+    }
+
+    function expandAncestors(item) {
+      hierarchyPathFor(item).forEach(id => collapsed.delete(id));
+    }
+
+    function renderList() {
+      $('#selectionCount').textContent = `${items.length} 个选区`;
+      $('#summaryCount').textContent = items.length;
+      const childrenByParent = new Map();
+      items.forEach(item => {
+        if (!childrenByParent.has(item.parent)) childrenByParent.set(item.parent, []);
+        childrenByParent.get(item.parent).push(item);
+      });
+      const directMatches = items.filter(item => {
+        const matchesSearch = !searchTerm || item.id.toLowerCase().includes(searchTerm);
+        const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
+        return matchesSearch && matchesCategory;
+      });
+      const filtering = Boolean(searchTerm) || categoryFilter !== 'all';
+      const includedIds = new Set();
+      directMatches.forEach(item => hierarchyPathFor(item).forEach(id => includedIds.add(id)));
+      const rows = [];
+      function visit(parentId, depth) {
+        (childrenByParent.get(parentId) || []).forEach(item => {
+          if (filtering && !includedIds.has(item.id)) return;
+          const children = childrenByParent.get(item.id) || [];
+          const isCollapsed = collapsed.has(item.id) && !filtering;
+          rows.push({ item, depth, children, isCollapsed });
+          if (!isCollapsed) visit(item.id, depth + 1);
+        });
+      }
+      visit('root', 0);
+      $('#controlList').innerHTML = rows.map(({ item, depth, children, isCollapsed }) => `
+        <div class="control-row ${item.uid === selectedUid ? 'selected' : ''}" data-id="${escapeHtml(item.uid)}" style="--depth:${Math.min(depth,8)}">
+          <button class="tree-expander ${children.length ? '' : 'placeholder'}" data-toggle="${escapeHtml(item.id)}" aria-label="${isCollapsed ? '展开' : '折叠'}"><i data-lucide="${isCollapsed ? 'chevron-right' : 'chevron-down'}"></i></button>
+          <span class="layer-chip">L${item.layer}</span>
+          <span class="mini ${item.tone}"><i data-lucide="${item.icon}"></i></span>
+          <div class="control-main"><div class="control-id">${escapeHtml(item.id)}</div><div class="control-kind">${categoryNames[item.category]} · ${item.status === 'candidate' ? '候选' : stateNames[item.state]} ${children.length ? `· ${children.length} 子项` : ''}</div></div>
+          <span class="status-dot ${item.ready ? 'ready' : ''}"></span>
+        </div>`).join('') || '<div style="padding:18px 10px;color:var(--muted);font-size:11px;text-align:center">没有匹配的控件</div>';
+      $('#controlList').querySelectorAll('[data-toggle]').forEach(button => button.addEventListener('click', event => {
+        event.stopPropagation();
+        const id = button.dataset.toggle;
+        collapsed.has(id) ? collapsed.delete(id) : collapsed.add(id);
+        renderList();
+        if (window.lucide) window.lucide.createIcons();
+      }));
+      $('#controlList').querySelectorAll('.control-row').forEach(row => row.addEventListener('click', () => {
+        selectedUid = row.dataset.id;
+        expandAncestors(selectedItem());
+        setMode('select');
+        render();
+      }));
+    }
+
+    function renderRegions() {
+      const orderedItems = [...items].sort((a, b) => a.layer - b.layer || items.indexOf(a) - items.indexOf(b));
+      $('#regionLayer').innerHTML = orderedItems.filter(item => item.renderMode !== 'hidden').map(item => {
+        const rect = item.rect;
+        const selected = item.uid === selectedUid;
+        const cleanCrop = componentCache.get(item.uid);
+        const sourceCrop = sourceCropCache.get(item.uid);
+        const crop = sourceCropsVisible ? sourceCrop : (['skin','artwork'].includes(item.nodeKind) && item.renderMode !== 'outline' ? cleanCrop : null);
+        return `<div class="region ${selected ? 'selected' : ''}" data-id="${escapeHtml(item.uid)}" data-category="${item.category}" data-layer="${item.layer}" data-node-kind="${item.nodeKind}" data-render-mode="${item.renderMode}" style="z-index:${selected ? item.layer + 5 : item.layer};left:${rect.x / SOURCE.width * 100}%;top:${rect.y / SOURCE.height * 100}%;width:${rect.w / SOURCE.width * 100}%;height:${rect.h / SOURCE.height * 100}%">
+          ${crop ? `<span class="component-crop" style="background-image:url('${crop}')"></span>` : ''}
+          <span class="label">${item.nodeKind} · L${item.layer} · ${escapeHtml(item.id)}</span>
+          ${handles.map(dir => `<span class="resize-handle" data-dir="${dir}"></span>`).join('')}
+        </div>`;
+      }).join('');
+      $('#regionLayer').querySelectorAll('.region').forEach(region => region.addEventListener('pointerdown', startRegionInteraction));
+    }
+
+    function renderInspector() {
+      const item = selectedItem();
+      const disabled = !item;
+      $('#activeSelection').textContent = item ? `选区 ${String(items.indexOf(item) + 1).padStart(2,'0')}` : '未选择';
+      ['controlId','controlCategory','controlLayer','rectX','rectY','rectW','rectH','paddingMinus','paddingPlus','duplicateButton','deleteButton','extractButton','deleteTool','cleanParentButton'].forEach(id => $(`#${id}`).disabled = disabled);
+      if (!item) { $('#hierarchyPath').textContent = ''; $('#sourceRectInfo').textContent = ''; return; }
+      $('#controlId').value = item.id;
+      $('#controlCategory').value = item.category;
+      $('#controlParent').value = item.parent || 'root';
+      $('#controlLayer').value = item.layer;
+      $('#controlStatus').value = item.status;
+      $('#hierarchyPath').textContent = hierarchyPathFor(item).join('  ›  ');
+      $('#paddingValue').textContent = `${item.padding} px`;
+      $('#rectX').value = Math.round(item.rect.x);
+      $('#rectY').value = Math.round(item.rect.y);
+      $('#rectW').value = Math.round(item.rect.w);
+      $('#rectH').value = Math.round(item.rect.h);
+      const source = item.sourceRect || item.rect;
+      $('#sourceRectInfo').textContent = `源图裁剪：X ${Math.round(source.x)} · Y ${Math.round(source.y)} · W ${Math.round(source.w)} · H ${Math.round(source.h)}`;
+      $('#stateControl').querySelectorAll('.segment').forEach(button => button.classList.toggle('active', button.dataset.state === item.state));
+      const children = items.filter(entry => entry.parent === item.id);
+      $('#nodeKindInfo').textContent = `Node Kind\n${item.nodeKind}`;
+      $('#renderModeInfo').textContent = `Render Mode\n${item.renderMode}`;
+      $('#childrenInfo').textContent = `Children\n${children.length}`;
+      $('#assetStatusInfo').textContent = `Reusable Bitmap\n${item.reusableBitmap ? 'Yes' : 'No'} · ${item.cleanupStatus}`;
+      const cleanTarget = item.nodeKind === 'composite' ? children.find(child => child.id === `${item.id}.background`) : item;
+      $('#cleanParentButton').disabled = !cleanTarget || cleanTarget.nodeKind !== 'skin' || cleanTarget.cleanupStatus === 'clean';
+      const visualImage = selectedVisualMode === 'source' ? sourceCropCache.get(item.uid)
+        : selectedVisualMode === 'clean' ? componentCache.get(item.uid) : item.assemblyAssetUrl;
+      const missingMessage = selectedVisualMode === 'clean' ? 'Clean asset not generated'
+        : selectedVisualMode === 'assembly' ? 'Assembly preview not generated' : 'Source crop not available';
+      $('#maskPreview').className = visualImage ? 'actual-crop' : 'preview-message';
+      $('#maskPreview').style.backgroundImage = visualImage ? `url('${visualImage}')` : '';
+      $('#maskPreview').textContent = visualImage ? '' : missingMessage;
+      document.querySelectorAll('.visual-tab').forEach(button => button.classList.toggle('active', button.dataset.view === selectedVisualMode));
+    }
+
+    function renderResults() {
+      const base = resultTab === 'assets' ? defaultAssetItems() : items.filter(item => ['composite','native'].includes(item.nodeKind));
+      const visible = base.filter(item => resultFilter === 'all' || item.nodeKind === resultFilter
+        || (resultFilter === 'needs_cleanup' && item.cleanupStatus === 'needs_cleanup')
+        || (resultFilter === 'ready' && item.reusableBitmap));
+      $('#resultCount').textContent = `${visible.length} / ${base.length}`;
+      $('#resultList').innerHTML = visible.map(item => {
+        const componentImage = componentCache.get(item.uid);
+        const preview = componentImage ? `<i class="actual-result" style="background-image:url('${componentImage}')"></i>` : `<i><i data-lucide="${item.nodeKind === 'composite' ? 'brackets' : item.icon}"></i></i>`;
+        const children = items.filter(entry => entry.parent === item.id).length;
+        const meta = resultTab === 'structure' ? `${item.nodeKind} · ${children} children` : `${item.nodeKind} · ${item.reusableBitmap ? 'Ready' : 'Needs Cleanup'}`;
+        return `<div class="result-item ${resultTab === 'structure' ? 'structure' : ''} ${item.uid === selectedUid ? 'selected' : ''}" data-result-id="${escapeHtml(item.uid)}"><span class="result-thumb">${preview}</span><div><div class="result-name">${escapeHtml(item.id)}</div><div class="result-meta">${meta}</div></div></div>`;
+      }).join('');
+      document.querySelectorAll('.result-tab').forEach(button => button.classList.toggle('active', button.dataset.tab === resultTab));
+      document.querySelectorAll('.result-filter').forEach(button => button.classList.toggle('active', button.dataset.filter === resultFilter));
+      $('#resultList').querySelectorAll('[data-result-id]').forEach(row => row.addEventListener('click', () => { selectedUid = row.dataset.resultId; render(); }));
+    }
+
+    function setMode(nextMode) {
+      mode = nextMode;
+      $('#selectTool').classList.toggle('active', mode === 'select');
+      $('#rectTool').classList.toggle('active', mode === 'rect');
+      $('#lassoTool').classList.toggle('active', mode === 'lasso');
+      $('#viewport').classList.toggle('draw-mode', mode !== 'select');
+    }
+
+    function updateZoom() {
+      $('#zoomValue').textContent = `${zoom}%`;
+      $('#imageFrame').style.width = `${clamp(75 * zoom / 82, 44, 105)}%`;
+    }
+
+    function pointFromEvent(event) {
+      const box = $('#imageFrame').getBoundingClientRect();
+      return {
+        x:clamp((event.clientX - box.left) / box.width * SOURCE.width, 0, SOURCE.width),
+        y:clamp((event.clientY - box.top) / box.height * SOURCE.height, 0, SOURCE.height)
+      };
+    }
+
+    function subtreeItems(rootItem) {
+      if (!rootItem) return [];
+      const result = [];
+      const queue = [rootItem];
+      while (queue.length) {
+        const current = queue.shift();
+        result.push(current);
+        items.filter(item => item.parent === current.id).forEach(child => queue.push(child));
+      }
+      return result;
+    }
+
+    function translateSubtree(rootItem, dx, dy) {
+      const subtree = subtreeItems(rootItem);
+      if (!subtree.length) return;
+      const minX = Math.min(...subtree.map(item => item.rect.x));
+      const minY = Math.min(...subtree.map(item => item.rect.y));
+      const maxX = Math.max(...subtree.map(item => item.rect.x + item.rect.w));
+      const maxY = Math.max(...subtree.map(item => item.rect.y + item.rect.h));
+      const moveX = clamp(dx, -minX, SOURCE.width - maxX);
+      const moveY = clamp(dy, -minY, SOURCE.height - maxY);
+      subtree.forEach(item => {
+        item.rect.x += moveX;
+        item.rect.y += moveY;
+      });
+    }
+
+    function updateRegionPositions() {
+      const byUid = new Map(items.map(item => [item.uid, item]));
+      $('#regionLayer').querySelectorAll('.region:not(.draft-region)').forEach(region => {
+        const item = byUid.get(region.dataset.id);
+        if (!item) return;
+        region.style.left = `${item.rect.x / SOURCE.width * 100}%`;
+        region.style.top = `${item.rect.y / SOURCE.height * 100}%`;
+        region.style.width = `${item.rect.w / SOURCE.width * 100}%`;
+        region.style.height = `${item.rect.h / SOURCE.height * 100}%`;
+      });
+    }
+
+    function updateInspectorGeometry() {
+      const item = selectedItem();
+      if (!item) return;
+      $('#rectX').value = Math.round(item.rect.x);
+      $('#rectY').value = Math.round(item.rect.y);
+      $('#rectW').value = Math.round(item.rect.w);
+      $('#rectH').value = Math.round(item.rect.h);
+    }
+
+    function startRegionInteraction(event) {
+      if (mode !== 'select') return;
+      event.preventDefault();
+      const region = event.currentTarget;
+      selectedUid = region.dataset.id;
+      const item = selectedItem();
+      expandAncestors(item);
+      const handle = event.target.closest('.resize-handle');
+      const affected = subtreeItems(item);
+      interaction = {
+        type:handle ? 'resize' : 'move', dir:handle?.dataset.dir || '',
+        start:pointFromEvent(event), startRect:{ ...item.rect }, before:snapshot(),
+        affected:affected.map(entry => entry.uid),
+        startRects:Object.fromEntries(affected.map(entry => [entry.uid, { ...entry.rect }]))
+      };
+      $('#viewport').classList.add('is-interacting');
+      renderInspector();
+      renderList();
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function beginDraw(event) {
+      if (mode === 'select' || event.button !== 0 || event.target.closest('.region')) return;
+      event.preventDefault();
+      const point = pointFromEvent(event);
+      interaction = { type:'draw', start:point, current:point, points:[point], before:snapshot() };
+      $('#viewport').classList.add('is-interacting');
+      drawDraft({ x:point.x, y:point.y, w:0, h:0 });
+    }
+
+    function drawDraft(rect) {
+      let draft = $('.draft-region');
+      if (!draft) {
+        draft = document.createElement('div');
+        draft.className = 'region selected draft-region';
+        $('#regionLayer').appendChild(draft);
+      }
+      draft.style.left = `${rect.x / SOURCE.width * 100}%`;
+      draft.style.top = `${rect.y / SOURCE.height * 100}%`;
+      draft.style.width = `${rect.w / SOURCE.width * 100}%`;
+      draft.style.height = `${rect.h / SOURCE.height * 100}%`;
+    }
+
+    function currentDrawRect(point) {
+      const points = mode === 'lasso' ? interaction.points : [interaction.start, point];
+      const xs = points.map(entry => entry.x);
+      const ys = points.map(entry => entry.y);
+      const x = Math.min(...xs), y = Math.min(...ys);
+      return { x, y, w:Math.max(...xs) - x, h:Math.max(...ys) - y };
+    }
+
+    function onPointerMove(event) {
+      if (!interaction) return;
+      const point = pointFromEvent(event);
+      if (interaction.type === 'draw') {
+        interaction.current = point;
+        if (mode === 'lasso') interaction.points.push(point);
+        drawDraft(currentDrawRect(point));
+        return;
+      }
+      const item = selectedItem();
+      if (!item) return;
+      const dx = point.x - interaction.start.x;
+      const dy = point.y - interaction.start.y;
+      const start = interaction.startRect;
+      if (interaction.type === 'move') {
+        const startRects = Object.values(interaction.startRects);
+        const minX = Math.min(...startRects.map(rect => rect.x));
+        const minY = Math.min(...startRects.map(rect => rect.y));
+        const maxX = Math.max(...startRects.map(rect => rect.x + rect.w));
+        const maxY = Math.max(...startRects.map(rect => rect.y + rect.h));
+        const moveX = clamp(dx, -minX, SOURCE.width - maxX);
+        const moveY = clamp(dy, -minY, SOURCE.height - maxY);
+        interaction.affected.forEach(uid => {
+          const affectedItem = items.find(entry => entry.uid === uid);
+          const source = interaction.startRects[uid];
+          if (affectedItem && source) affectedItem.rect = { ...source, x:source.x + moveX, y:source.y + moveY };
+        });
+      } else {
+        let { x, y, w, h } = start;
+        if (interaction.dir.includes('e')) w = clamp(start.w + dx, 8, SOURCE.width - start.x);
+        if (interaction.dir.includes('s')) h = clamp(start.h + dy, 8, SOURCE.height - start.y);
+        if (interaction.dir.includes('w')) { x = clamp(start.x + dx, 0, start.x + start.w - 8); w = start.w + start.x - x; }
+        if (interaction.dir.includes('n')) { y = clamp(start.y + dy, 0, start.y + start.h - 8); h = start.h + start.y - y; }
+        const resized = { x, y, w, h };
+        item.rect = resized;
+        const scaleX = resized.w / start.w;
+        const scaleY = resized.h / start.h;
+        interaction.affected.filter(uid => uid !== item.uid).forEach(uid => {
+          const affectedItem = items.find(entry => entry.uid === uid);
+          const source = interaction.startRects[uid];
+          if (!affectedItem || !source) return;
+          affectedItem.rect = {
+            x:resized.x + (source.x - start.x) * scaleX,
+            y:resized.y + (source.y - start.y) * scaleY,
+            w:source.w * scaleX,
+            h:source.h * scaleY
+          };
+        });
+      }
+      updateRegionPositions();
+      updateInspectorGeometry();
+    }
+
+    function onPointerUp() {
+      if (!interaction) return;
+      if (interaction.type === 'draw') {
+        const rect = currentDrawRect(interaction.current);
+        if (rect.w >= 8 && rect.h >= 8) {
+          pushHistory(interaction.before);
+          const item = createItem(rect, mode === 'lasso' ? 'panel' : 'button');
+          items.push(item);
+          selectedUid = item.uid;
+          buildComponentCrops();
+          showToast(mode === 'lasso' ? '已按手绘轨迹生成边界选区' : '已创建矩形选区');
+        }
+        $('.draft-region')?.remove();
+        setMode('select');
+      } else if (snapshot() !== interaction.before) {
+        pushHistory(interaction.before);
+      }
+      interaction = null;
+      $('#viewport').classList.remove('is-interacting');
+      render();
+    }
+
+    function addSelection() {
+      pushHistory();
+      const offset = (items.length % 6) * 18;
+      const item = createItem({ x:470 + offset, y:260 + offset, w:180, h:90 });
+      items.push(item);
+      selectedUid = item.uid;
+      buildComponentCrops();
+      setMode('select');
+      render();
+      showToast('已添加选区，可直接拖动');
+    }
+
+    function deleteSelection() {
+      const source = selectedItem();
+      if (!source) return;
+      pushHistory();
+      const subtreeUids = new Set(subtreeItems(source).map(item => item.uid));
+      const index = items.findIndex(item => item.uid === selectedUid);
+      items = items.filter(item => !subtreeUids.has(item.uid));
+      selectedUid = items[Math.min(index, items.length - 1)]?.uid || null;
+      buildComponentCrops();
+      render();
+      showToast(`已删除 ${subtreeUids.size} 个图层`);
+    }
+
+    function duplicateSelection() {
+      const source = selectedItem();
+      if (!source) return;
+      pushHistory();
+      const originals = subtreeItems(source);
+      const existingIds = new Set(items.map(item => item.id));
+      const idMap = new Map();
+      originals.forEach(original => {
+        let candidate = `${original.id}.copy`;
+        let suffix = 2;
+        while (existingIds.has(candidate)) candidate = `${original.id}.copy${suffix++}`;
+        existingIds.add(candidate);
+        idMap.set(original.id, candidate);
+      });
+      const copies = originals.map(original => {
+        const copy = structuredClone(original);
+        copy.uid = createUid();
+        copy.id = idMap.get(original.id);
+        copy.parent = idMap.get(original.parent) || original.parent;
+        copy.ready = false;
+        copy.rect.x = clamp(copy.rect.x + 22, 0, SOURCE.width - copy.rect.w);
+        copy.rect.y = clamp(copy.rect.y + 22, 0, SOURCE.height - copy.rect.h);
+        return copy;
+      });
+      items.push(...copies);
+      selectedUid = copies[0].uid;
+      buildComponentCrops();
+      render();
+      showToast(`已复制 ${copies.length} 个图层`);
+    }
+
+    function updateRectFromInputs() {
+      const item = selectedItem();
+      if (!item) return;
+      const before = editStartSnapshot || snapshot();
+      const oldRect = { ...item.rect };
+      const w = clamp(Number($('#rectW').value) || 8, 8, SOURCE.width);
+      const h = clamp(Number($('#rectH').value) || 8, 8, SOURCE.height);
+      const nextRect = {
+        x:clamp(Number($('#rectX').value) || 0, 0, SOURCE.width - w),
+        y:clamp(Number($('#rectY').value) || 0, 0, SOURCE.height - h), w, h
+      };
+      const descendants = subtreeItems(item).filter(entry => entry.uid !== item.uid);
+      const scaleX = nextRect.w / oldRect.w;
+      const scaleY = nextRect.h / oldRect.h;
+      descendants.forEach(descendant => {
+        descendant.rect = {
+          x:nextRect.x + (descendant.rect.x - oldRect.x) * scaleX,
+          y:nextRect.y + (descendant.rect.y - oldRect.y) * scaleY,
+          w:descendant.rect.w * scaleX,
+          h:descendant.rect.h * scaleY
+        };
+      });
+      item.rect = nextRect;
+      if (snapshot() !== before) pushHistory(before);
+      editStartSnapshot = null;
+      render();
+    }
+
+    function downloadBlob(blob, name) {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = name;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    }
+
+    async function exportCandidates() {
+      const exportableItems = defaultAssetItems().filter(item => item.reusableBitmap && componentCache.has(item.uid));
+      if (!exportableItems.length) { showToast('没有通过 Clean Asset Gate 的可导出资产'); return; }
+      const gap = 12, sheetWidth = 2048;
+      let cursorX = gap, cursorY = gap, rowHeight = 0;
+      const atlas = [];
+      exportableItems.forEach(item => {
+        const pad = item.padding;
+        const source = item.sourceRect || item.rect;
+        const cropW = Math.round(source.w + pad * 2);
+        const cropH = Math.round(source.h + pad * 2);
+        if (cursorX + cropW + gap > sheetWidth) { cursorX = gap; cursorY += rowHeight + gap; rowHeight = 0; }
+        atlas.push({ item, x:cursorX, y:cursorY, w:cropW, h:cropH });
+        cursorX += cropW + gap;
+        rowHeight = Math.max(rowHeight, cropH);
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = sheetWidth;
+      canvas.height = Math.max(1, cursorY + rowHeight + gap);
+      const context = canvas.getContext('2d');
+      const loadedComponents = await Promise.all(atlas.map(entry => new Promise(resolve => {
+        const image = new Image();
+        image.onload = () => resolve({ entry, image });
+        image.src = componentCache.get(entry.item.uid);
+      })));
+      loadedComponents.forEach(({ entry, image }) => {
+        const pad = entry.item.padding;
+        context.drawImage(image, entry.x + pad, entry.y + pad, image.width, image.height);
+      });
+      const exportName = `${EXPORT_SLUG}-component-candidates`;
+      canvas.toBlob(blob => downloadBlob(blob, `${exportName}.png`), 'image/png');
+      const manifest = {
+        schema_version:2,
+        source:{ kind:'workbench_export', source_name:SOURCE_NAME, page_size:SOURCE },
+        source_size:SOURCE,
+        status:'pending_review',
+        components:atlas.map(entry => ({
+          component_id:entry.item.id, category:entry.item.category, state:entry.item.state,
+          node_kind:entry.item.nodeKind, render_mode:entry.item.renderMode,
+          parent_id:entry.item.parent, children:items.filter(child => child.parent === entry.item.id).map(child => child.id),
+          layer:entry.item.layer, z_index:items.indexOf(entry.item), status:entry.item.status,
+          confidence:entry.item.confidence, reason:entry.item.reason, reuse:entry.item.reuse,
+          padding:entry.item.padding, source_rect:entry.item.sourceRect || entry.item.rect,
+          bounds:{ x:entry.item.rect.x, y:entry.item.rect.y, width:entry.item.rect.w, height:entry.item.rect.h },
+          visual_assets:{ source_crop:null, clean_asset:`${exportName}.png`, assembly_preview:null },
+          review:{ status:'pending_review', cleanup_status:'clean' }, reusable_bitmap:true,
+          atlas_rect:{ x:entry.x, y:entry.y, width:entry.w, height:entry.h }
+        }))
+      };
+      downloadBlob(new Blob([JSON.stringify(manifest, null, 2)], { type:'application/json' }), `${exportName}.json`);
+      showToast('已导出候选图集与 JSON');
+    }
+
+    $('#undoButton').addEventListener('click', undo);
+    $('#redoButton').addEventListener('click', redo);
+    $('#importLayersButton').addEventListener('click', () => $('#layerFolderInput').click());
+    $('#layerFolderInput').addEventListener('change', event => importLayerFolder(event.target.files));
+    $('#sourceImage').addEventListener('load', () => { buildComponentCrops(); render(); });
+    $('#expandAll').addEventListener('click', () => { collapsed.clear(); renderList(); if (window.lucide) window.lucide.createIcons(); });
+    $('#collapseAll').addEventListener('click', () => {
+      const parents = new Set(items.map(item => item.parent));
+      collapsed = new Set(items.filter(item => parents.has(item.id)).map(item => item.id));
+      renderList(); if (window.lucide) window.lucide.createIcons();
+    });
+    $('#controlSearch').addEventListener('input', event => { searchTerm = event.target.value.trim().toLowerCase(); renderList(); if (window.lucide) window.lucide.createIcons(); });
+    $('#categoryFilter').addEventListener('change', event => { categoryFilter = event.target.value; renderList(); if (window.lucide) window.lucide.createIcons(); });
+    $('#addControl').addEventListener('click', addSelection);
+    $('#deleteTool').addEventListener('click', deleteSelection);
+    $('#deleteButton').addEventListener('click', deleteSelection);
+    $('#duplicateButton').addEventListener('click', duplicateSelection);
+    $('#selectTool').addEventListener('click', () => setMode('select'));
+    $('#rectTool').addEventListener('click', () => setMode('rect'));
+    $('#lassoTool').addEventListener('click', () => setMode('lasso'));
+    $('#componentLayerButton').addEventListener('click', () => { componentLayersVisible = !componentLayersVisible; render(); showToast(componentLayersVisible ? '已显示可移动组件图层' : '已切回原图标注视图'); });
+    $('#showSourceCrops').addEventListener('change', event => { sourceCropsVisible = event.target.checked; renderRegions(); showToast(sourceCropsVisible ? 'Source Crop 调试显示已开启' : 'Source Crop 调试显示已关闭'); });
+    $('#zoomIn').addEventListener('click', () => { zoom = clamp(zoom + 10, 42, 142); updateZoom(); });
+    $('#zoomOut').addEventListener('click', () => { zoom = clamp(zoom - 10, 42, 142); updateZoom(); });
+    $('#fitCanvas').addEventListener('click', () => { zoom = 82; updateZoom(); });
+    $('#resetLayout').addEventListener('click', () => {
+      pushHistory();
+      items.forEach(item => item.rect = { ...(item.sourceRect || item.rect) });
+      render();
+      showToast('全部组件已回到源图位置');
+    });
+    $('#imageFrame').addEventListener('pointerdown', beginDraw);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+
+    $('#controlId').addEventListener('focus', () => editStartSnapshot = snapshot());
+    $('#controlId').addEventListener('input', event => {
+      const item = selectedItem();
+      if (!item) return;
+      const oldId = item.id;
+      const nextId = event.target.value || 'control.unnamed.default';
+      item.id = nextId;
+      items.filter(entry => entry.parent === oldId).forEach(child => child.parent = nextId);
+      if (collapsed.has(oldId)) { collapsed.delete(oldId); collapsed.add(nextId); }
+      renderList(); renderRegions(); renderResults();
+      if (window.lucide) window.lucide.createIcons();
+    });
+    $('#controlId').addEventListener('change', () => {
+      if (editStartSnapshot && snapshot() !== editStartSnapshot) pushHistory(editStartSnapshot);
+      editStartSnapshot = null;
+    });
+    $('#controlCategory').addEventListener('change', event => {
+      const item = selectedItem(); if (!item) return; pushHistory(); item.category = event.target.value; render();
+    });
+    $('#controlLayer').addEventListener('change', event => {
+      const item = selectedItem(); if (!item) return; pushHistory(); item.layer = clamp(Number(event.target.value) || 0, 0, 100); render();
+    });
+    $('#stateControl').addEventListener('click', event => {
+      const button = event.target.closest('.segment'); const item = selectedItem();
+      if (!button || !item) return; pushHistory(); item.state = button.dataset.state; render();
+    });
+    ['rectX','rectY','rectW','rectH'].forEach(id => {
+      $(`#${id}`).addEventListener('focus', () => editStartSnapshot = snapshot());
+      $(`#${id}`).addEventListener('change', updateRectFromInputs);
+    });
+    $('#paddingMinus').addEventListener('click', () => { const item = selectedItem(); if (!item) return; pushHistory(); item.padding = clamp(item.padding - 1, 0, 32); render(); });
+    $('#paddingPlus').addEventListener('click', () => { const item = selectedItem(); if (!item) return; pushHistory(); item.padding = clamp(item.padding + 1, 0, 32); render(); });
+    document.querySelectorAll('.visual-tab').forEach(button => button.addEventListener('click', () => { selectedVisualMode = button.dataset.view; renderInspector(); }));
+    document.querySelectorAll('.result-tab').forEach(button => button.addEventListener('click', () => { resultTab = button.dataset.tab; resultFilter = 'all'; renderResults(); if (window.lucide) window.lucide.createIcons(); }));
+    document.querySelectorAll('.result-filter').forEach(button => button.addEventListener('click', () => { resultFilter = button.dataset.filter; renderResults(); if (window.lucide) window.lucide.createIcons(); }));
+    $('#cleanParentButton').addEventListener('click', () => {
+      const item = selectedItem();
+      if (!item) return;
+      const target = item.nodeKind === 'composite' ? items.find(entry => entry.parent === item.id && entry.id === `${item.id}.background`) : item;
+      if (!target || target.nodeKind !== 'skin' || target.cleanupStatus === 'clean') return;
+      pushHistory();
+      target.cleanupStatus = 'requested';
+      target.status = 'candidate';
+      target.ready = false;
+      target.reusableBitmap = false;
+      render();
+      showToast(`已为 ${target.id} 排队 Precision Reconstruction；工作台不会在前端伪造补图`);
+    });
+    $('#extractButton').addEventListener('click', () => {
+      if (!items.length) return;
+      const pending = defaultAssetItems().filter(item => item.cleanupStatus !== 'clean');
+      pushHistory();
+      pending.forEach(item => { item.cleanupStatus = 'requested'; item.status = 'candidate'; item.ready = false; item.reusableBitmap = false; });
+      render();
+      showToast(`已排队 ${pending.length} 个净化/提取任务；仅 clean_asset 可进入组件库`);
+    });
+    $('#exportButton').addEventListener('click', exportCandidates);
+    window.addEventListener('keydown', event => {
+      if (event.target.matches('input,select')) return;
+      if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); deleteSelection(); return; }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); return; }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelection(); return; }
+      const item = selectedItem();
+      if (!item || !['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) return;
+      event.preventDefault(); pushHistory(); const step = event.shiftKey ? 10 : 1;
+      if (event.key === 'ArrowLeft') translateSubtree(item, -step, 0);
+      if (event.key === 'ArrowRight') translateSubtree(item, step, 0);
+      if (event.key === 'ArrowUp') translateSubtree(item, 0, -step);
+      if (event.key === 'ArrowDown') translateSubtree(item, 0, step);
+      render();
+    });
+
+    window.addEventListener('load', async () => {
+      const loaded = await loadWorkbenchSession();
+      if (!loaded) { buildComponentCrops(); render(); }
+    });
+  </script>
+</body>
+</html>

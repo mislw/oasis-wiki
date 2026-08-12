@@ -68,6 +68,7 @@ Skill 现在先按任务意图分类，再读对应 reference，避免每次加�
 - **MCP 操作**：连接 UGCAskQ MCP、读工具清单、做 PRV 计划、执行和验证。
 - **配置表/数值**：查表、解释字段、追踪代码消费链路、处理权重/奖励/属性。
 - **UI/交互**：MainUI 入口、UIManager 注册、Widget 控件命名、按钮绑定、刷新链路。
+- **Cowart UI 生产**：游戏风格 UI 生成、自动打开 Cowart、可编辑组件提取、图层清单和 RedCliff 交付计划。
 - **项目保护**：二进制资产、`.uasset` / `.umap` 脏文件、备份、队友代码保护。
 
 默认一次任务只选一个主分支，最多再选一个辅助分支。
@@ -233,6 +234,7 @@ AssetRegistry.GetAssetByObjectPath failed。
 - `oasis-wiki/agents/openai.yaml`：Codex UI 元数据。
 - `oasis-wiki/references/wiki`：本地官方 wiki markdown 导出。
 - `oasis-wiki/references/task-router.md`：任务意图分类路由。
+- `oasis-wiki/references/cowart-ui-workflow.md`：Cowart UI 生成、视觉评审、组件提取与 RedCliff 交付分类入口。
 - `oasis-wiki/references/answer-modes.md`：常规模式 / 教学模式规则。
 - `oasis-wiki/references/teaching-mode.md`：教学模式细则和强制只读规则。
 - `oasis-wiki/references/feature-development-flow.md`：功能开发主流程。

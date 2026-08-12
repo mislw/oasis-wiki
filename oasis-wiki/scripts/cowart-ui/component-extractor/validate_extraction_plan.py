@@ -7,6 +7,8 @@ import re
 import sys
 from pathlib import Path, PurePosixPath
 
+from component_semantics import CLEANUP_STATUSES, NODE_KINDS, RENDER_MODES
+
 
 VALID_MODES = {"native", "extract_artwork", "reconstruct_skin", "composite"}
 VALID_STATUSES = {"candidate", "pending_review"}
@@ -39,8 +41,9 @@ def validation_errors(plan):
     errors = []
     if not isinstance(plan, dict):
         return ["plan must be a JSON object"]
-    if plan.get("schema_version") != 1:
-        errors.append("schema_version must be 1")
+    schema_version = plan.get("schema_version")
+    if schema_version not in (1, 2):
+        errors.append("schema_version must be 1 or 2")
     if plan.get("artifact_type") != "extraction_plan":
         errors.append("artifact_type must be extraction_plan")
 
@@ -79,6 +82,17 @@ def validation_errors(plan):
             errors.append(f"{prefix}.mode must be one of {sorted(VALID_MODES)}")
         if component.get("status") not in VALID_STATUSES:
             errors.append(f"{prefix}.status must be candidate or pending_review")
+        if schema_version == 2:
+            if component.get("node_kind") not in NODE_KINDS:
+                errors.append(f"{prefix}.node_kind is invalid")
+            if component.get("render_mode") not in RENDER_MODES:
+                errors.append(f"{prefix}.render_mode is invalid")
+            visual_assets = component.get("visual_assets")
+            if not isinstance(visual_assets, dict):
+                errors.append(f"{prefix}.visual_assets is required")
+            review = component.get("review")
+            if not isinstance(review, dict) or review.get("cleanup_status") not in CLEANUP_STATUSES:
+                errors.append(f"{prefix}.review.cleanup_status is invalid")
         confidence = component.get("confidence")
         if not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or not 0 <= confidence <= 1:
             errors.append(f"{prefix}.confidence must be between 0 and 1")

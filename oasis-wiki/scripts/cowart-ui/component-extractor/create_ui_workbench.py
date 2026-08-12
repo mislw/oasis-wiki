@@ -1,0 +1,392 @@
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import shutil
+import socket
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from PIL import Image
+
+from component_semantics import normalize_node_semantics
+
+
+WIKI_ROOT = Path(__file__).resolve().parents[3]
+SCRIPT_ROOT = Path(__file__).resolve().parent
+TEMPLATE = WIKI_ROOT / "assets" / "cowart-ui" / "workbench-template" / "index.html"
+SERVER_SCRIPT = SCRIPT_ROOT / "serve_workbench.py"
+
+
+def slug(value: str) -> str:
+    text = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return text or "ui-workbench"
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def validate_visual_review(review_path: Path, image_path: Path) -> dict[str, Any]:
+    review = json.loads(review_path.read_text(encoding="utf-8-sig"))
+    if review.get("schema_version") != 1 or review.get("workflow_stage") != "visual_review":
+        raise ValueError("Visual review is not a supported visual-review.json package.")
+    if review.get("status") != "approved":
+        raise ValueError("Visual review is not approved. Run approve_visual_review.py after Cowart visual confirmation.")
+    approved = review.get("approved_image")
+    if not isinstance(approved, dict) or approved.get("sha256") != sha256_file(image_path):
+        raise ValueError("The supplied image does not match the approved visual review. Approve this exact final image first.")
+    return review
+
+
+def first(mapping: dict[str, Any], keys: tuple[str, ...], default: Any = None) -> Any:
+    for key in keys:
+        if key in mapping and mapping[key] is not None:
+            return mapping[key]
+    return default
+
+
+def bounds_from(item: dict[str, Any]) -> dict[str, float] | None:
+    value = first(item, ("bounds", "layout_rect", "layoutRect", "source_rect", "sourceRect", "rect"), item)
+    if not isinstance(value, dict):
+        return None
+    try:
+        bounds = {
+            "x": float(first(value, ("x", "left"), 0)),
+            "y": float(first(value, ("y", "top"), 0)),
+            "width": float(first(value, ("width", "w"))),
+            "height": float(first(value, ("height", "h"))),
+        }
+    except (TypeError, ValueError):
+        return None
+    return bounds if bounds["width"] > 0 and bounds["height"] > 0 else None
+
+
+def component_id_for(item: dict[str, Any], index: int) -> str:
+    value = first(item, ("component_id", "componentId", "control_id", "controlId", "id", "name"))
+    text = re.sub(r"[^a-z0-9_]+", ".", str(value or "").lower()).strip(".")
+    if not text or "." not in text:
+        text = f"layer.{text or f'item{index:03d}'}"
+    return text
+
+
+def raw_controls(data: Any) -> list[dict[str, Any]]:
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    if not isinstance(data, dict):
+        return []
+    for key in ("controls", "components", "elements", "layers", "items", "nodes"):
+        value = data.get(key)
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, dict)]
+    return []
+
+
+def normalize_controls(
+    controls_path: Path | None,
+    session_dir: Path,
+    width: int,
+    height: int,
+) -> list[dict[str, Any]]:
+    if controls_path is None:
+        return [{
+            "component_id": "background.ui.source",
+            "category": "background",
+            "parent_id": "root",
+            "layer": 0,
+            "z_index": 0,
+            "bounds": {"x": 0, "y": 0, "width": width, "height": height},
+            "status": "candidate",
+            "confidence": 0.25,
+            "reason": "No generated UI Tree was supplied; only the source image is available.",
+        }]
+
+    data = json.loads(controls_path.read_text(encoding="utf-8-sig"))
+    items = raw_controls(data)
+    if not items:
+        raise ValueError("Controls JSON has no controls/components/elements/layers/items/nodes array.")
+    id_map: dict[str, str] = {}
+    prepared: list[tuple[dict[str, Any], str, str]] = []
+    used: set[str] = set()
+    for index, item in enumerate(items, 1):
+        element_id = str(first(item, ("element_id", "elementId", "id", "uuid"), f"element-{index}"))
+        original_component_id = str(first(item, ("component_id", "componentId", "control_id", "controlId", "id", "name"), ""))
+        component_id = component_id_for(item, index)
+        base, suffix = component_id, 2
+        while component_id in used:
+            component_id = f"{base}.v{suffix}"
+            suffix += 1
+        used.add(component_id)
+        id_map[element_id] = component_id
+        if original_component_id:
+            id_map[original_component_id] = component_id
+        id_map[component_id] = component_id
+        prepared.append((item, element_id, component_id))
+
+    parent_keys = ("parent_id", "parentId", "parent", "group_id", "groupId")
+    prepared_bounds = {component_id: bounds_from(item) for item, _element_id, component_id in prepared}
+    parent_by_component: dict[str, str] = {}
+    child_counts: dict[str, int] = {}
+    for item, _element_id, component_id in prepared:
+        parent_value = first(item, parent_keys)
+        parent_raw = str(parent_value) if parent_value is not None else None
+        if parent_raw is not None:
+            parent_id = id_map.get(parent_raw, "root") if parent_raw != "root" else "root"
+        else:
+            bounds = prepared_bounds[component_id]
+            candidates: list[tuple[float, str]] = []
+            if bounds is not None:
+                area = bounds["width"] * bounds["height"]
+                for _candidate_item, _candidate_element, candidate_id in prepared:
+                    candidate = prepared_bounds[candidate_id]
+                    if candidate_id == component_id or candidate is None:
+                        continue
+                    candidate_area = candidate["width"] * candidate["height"]
+                    contains = (
+                        candidate_area > area
+                        and candidate["x"] <= bounds["x"]
+                        and candidate["y"] <= bounds["y"]
+                        and candidate["x"] + candidate["width"] >= bounds["x"] + bounds["width"]
+                        and candidate["y"] + candidate["height"] >= bounds["y"] + bounds["height"]
+                    )
+                    if contains:
+                        candidates.append((candidate_area, candidate_id))
+            parent_id = min(candidates)[1] if candidates else "root"
+        parent_by_component[component_id] = parent_id
+        child_counts[parent_id] = child_counts.get(parent_id, 0) + 1
+
+    layer_dir = session_dir / "layers"
+    controls: list[dict[str, Any]] = []
+    for index, (item, element_id, component_id) in enumerate(prepared, 1):
+        bounds = bounds_from(item)
+        if bounds is None:
+            raise ValueError(f"{component_id} has no valid bounds.")
+        if bounds["x"] < 0 or bounds["y"] < 0 or bounds["x"] + bounds["width"] > width or bounds["y"] + bounds["height"] > height:
+            raise ValueError(f"{component_id} bounds exceed the source image.")
+        parent_value = first(item, parent_keys)
+        parent_raw = str(parent_value) if parent_value is not None else None
+        parent_id = parent_by_component[component_id]
+        reasons: list[str] = []
+        if parent_raw not in (None, "root") and parent_id == "root":
+            reasons.append(f"Missing parent {parent_raw}; attached to root.")
+        status = str(item.get("status") or "pending_review")
+        if status not in ("pending_review", "candidate"):
+            status = "candidate"
+            reasons.append("Generated controls cannot be auto-promoted to active.")
+        copied_file = None
+        file_value = item.get("file")
+        if isinstance(file_value, str):
+            source_file = (controls_path.parent / file_value).resolve()
+            if source_file.is_file():
+                layer_dir.mkdir(exist_ok=True)
+                target = layer_dir / f"{component_id}{source_file.suffix.lower()}"
+                shutil.copy2(source_file, target)
+                copied_file = target.relative_to(session_dir).as_posix()
+
+        copied_visual_assets: dict[str, Any] = {}
+        raw_visual_assets = item.get("visual_assets") if isinstance(item.get("visual_assets"), dict) else {}
+        asset_directories = {
+            "source_crop": session_dir / "source",
+            "clean_asset": session_dir / "layers",
+            "assembly_preview": session_dir / "preview",
+        }
+        for asset_name, asset_directory in asset_directories.items():
+            asset_value = raw_visual_assets.get(asset_name)
+            if asset_value in (None, "__source__"):
+                copied_visual_assets[asset_name] = asset_value
+                continue
+            if not isinstance(asset_value, str):
+                copied_visual_assets[asset_name] = None
+                continue
+            source_asset = (controls_path.parent / asset_value).resolve()
+            if not source_asset.is_file():
+                copied_visual_assets[asset_name] = None
+                reasons.append(f"Missing {asset_name}: {asset_value}.")
+                continue
+            asset_directory.mkdir(exist_ok=True)
+            target_asset = asset_directory / f"{component_id}{source_asset.suffix.lower()}"
+            shutil.copy2(source_asset, target_asset)
+            copied_visual_assets[asset_name] = target_asset.relative_to(session_dir).as_posix()
+
+        semantic_input = dict(item)
+        if raw_visual_assets:
+            semantic_input["visual_assets"] = copied_visual_assets
+        semantics = normalize_node_semantics(semantic_input, child_counts.get(component_id, 0) > 0, copied_file)
+        if semantics["visual_assets"]["source_crop"] is None:
+            semantics["visual_assets"]["source_crop"] = "__source__"
+        status = semantics["review"]["status"]
+        if reasons:
+            status = "candidate"
+            semantics["review"]["status"] = status
+
+        control = {
+            "component_id": component_id,
+            "element_id": element_id,
+            "category": str(item.get("category") or item.get("type") or "unknown").lower(),
+            "parent_id": parent_id,
+            "layer": int(float(first(item, ("layer", "semantic_layer", "semanticLayer"), 30))),
+            "z_index": float(first(item, ("z_index", "zIndex", "z", "order", "index"), index - 1)),
+            "bounds": bounds,
+            "state": str(item.get("state") or "default"),
+            "status": status,
+            "confidence": float(item.get("confidence", 0.96)),
+            "reason": "; ".join(reasons) or item.get("reason"),
+            "asset_policy": item.get("asset_policy") or ("native" if semantics["node_kind"] == "native" else "reconstruction_candidate" if semantics["review"]["cleanup_status"] == "needs_cleanup" else "layer"),
+            "extraction": item.get("extraction") if isinstance(item.get("extraction"), dict) else None,
+            **semantics,
+        }
+        if copied_file:
+            control["file"] = copied_file
+        controls.append(control)
+
+        extraction = item.get("extraction") if isinstance(item.get("extraction"), dict) else {}
+        background_id = f"{component_id}.background"
+        if semantics["node_kind"] == "composite" and extraction.get("mode") == "reconstruct_skin" and background_id not in used:
+            background_source = semantics["visual_assets"].get("source_crop")
+            background_clean = semantics["visual_assets"].get("clean_asset")
+            control["visual_assets"]["clean_asset"] = None
+            control["reusable_bitmap"] = False
+            background_input = {
+                "node_kind": "skin",
+                "render_mode": "bitmap",
+                "status": "candidate",
+                "asset_policy": "reconstruction_candidate" if not background_clean else "layer",
+                "visual_assets": {
+                    "source_crop": background_source,
+                    "clean_asset": background_clean,
+                    "assembly_preview": None,
+                },
+                "review": {"status": "candidate", "cleanup_status": "clean" if background_clean else "needs_cleanup"},
+            }
+            background_semantics = normalize_node_semantics(background_input)
+            controls.append({
+                "component_id": background_id,
+                "element_id": f"{element_id}-background",
+                "category": control["category"],
+                "parent_id": component_id,
+                "layer": control["layer"],
+                "z_index": control["z_index"] - 0.5,
+                "bounds": dict(bounds),
+                "state": control["state"],
+                "status": background_semantics["review"]["status"],
+                "confidence": control["confidence"],
+                "reason": "Derived clean-skin target for a composite parent; source crop is trace-only until reconstruction completes.",
+                "asset_policy": background_input["asset_policy"],
+                "extraction": dict(extraction),
+                **background_semantics,
+            })
+            used.add(background_id)
+
+    children_by_parent: dict[str, list[str]] = {}
+    for control in controls:
+        children_by_parent.setdefault(control["parent_id"], []).append(control["component_id"])
+    for control in controls:
+        control["children"] = children_by_parent.get(control["component_id"], [])
+    return controls
+
+
+def free_port(host: str) -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind((host, 0))
+        return int(sock.getsockname()[1])
+
+
+def start_server(directory: Path, host: str, port: int) -> int:
+    python = Path(sys.executable)
+    pythonw = python.with_name("pythonw.exe")
+    executable = pythonw if pythonw.is_file() else python
+    flags = 0
+    if sys.platform == "win32":
+        flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    process = subprocess.Popen(
+        [str(executable), str(SERVER_SCRIPT), "--directory", str(directory), "--host", host, "--port", str(port)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        close_fds=True,
+        creationflags=flags,
+    )
+    deadline = time.time() + 5
+    while time.time() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=0.2):
+                return process.pid
+        except OSError:
+            time.sleep(0.1)
+    raise RuntimeError("Workbench server did not start within 5 seconds.")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Create and launch a local UI control workbench.")
+    parser.add_argument("--image", required=True, type=Path)
+    parser.add_argument("--controls", type=Path)
+    parser.add_argument("--visual-review", type=Path, help="Approved visual-review.json from the Cowart review stage.")
+    parser.add_argument("--allow-unreviewed", action="store_true", help="Diagnostic only: bypass the required visual approval gate.")
+    parser.add_argument("--name", default="Generated UI")
+    parser.add_argument("--output-root", type=Path, default=Path.home() / ".codex" / "ui-workbenches")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=0)
+    parser.add_argument("--no-start", action="store_true")
+    args = parser.parse_args()
+
+    image_path = args.image.resolve()
+    if not image_path.is_file():
+        raise FileNotFoundError(image_path)
+    if args.visual_review:
+        review = validate_visual_review(args.visual_review.resolve(), image_path)
+    elif args.allow_unreviewed:
+        review = None
+    else:
+        raise ValueError("An approved --visual-review is required. Use --allow-unreviewed only for diagnostics.")
+    with Image.open(image_path) as image:
+        width, height = image.size
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    session_dir = args.output_root.resolve() / f"{stamp}-{slug(args.name)}"
+    session_dir.mkdir(parents=True, exist_ok=False)
+    shutil.copy2(TEMPLATE, session_dir / "index.html")
+    source_name = f"source{image_path.suffix.lower()}"
+    shutil.copy2(image_path, session_dir / source_name)
+    controls = normalize_controls(args.controls.resolve() if args.controls else None, session_dir, width, height)
+    session = {
+        "schema_version": 2,
+        "title": args.name,
+        "source_image": source_name,
+        "source_name": image_path.name,
+        "source_size": {"width": width, "height": height},
+        "controls": controls,
+        "visual_review": {
+            "status": review["status"] if review else "unreviewed_diagnostic",
+            "path": str(args.visual_review.resolve()) if args.visual_review else None,
+            "image_sha256": sha256_file(image_path),
+        },
+    }
+    (session_dir / "session.json").write_text(json.dumps(session, ensure_ascii=False, indent=2), encoding="utf-8")
+    port = args.port or free_port(args.host)
+    url = f"http://localhost:{port}/"
+    shortcut = session_dir / "Open UI Workbench.url"
+    shortcut.write_text(f"[InternetShortcut]\nURL={url}\n", encoding="utf-8")
+    pid = None if args.no_start else start_server(session_dir, args.host, port)
+    result = {
+        "url": url,
+        "session_dir": str(session_dir),
+        "shortcut": str(shortcut),
+        "server_pid": pid,
+        "control_count": len(controls),
+    }
+    (session_dir / "workbench.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps(result, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

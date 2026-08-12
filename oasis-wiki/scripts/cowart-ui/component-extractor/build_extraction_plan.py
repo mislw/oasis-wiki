@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from validate_extraction_plan import VALID_MODES, validate_plan
+from component_semantics import normalize_node_semantics
 
 
 def load_json(path):
@@ -30,6 +31,7 @@ def extraction_component(node):
         output = f"layers/{target}.png"
     if mode in {"native", "composite"}:
         output = None
+    semantics = normalize_node_semantics(node)
     return {
         "target_component_id": target,
         "category": node.get("category", "unknown"),
@@ -44,6 +46,7 @@ def extraction_component(node):
         "output": output,
         "confidence": extraction.get("confidence", 0.0),
         "reason": extraction.get("reason", ""),
+        **semantics,
     }
 
 
@@ -78,7 +81,7 @@ def build_plan(ui_tree, visual_review, image_path):
             existing["reason"] = "; ".join(filter(None, [existing["reason"], component["reason"]]))
 
     plan = {
-        "schema_version": 1,
+        "schema_version": 2,
         "artifact_type": "extraction_plan",
         "source": {"image": Path(image_path).name, "sha256": image_sha256, "page_size": page_size},
         "components": [grouped[target] for target in sorted(grouped)],

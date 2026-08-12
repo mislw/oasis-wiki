@@ -15,6 +15,14 @@ Choose one mode per node:
 
 For each candidate, set `asset_policy: reconstruction_candidate`. That state cannot be treated as a library layer until the asset is reconstructed and reviewed.
 
+The schema 2 representation separates three files throughout Stage 2:
+
+- `source_crop`: raw evidence, allowed to contain children and native content.
+- `clean_asset`: reconstructed or independently extracted reusable Skin/Artwork.
+- `assembly_preview`: clean parent plus children and native placeholders, used only for comparison.
+
+For a parent that contains independently controlled children, keep the parent as `node_kind: composite` and reconstruct a dedicated `*.background` Skin. Composite defaults to `render_mode: outline`; Native defaults to `outline` or `hidden`. Neither may become a bitmap library asset.
+
 ## Stage 2B: Precision Reconstruction
 
 1. Run `build_extraction_plan.py` with `ui-tree.json`, approved `visual-review.json`, and the locked visual image.
@@ -24,6 +32,8 @@ For each candidate, set `asset_policy: reconstruction_candidate`. That state can
 5. Save transparent PNGs at each plan output path and run `recompose_ui.py` to place them back at every recorded position.
 6. Run `validate_reconstruction.py`. It checks files, PNG type, alpha support, preview existence, and review state. Its visual similarity is deliberately `null` because a developer must compare the preview with the approved source.
 
+The Workbench `净化母版` action may create or queue the reconstruction job and reflect status, but it must not perform browser-side pixel filling. A Skin remains `needs_cleanup` until a real `clean_asset` is loaded and validated.
+
 ## Review Gate
 
-Every planned component remains `candidate` or `pending_review`. Reconstruction does not grant `active`. Only the existing Stage 3 Component Confirmation and a developer decision may add a component to the library.
+Every planned component remains `candidate` or `pending_review`. Reconstruction does not grant `active`. The activation Gate rejects Composite, Native, missing `clean_asset`, non-clean cleanup state, and source/assembly-only nodes. Only the existing Stage 3 Component Confirmation and a developer decision may add a clean Skin/Artwork component to the library.

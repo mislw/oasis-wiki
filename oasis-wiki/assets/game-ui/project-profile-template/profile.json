@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "project": {"name": "UnknownProject", "slug": "unknown-project", "aliases": []},
+  "style_guide": {
+    "status": "pending_review",
+    "colors": {},
+    "shapes": {},
+    "typography": {},
+    "spacing": {},
+    "icons": {},
+    "layers": {"background": 0, "window": 10, "panel": 20, "content": 30, "visual": 40, "text": 50, "interaction": 60, "state": 70, "popup": 80, "guide": 90, "system": 100}
+  },
+  "components": [],
+  "pages": [],
+  "history": []
+}
