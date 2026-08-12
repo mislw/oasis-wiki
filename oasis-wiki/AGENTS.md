@@ -29,6 +29,7 @@ If a path, current workspace, or uploaded filename contains a known project name
 - For project-level planning, uploaded design docs, requirements, economy/numerical/UI/stage/system details, or any question where a path/current workspace/uploaded filename contains a known project name, read `references/project-planning-memory.md`. Resolve the project identity from the path first, then load that project's local planning memory, feature memories, and index before proposing implementation. Prefer whole-project architecture, system boundaries, data flow, long-term maintainability, and future compatibility over one-off patches.
 - For log/debugging questions, search the focused wiki entries for `调试日志说明`, `PIE日志面板`, `日志提取`, `客户端调试管理器`, and `战斗日志`. Distinguish editor PIE logs, local `Clientlog`/`DSlog`, phone client logs, management-platform DS logs, MCP call logs (`Saved/log/MCP_YYYYMMDD.log`), and battle logs. When the user asks why something errored or how an error happened, proactively inspect available project/editor logs first instead of asking the user to look them up.
 - Read `references/skill-evolution.md` when deciding whether a conversation, correction, or project pattern should be added to this knowledge bundle.
+- For flattened AI-generated UI that needs reusable controls, read `references/cowart-ui-workflow.md` and `references/cowart-ui/precision-reconstruction.md`. Preserve text, numbers, timers, progress, labels, and hit targets as native controls; reconstruct only reusable artwork and skins; require recomposition plus developer review before Stage 3 confirmation.
 - UGC project files may be read and analyzed freely.
 - Do not directly modify UGC project files unless the user explicitly overrides project-file read-only behavior for the current task.
 - In teaching mode, never change UGC project files directly. If existing code must change, give exact file-line instructions, reason through the affected feature path, confirm the prior behavior remains intact, and explain what the changed code does.
@@ -58,6 +59,9 @@ If a path, current workspace, or uploaded filename contains a known project name
 - `references/mcp-ui-widget.md`: MCP UI/Widget/UMG/Blueprint viewing and generation workflow.
 - `references/mcp-datatable.md`: MCP config table/DataTable/UAEDataTable workflow.
 - `references/skill-evolution.md`: controlled protocol for updating the knowledge bundle.
+- `references/cowart-ui-workflow.md`: staged workflow for turning approved UI visuals into reviewable reusable controls.
+- `references/cowart-ui/precision-reconstruction.md`: Stage 2A/2B recognition, reconstruction, recomposition, and review gate.
+- `references/cowart-ui/component-extractor.md`: extraction-plan schema and local command-line tools.
 
 ## Search
 

@@ -56,6 +56,21 @@ Check:
 - `UE.LoadObject` for non-class assets usually uses `Foo.Foo`.
 - Root-relative UGC paths often need `UGCMapInfoLib.GetRootLongPackagePath()` or `UGCGameSystem.GetUGCResourcesFullPath(...)`.
 
+## UGC Resource Path Missing Leading Slash
+
+Symptoms:
+
+- PIE shows the generic dialog `在 Lua 文件中发现了一些错误，请检查输出日志。` after a table row or UI config starts exercising new code.
+- The feature works again when the triggering row is removed, which can make the row data or activity time look responsible.
+- Client or PIE logs contain `Path starts with 'Asset', which is no longer supported` and `OriginalPath=Asset/...`.
+
+Check:
+
+- Arguments passed to `UGCGameSystem.GetUGCResourcesFullPath(...)` must start with `/Asset/`, not `Asset/`.
+- Use `UGCGameSystem.GetUGCResourcesFullPath('/Asset/Data/Table/Foo.Foo')` for tables and `UGCGameSystem.GetUGCResourcesFullPath('/Asset/UI/Foo.Foo_C')` for WidgetBlueprint classes.
+- Search every path reached by the new row; table, widget class, shop, object, texture, and other dependent lookups can fail separately.
+- Treat the generic Lua dialog as a summary only. Confirm the cause from fresh `Clientlog`, `LuaLog`, or PIE output, then restart PIE and verify that no new path error is emitted.
+
 ## Missing Nil Checks
 
 Symptoms:

@@ -45,9 +45,10 @@ Default to normal mode. Use teaching mode only when the user explicitly asks for
 7. For MCP/editor automation, search `references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` when setup or official behavior is uncertain. Confirm the editor MCP Server is running locally, the SSE URL/port match the panel, call logging is enabled when debugging, and backups for `.uasset` files live outside the UGC project tree. If Codex direct/native MCP registration enters reconnect loops (`正在重新连接 1/5`, `正在重新连接 4/5`, `reconnecting`) or fails with stream-completion errors (`stream disconnected before completion`, missing `response.completed`), immediately stop retrying native MCP and use the local HTTP proxy workflow in `references/mcp-integration.md` instead. Also use the proxy when the user asks for `长连接 MCP` / `MCP 代理` / `绕过直连 MCP` / `让 Codex 用 MCP`.
 8. For log/debugging questions, inspect available project/editor logs first when possible, and distinguish PIE logs, local `Clientlog`/`DSlog`, phone logs, management-platform DS logs, MCP call logs (`Saved/log/MCP_YYYYMMDD.log`), and battle logs.
 9. If the user asks whether knowledge should be added to this skill, read `references/skill-evolution.md`, follow the controlled update protocol, and run `scripts/check-skill-hygiene.ps1` before finishing.
-10. Hard code-change rule: never directly rewrite, restructure, wrap, rename, or reorder existing teammate/predecessor code just to make a cleaner implementation. Add new logic beside or after the existing flow, keep the original block intact, and make the smallest compatible hook.
-11. Keep defensive code narrow: guard only real boundary risks such as user input, missing config, async UI lifecycle, RPC payloads, destroyed actors, or optional data. If an internal required value is supposed to exist for the whole flow, prefer letting the bug surface over wrapping every step in repeated `if` / `UE.IsValid` checks.
-12. For implementation answers, cite relevant local file paths and line numbers when possible. Preserve existing teammate behavior, names, call order, formatting, RPC names, event IDs, save keys, and project style unless the change is required and explained.
+10. For flattened AI-generated UI that needs reusable controls, read `references/cowart-ui-workflow.md` and `references/cowart-ui/precision-reconstruction.md`. Keep text, numbers, timers, progress, labels, and hit targets native; use reconstruction only for reusable artwork and skins; require recomposition plus developer review before Stage 3 confirmation.
+11. Hard code-change rule: never directly rewrite, restructure, wrap, rename, or reorder existing teammate/predecessor code just to make a cleaner implementation. Add new logic beside or after the existing flow, keep the original block intact, and make the smallest compatible hook.
+12. Keep defensive code narrow: guard only real boundary risks such as user input, missing config, async UI lifecycle, RPC payloads, destroyed actors, or optional data. If an internal required value is supposed to exist for the whole flow, prefer letting the bug surface over wrapping every step in repeated `if` / `UE.IsValid` checks.
+13. For implementation answers, cite relevant local file paths and line numbers when possible. Preserve existing teammate behavior, names, call order, formatting, RPC names, event IDs, save keys, and project style unless the change is required and explained.
 
 ## Search
 
@@ -90,3 +91,6 @@ Additional distilled references:
 - `references/snippets.md`: small Lua templates for RPCs, UI, replication, actions, resources, and loadouts.
 - `references/pitfalls.md`: gotchas and verification reminders to check before giving code advice.
 - `references/skill-evolution.md`: controlled protocol for deciding when and how to update this skill.
+- `references/cowart-ui-workflow.md`: staged workflow for turning approved UI visuals into reviewable reusable controls.
+- `references/cowart-ui/precision-reconstruction.md`: Stage 2A/2B recognition, reconstruction, recomposition, and review gate.
+- `references/cowart-ui/component-extractor.md`: extraction-plan schema and local command-line tools.
