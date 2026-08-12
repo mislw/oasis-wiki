@@ -10,7 +10,8 @@ $allowedDirs = @(
     'agents',
     'assets',
     'references',
-    'scripts'
+    'scripts',
+    'tests'
 )
 
 $allowedFiles = @(
@@ -21,7 +22,8 @@ $allowedFiles = @(
     'LICENSE',
     'LICENSE.md',
     'license.txt',
-    'SKILL.md'
+    'SKILL.md',
+    'VERSION'
 )
 
 $ignoredNames = @(

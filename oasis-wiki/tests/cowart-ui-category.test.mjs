@@ -31,6 +31,13 @@ const requiredFiles = [
   "assets/cowart-ui/component-decisions-template.json",
   "assets/cowart-ui/workflow-console/index.html",
   "assets/cowart-ui/workbench-template/index.html",
+  "references/cowart-ui/precision-reconstruction.md",
+  "assets/cowart-ui/extraction-plan-template.json",
+  "scripts/cowart-ui/component-extractor/build_extraction_plan.py",
+  "scripts/cowart-ui/component-extractor/validate_extraction_plan.py",
+  "scripts/cowart-ui/component-extractor/build_reconstruction_jobs.py",
+  "scripts/cowart-ui/component-extractor/recompose_ui.py",
+  "scripts/cowart-ui/component-extractor/validate_reconstruction.py",
 ];
 
 function walk(dir) {
@@ -74,4 +81,10 @@ test("Cowart UI bundle excludes environments, bytecode, and runtime outputs", ()
   const forbidden = roots.flatMap(walk).map((path) => relative(wikiRoot, path))
     .filter((path) => /(^|[\\/])(?:\.venv|__pycache__|sessions?)([\\/]|$)|\.pyc$/i.test(path));
   assert.deepEqual(forbidden, []);
+});
+
+test("bundled Skill includes the precision component reconstruction workflow", () => {
+  const content = readFileSync(join(wikiRoot, "references/cowart-ui-workflow.md"), "utf8");
+  assert.match(content, /Precision Component Reconstruction/);
+  assert.match(content, /reconstruction_candidate/);
 });

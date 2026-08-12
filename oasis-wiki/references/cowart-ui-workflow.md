@@ -73,3 +73,15 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 - 不覆盖或删除 Cowart 中既有图形；修订图保留版本关系。
 - 未经用户明确授权，不写入 UGC Lua、WidgetBlueprint、`.uasset`、`.umap` 或项目内风格档案。
 - 不打包 `.venv`、`__pycache__`、`.pyc`、临时 session、用户 profile 或 RedCliff 运行产物。
+
+## Precision Component Reconstruction
+
+当审核通过的 UI 只有扁平位图、没有可信源图层包时，进入 `references/cowart-ui/precision-reconstruction.md`：
+
+1. 锁定审核图与 SHA-256，并建立包含原生控件、皮肤、图标、复合区域和候选控件的 UI Tree。
+2. 执行 Stage 2A Component Recognition，生成并验证 `extraction-plan.json`。
+3. 执行 Stage 2B Precision Reconstruction；共享皮肤必须综合等价实例重建，不得把任意矩形裁剪冒充可复用控件。
+4. 使用真实位图合成生成 `reconstructed-preview.png`，再与审核图对比并记录重建报告。
+5. 只有通过评审的候选项才能进入 Stage 3 Component Confirmation 和组件库。
+
+工作台必须区分 `reconstruction_candidate`、重建输出、`pending_review` 与开发者明确确认的 `active` 组件。

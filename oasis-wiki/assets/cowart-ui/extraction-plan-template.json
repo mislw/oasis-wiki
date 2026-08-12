@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "artifact_type": "extraction_plan",
+  "source": {
+    "image": "visual-final.png",
+    "sha256": "<approved-image-sha256>",
+    "page_size": { "width": 1920, "height": 1080 }
+  },
+  "components": [
+    {
+      "target_component_id": "button.purchase.gold",
+      "category": "button",
+      "mode": "reconstruct_skin",
+      "status": "candidate",
+      "source_nodes": ["button.exchange.offer_01"],
+      "instances": [
+        {
+          "node_id": "button.exchange.offer_01",
+          "bounds": { "x": 0, "y": 0, "width": 120, "height": 44 }
+        }
+      ],
+      "remove_content": ["cost_text", "currency_icon"],
+      "source_content_clean": false,
+      "transparent": true,
+      "evaluate_nine_slice": true,
+      "output": "layers/button.purchase.gold.png",
+      "confidence": 0.96,
+      "reason": "Equivalent purchase buttons use one reusable skin."
+    }
+  ]
+}
