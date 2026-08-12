@@ -130,6 +130,49 @@ Read:
 
 Rule: DataTable/UAEDataTable rows are treated as source data. Runtime logic must not mutate returned row objects directly; copy the row into a normal Lua table before changing derived values.
 
+### UI Design System
+
+Use when the user asks to analyze UI screenshots, extract or correct reusable controls, build a project-specific style/component library, optimize a UI mockup, plan a complete UI Tree, or generate a new page from an existing control library.
+
+Trigger examples:
+
+- `分析这张 UI 参考图`
+- `提取控件库/设计规范`
+- `控件修正/确认控件/拒绝控件`
+- `按照项目风格生成 UI`
+- `先渲染这个 UI`
+- `检查层级/遮挡/复用率`
+
+Read:
+
+- `references/game-ui-design-system.md`
+- Only the task-specific file under `references/game-ui/` selected by that router
+- Secondary branch: `MCP Operation` only when inspecting or changing real WidgetBlueprint assets
+
+This branch owns visual-system decisions and the mandatory UI Tree gate. `UI And Interaction` owns runtime Lua bindings, RPC/event flow, and refresh behavior. Use both only when the request spans design and runtime implementation.
+
+### Cowart UI Production
+
+Use when the user asks to generate or revise a game UI image, automatically place it into and open native Cowart, split a flat UI into editable controls, process a Canva Magic Layers export, recover a layer hierarchy, or create a RedCliff UI delivery plan.
+
+Trigger examples:
+
+- `按照游戏风格生成这个 UI，生成后自动打开 Cowart`
+- `把这张 UI 拆成可移动组件`
+- `导入 Magic Layers 并恢复层级`
+- `生成 layer-manifest 和 Cowart shape plan`
+- `把确认后的 UI 做成 RedCliff 交付计划`
+
+Read:
+
+- `references/cowart-ui-workflow.md`
+- `references/cowart-ui/component-extractor.md` for generation, Cowart review, layer extraction, workbench, and component decisions
+- `references/cowart-ui/delivery.md` only after visual and component approval
+- Upstream branch: `UI Design System` for project style, reusable components, and the mandatory UI Tree
+- Secondary branch: `MCP Operation` only after explicit authorization to inspect or modify real WidgetBlueprint assets
+
+This category owns the production pipeline and automatic Cowart handoff. It must not treat a visual-review bitmap as editable components, and it must not mutate UGC project files during visual review, component extraction, or delivery-plan generation.
+
 ### UI And Interaction
 
 Use when the user asks where a UI lives, how a button opens a panel, how a Widget should be named/bound, or how UI refresh should happen.

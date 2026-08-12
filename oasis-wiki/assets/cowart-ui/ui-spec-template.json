@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "page": {
+    "page_id": "page.special-offer",
+    "name": "Special Offer",
+    "canvas": {"width": 1280, "height": 720},
+    "purpose": "Show time-limited shop offers.",
+    "operations": [
+      {"operation_id": "purchase.offer", "trigger": "button.purchase", "action": "request_purchase", "owner": "server"}
+    ]
+  },
+  "visual": {
+    "profile": "redcliff",
+    "reference_images": [
+      {
+        "source": "<original-style-image-path>",
+        "role": "style",
+        "priority": 1,
+        "copy_visual_style": true,
+        "source_kind": "input_image_attachment"
+      },
+      {
+        "source": "<original-layout-image-path>",
+        "role": "layout",
+        "priority": 1,
+        "copy_visual_style": false,
+        "source_kind": "input_image_attachment"
+      }
+    ],
+    "art_direction": "Use confirmed RedCliff controls before proposing new ones."
+  },
+  "data_contract": [
+    {"key": "offers", "type": "array", "owner": "server", "refresh": "open_and_purchase"}
+  ],
+  "nodes": [
+    {
+      "component_id": "background.special_offer.scene",
+      "category": "background",
+      "parent_id": "root",
+      "layer": 0,
+      "z_index": 0,
+      "bounds": {"x": 0, "y": 0, "width": 1280, "height": 720},
+      "status": "pending_review",
+      "asset_policy": "layer",
+      "dynamic": false
+    },
+    {
+      "component_id": "button.purchase.primary",
+      "category": "button",
+      "parent_id": "background.special_offer.scene",
+      "layer": 60,
+      "z_index": 10,
+      "bounds": {"x": 900, "y": 590, "width": 220, "height": 64},
+      "status": "pending_review",
+      "asset_policy": "native",
+      "reuse_of": "button.primary.gold",
+      "dynamic": true,
+      "bindings": ["offers.selected.price"],
+      "operation_id": "purchase.offer"
+    }
+  ]
+}

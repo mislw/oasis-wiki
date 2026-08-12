@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "project": {
+    "name": "RedCliff",
+    "slug": "redcliff",
+    "aliases": ["red-cliff", "赤壁"]
+  },
+  "style_guide": {
+    "status": "pending_review",
+    "source": ["城防管理参考图", "英雄培养参考图"],
+    "colors": {
+      "background": "dark brown game-scene overlay",
+      "window": "warm cream",
+      "header": "dark brown wood grain",
+      "primary_button": "gold to orange vertical gradient",
+      "selected": "light green with bright green border",
+      "information": "dark coffee brown",
+      "disabled": "desaturated pink-gray or dark gray",
+      "title_text": "warm white with dark brown outline"
+    },
+    "shapes": {
+      "panel": "medium rounded corners with light inner border",
+      "button": "rounded rectangle with double border, top highlight, bottom shadow",
+      "card": "rounded rectangle with double border"
+    },
+    "typography": {
+      "title": "bold warm-white Chinese with dark outline and shadow",
+      "button": "bold white or pale-yellow Chinese with brown outline",
+      "body": "dark brown"
+    },
+    "spacing": {"status": "requires source-resolution confirmation"},
+    "icons": {"style": "cartoon render, soft highlight, dark outer contour"},
+    "layers": {"background": 0, "window": 10, "panel": 20, "content": 30, "visual": 40, "text": 50, "interaction": 60, "state": 70, "popup": 80, "guide": 90, "system": 100}
+  },
+  "components": [
+    {"component_id":"panel.window.main","name":"主窗口面板","category":"panel","description":"页面主窗口容器","usage":["城防","英雄"],"states":["default"],"parent_types":["root"],"layer":10,"reusable":true,"visual_style":{"fill":"warm cream","border":"light inner border"},"interaction":{},"source":{"image":"城防管理参考图"},"confidence":0.98,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"bar.header.wood","name":"木纹标题栏","category":"header","description":"页面顶部标题栏","usage":["page title"],"states":["default"],"parent_types":["panel"],"layer":20,"reusable":true,"visual_style":{"fill":"dark brown wood grain"},"interaction":{},"source":{"image":"城防管理参考图"},"confidence":0.96,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"button.close.default","name":"关闭按钮","category":"button","description":"关闭当前页面","usage":["close"],"states":["default","pressed"],"parent_types":["header"],"layer":60,"reusable":true,"visual_style":{"shape":"large X","fill":"pale cream"},"interaction":{"click":"close page"},"source":{"image":"城防管理参考图"},"confidence":0.99,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"button.primary.gold","name":"金色主操作按钮","category":"button","description":"页面核心确认操作","usage":["保存","升级","确认"],"states":["default","pressed","disabled","highlighted"],"parent_types":["panel","popup"],"layer":60,"reusable":true,"visual_style":{"fill":"gold-orange gradient","border":"dark orange double border","highlight":"top","shadow":"bottom brown-orange"},"interaction":{"click":"execute primary action"},"source":{"image":"城防管理参考图"},"confidence":0.98,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"button.secondary.gold","name":"金色次级操作按钮","category":"button","description":"页面次级操作","usage":["管理建筑","编辑阵容"],"states":["default","pressed","disabled"],"parent_types":["panel"],"layer":60,"reusable":true,"visual_style":{"fill":"gold-orange gradient"},"interaction":{"click":"execute secondary action"},"source":{"image":"城防管理参考图"},"confidence":0.94,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"tab.scheme.default","name":"数字方案页签","category":"tab","description":"未选中的方案或阵容页签","usage":["scheme selection"],"states":["default","selected","disabled"],"parent_types":["tab_group"],"layer":60,"reusable":true,"visual_style":{"shape":"small rounded square"},"interaction":{"click":"select scheme"},"source":{"image":"城防管理参考图"},"confidence":0.94,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"item.resource.cost","name":"资源消耗项","category":"resource_item","description":"显示资源图标、当前量与需求量","usage":["upgrade cost","refund"],"states":["enough","insufficient"],"parent_types":["panel","button"],"layer":40,"reusable":true,"visual_style":{"icon":"cartoon circular icon"},"interaction":{},"source":{"image":"英雄培养参考图"},"confidence":0.91,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"slot.tower.occupied","name":"已布置防御建筑点","category":"slot","description":"城防阵型中的已占用建筑位置","usage":["tower layout"],"states":["occupied","selected","disabled"],"parent_types":["panel"],"layer":30,"reusable":true,"visual_style":{"content":"cartoon tower visual"},"interaction":{"click":"select building; exact behavior pending"},"source":{"image":"城防管理参考图"},"confidence":0.82,"status":"candidate","version":1,"confirmed_by":null,"reason":"可能是可点击槽位，也可能是场景预览对象"},
+    {"component_id":"card.hero.deployed","name":"已上阵英雄卡","category":"card","description":"显示当前阵容中的英雄","usage":["formation"],"states":["deployed","selected"],"parent_types":["panel"],"layer":30,"reusable":true,"visual_style":{"selected":"light green border"},"interaction":{"click":"select hero"},"source":{"image":"英雄培养参考图"},"confidence":0.98,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"slot.hero.locked","name":"锁定英雄槽","category":"slot","description":"尚未解锁的上阵位置","usage":["formation"],"states":["locked"],"parent_types":["panel"],"layer":30,"reusable":true,"visual_style":{"fill":"desaturated pink-gray"},"interaction":{},"source":{"image":"英雄培养参考图"},"confidence":0.98,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"card.hero.roster","name":"英雄列表卡片","category":"card","description":"英雄列表中的紧凑卡片","usage":["hero roster"],"states":["available","selected","unavailable"],"parent_types":["grid","list"],"layer":30,"reusable":true,"visual_style":{"shape":"compact portrait card"},"interaction":{"click":"select hero"},"source":{"image":"英雄培养参考图"},"confidence":0.95,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"panel.tower.description","name":"建筑说明区域","category":"panel","description":"建筑详情说明或浮动提示","usage":["tower detail"],"states":["default"],"parent_types":["panel"],"layer":80,"reusable":true,"visual_style":{"fill":"dark translucent gray"},"interaction":{"hit_test":"pending"},"source":{"image":"城防管理参考图"},"confidence":0.64,"status":"candidate","version":1,"confirmed_by":null,"reason":"无法确认是固定说明面板还是临时 Tooltip"},
+    {"component_id":"slot.hero.detail","name":"英雄详情槽","category":"slot","description":"英雄详情中的技能、装备或兵种槽","usage":["hero detail"],"states":["default","locked"],"parent_types":["panel"],"layer":40,"reusable":true,"visual_style":{},"interaction":{},"source":{"image":"英雄培养参考图"},"confidence":0.58,"status":"candidate","version":1,"confirmed_by":null,"reason":"图标语义无法确认"},
+    {"component_id":"slot.tower.remove_mode","name":"拆除状态建筑槽","category":"slot","description":"建筑进入可拆除选中状态时的槽位扩展","usage":["building removal"],"states":["remove_mode"],"parent_types":["panel"],"layer":70,"reusable":true,"visual_style":{"selection":"gold ring with red remove marker"},"interaction":{"click":"toggle removal selection"},"source":{"image":"建筑拆除管理草图","artifact":"defense-remove-v1"},"confidence":0.86,"status":"pending_review","version":1,"confirmed_by":null},
+    {"component_id":"panel.building.remove_summary","name":"建筑拆除摘要面板","category":"panel","description":"显示当前拆除选择及预计返还资源","usage":["building removal"],"states":["default","empty"],"parent_types":["panel"],"layer":30,"reusable":true,"visual_style":{"fill":"dark coffee brown"},"interaction":{},"source":{"image":"建筑拆除管理草图","artifact":"defense-remove-v1"},"confidence":0.88,"status":"pending_review","version":1,"confirmed_by":null}
+  ],
+  "pages": [
+    {"page_id":"page.defense.management","name":"城防管理页","type":"城防页面","source":"城防管理参考图","components":["panel.window.main","bar.header.wood","button.close.default","button.primary.gold","button.secondary.gold","tab.scheme.default","item.resource.cost","slot.tower.occupied","panel.tower.description"],"review_status":"pending_review"},
+    {"page_id":"page.hero.management","name":"英雄培养与阵容页","type":"英雄页面","source":"英雄培养参考图","components":["panel.window.main","bar.header.wood","button.close.default","button.primary.gold","button.secondary.gold","tab.scheme.default","item.resource.cost","card.hero.deployed","slot.hero.locked","card.hero.roster","slot.hero.detail"],"review_status":"pending_review"},
+    {"page_id":"page.defense.remove","name":"城防建筑拆除管理页","type":"城防页面","source":"建筑拆除管理草图","components":["panel.window.main","bar.header.wood","button.close.default","button.primary.gold","item.resource.cost","slot.tower.occupied","slot.tower.remove_mode","panel.building.remove_summary"],"review_status":"pending_review"}
+  ],
+  "history": []
+}

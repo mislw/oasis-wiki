@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "reviewed_by": "developer",
+  "decisions": [
+    {
+      "component_id": "button.purchase.primary",
+      "action": "activate",
+      "name": "Primary purchase button",
+      "description": "Confirmed reusable primary action button.",
+      "usage": ["purchase", "confirm"],
+      "states": ["default", "pressed", "disabled"],
+      "parent_types": ["panel", "card"],
+      "reusable": true,
+      "visual_style": {"fill": "gold"},
+      "interaction": {"click": "execute primary action"}
+    }
+  ]
+}
