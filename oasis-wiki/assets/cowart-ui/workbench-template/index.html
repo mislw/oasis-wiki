@@ -473,6 +473,12 @@
       });
     }
 
+    function syncInitialCanvasMode() {
+      const hasReadyCleanLayer = items.some(item => item.reconstructionStatus === 'ready' && Boolean(item.cleanLayerUrl));
+      componentLayersVisible = hasReadyCleanLayer;
+      sourceCropsVisible = false;
+    }
+
     function firstValue(source, keys, fallback = null) {
       for (const key of keys) if (source && source[key] !== undefined && source[key] !== null) return source[key];
       return fallback;
@@ -624,7 +630,7 @@
       selectedUid = items[0]?.uid || null;
       history = [];
       future = [];
-      componentLayersVisible = true;
+      syncInitialCanvasMode();
       buildComponentCrops();
       render();
       return true;

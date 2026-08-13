@@ -260,6 +260,8 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             "reconstructing",
             "reconstructed",
             "validation",
+            "syncInitialCanvasMode",
+            "hasReadyCleanLayer",
             "净化母版",
         ):
             self.assertIn(marker, template)
