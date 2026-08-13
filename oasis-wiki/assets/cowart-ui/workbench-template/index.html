@@ -213,7 +213,7 @@
     </main>
     <footer class="results">
       <section class="panel summary"><strong id="summaryCount">3</strong><span>已标记控件</span></section>
-      <section class="panel result-panel"><div class="result-head"><div class="result-tabs"><button class="result-tab active" id="assetTab" data-tab="assets">Assets</button><button class="result-tab" id="structureTab" data-tab="structure">Structure</button></div><span id="resultCount">preview-sheet</span></div><div class="result-filters" id="resultFilters"><button class="result-filter active" data-filter="all">全部</button><button class="result-filter" data-filter="skin">Skin</button><button class="result-filter" data-filter="artwork">Artwork</button><button class="result-filter" data-filter="composite">Composite</button><button class="result-filter" data-filter="native">Native</button><button class="result-filter" data-filter="needs_cleanup">Needs Cleanup</button><button class="result-filter" data-filter="ready">Ready</button></div><div class="result-list" id="resultList"></div></section>
+      <section class="panel result-panel"><div class="result-head"><div class="result-tabs"><button class="result-tab active" id="assetTab" data-tab="assets">Assets</button><button class="result-tab" id="structureTab" data-tab="structure">Structure</button></div><span id="resultCount">preview-sheet</span></div><div class="result-filters" id="resultFilters"><button class="result-filter active" data-filter="all">全部</button><button class="result-filter" data-filter="skin">Skin</button><button class="result-filter" data-filter="artwork">Artwork</button><button class="result-filter" data-filter="composite">Composite</button><button class="result-filter" data-filter="native">Native</button><button class="result-filter" data-filter="pending">Pending</button><button class="result-filter" data-filter="ready">Ready</button></div><div class="result-list" id="resultList"></div></section>
       <section class="panel export-panel"><button class="primary" id="exportButton"><i data-lucide="folder-output"></i>导出 PNG + JSON</button></section>
     </footer>
   </div>
@@ -224,7 +224,7 @@
     let EXPORT_SLUG = 'ui-workbench';
     const exportSlug = value => String(value || 'ui-workbench').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'ui-workbench';
     const handles = ['nw','n','ne','e','se','s','sw','w'];
-    const categoryNames = { background:'背景', panel:'面板', grid:'网格', row:'行容器', card:'商品卡', button:'按钮', icon:'图标', artwork:'美术', badge:'角标', slot:'槽位', text:'文本', counter:'动态数值', tabs:'页签组' };
+    const categoryNames = { background:'背景', panel:'面板', grid:'网格', row:'行容器', card:'卡片', button:'按钮', icon:'图标', artwork:'美术', badge:'角标', slot:'槽位', text:'文本', counter:'动态数值', tabs:'标签组' };
     const stateNames = { default:'默认', disabled:'禁用', selected:'选中' };
     const makeControl = (uid, id, category, rect, parent, layer, options = {}) => ({
       uid, id, category, rect:{ ...rect }, sourceRect:{ ...rect }, parent, layer, state:'default', padding:2,
@@ -232,9 +232,11 @@
       tone:options.tone || '', ready:false, status:options.status || 'pending_review',
       confidence:options.confidence ?? 0.96, reason:options.reason || null, reuse:options.reuse || null,
       nodeKind:options.nodeKind || null, renderMode:options.renderMode || null,
-      visualAssets:options.visualAssets || { source_crop:'__source__', clean_asset:null, assembly_preview:null },
-      sourceCropUrl:options.sourceCropUrl || null, cleanAssetUrl:options.cleanAssetUrl || null, assemblyAssetUrl:options.assemblyAssetUrl || null,
-      cleanupStatus:options.cleanupStatus || null, reusableBitmap:Boolean(options.reusableBitmap),
+      visualAssets:options.visualAssets || { source_crop:'__source__', clean_layer:null, assembly_preview:null },
+      sourceCropUrl:options.sourceCropUrl || null, cleanLayerUrl:options.cleanLayerUrl || null, assemblyAssetUrl:options.assemblyAssetUrl || null,
+      layerReconstruction:options.layerReconstruction || { status:'pending', method:'image_reconstruction', error:null },
+      reconstructionStatus:options.reconstructionStatus || null, reconstructionError:options.reconstructionError || null,
+      reusableBitmap:Boolean(options.reusableBitmap),
       ...(options.state ? { state:options.state } : {})
     });
     const productColumns = [174, 364, 553, 743, 933];
@@ -316,6 +318,7 @@
     let sourceCropsVisible = false;
     let collapsed = new Set(initialItems.filter(item => item.category === 'card').map(item => item.id));
     let componentLayersVisible = true;
+    let reconstructionCapability = { available:false, required_capability:'image_edit_inpainting', executor:null, error:'LAYER_RECONSTRUCTION_UNAVAILABLE' };
     const componentCache = new Map();
     const sourceCropCache = new Map();
 
@@ -339,13 +342,15 @@
       item.nodeKind = nodeKind;
       item.renderMode = ['bitmap','outline','ghost','assembly','hidden'].includes(item.renderMode)
         ? item.renderMode : ({ composite:'outline', skin:'bitmap', artwork:'bitmap', native:'outline' }[nodeKind]);
-      item.visualAssets ||= { source_crop:'__source__', clean_asset:null, assembly_preview:null };
+      item.visualAssets ||= { source_crop:'__source__', clean_layer:null, assembly_preview:null };
       if (!('source_crop' in item.visualAssets)) item.visualAssets.source_crop = '__source__';
-      if (!('clean_asset' in item.visualAssets)) item.visualAssets.clean_asset = null;
+      if (!('clean_layer' in item.visualAssets)) item.visualAssets.clean_layer = null;
       if (!('assembly_preview' in item.visualAssets)) item.visualAssets.assembly_preview = null;
-      item.cleanupStatus = ['composite','native'].includes(nodeKind) ? 'not_applicable'
-        : (item.cleanAssetUrl || item.visualAssets.clean_asset ? 'clean' : (item.cleanupStatus || 'needs_cleanup'));
-      item.reusableBitmap = ['skin','artwork'].includes(nodeKind) && item.cleanupStatus === 'clean' && Boolean(item.cleanAssetUrl || item.visualAssets.clean_asset);
+      item.layerReconstruction ||= { status:nodeKind === 'native' ? 'not_applicable' : 'pending', method:nodeKind === 'native' ? null : 'image_reconstruction', error:null };
+      item.reconstructionStatus = nodeKind === 'native' ? 'not_applicable'
+        : (item.cleanLayerUrl || item.visualAssets.clean_layer ? (item.layerReconstruction.status || 'ready') : (item.reconstructionStatus || item.layerReconstruction.status || 'pending'));
+      item.reconstructionError = item.layerReconstruction.error || item.reconstructionError || null;
+      item.reusableBitmap = ['skin','artwork'].includes(nodeKind) && item.reconstructionStatus === 'ready' && Boolean(item.cleanLayerUrl || item.visualAssets.clean_layer);
       item.ready = item.reusableBitmap;
       return item;
     }
@@ -356,7 +361,7 @@
     }
 
     function defaultAssetItems(sourceItems = items) {
-      return sourceItems.filter(item => item.nodeKind === 'skin' || item.nodeKind === 'artwork');
+      return sourceItems.filter(item => item.nodeKind !== 'native' && item.reconstructionStatus !== 'not_applicable');
     }
 
     function restore(serialized) {
@@ -452,7 +457,7 @@
       componentCache.clear();
       sourceCropCache.clear();
       items.forEach(item => {
-        if (item.cleanAssetUrl && item.reusableBitmap) componentCache.set(item.uid, item.cleanAssetUrl);
+        if (item.cleanLayerUrl && item.reconstructionStatus === 'ready') componentCache.set(item.uid, item.cleanLayerUrl);
         if (item.sourceCropUrl) sourceCropCache.set(item.uid, item.sourceCropUrl);
       });
       if (!image.complete || !image.naturalWidth) return;
@@ -516,27 +521,29 @@
         const id = idMap.get(elementId);
         const parentRaw = firstValue(element, ['parent_id','parentId','group_id','groupId','parent'], 'root');
         const visualAssets = element.visual_assets || element.visualAssets || {};
-        const cleanName = visualAssets.clean_asset || firstValue(element, ['file','fileName','filename','asset','image']);
+        const cleanName = visualAssets.clean_layer || firstValue(element, ['file','fileName','filename','asset','image']);
         const cleanFile = typeof cleanName === 'string' ? findImportedFile(files, cleanName) : null;
         return makeControl(`import-${index + 1}`, id, String(element.category || element.type || 'unknown').toLowerCase(), rect, idMap.get(String(parentRaw)) || 'root', Number(firstValue(element, ['layer','semantic_layer','semanticLayer'], 30)), {
           status:element.status === 'candidate' || (['skin','artwork'].includes(element.node_kind) && !cleanFile) ? 'candidate' : 'pending_review',
           confidence:cleanFile || ['composite','native'].includes(element.node_kind) ? .98 : .5,
-          reason:cleanFile || ['composite','native'].includes(element.node_kind) ? element.reason || null : 'clean asset PNG missing from selected directory',
+          reason:cleanFile || element.node_kind === 'native' ? element.reason || null : 'clean layer PNG missing from selected directory',
           nodeKind:element.node_kind || element.nodeKind,
           renderMode:element.render_mode || element.renderMode,
           visualAssets,
-          cleanupStatus:(element.review || {}).cleanup_status,
+          layerReconstruction:element.layer_reconstruction,
+          reconstructionStatus:(element.layer_reconstruction || {}).status,
+          reconstructionError:(element.layer_reconstruction || {}).error,
           reusableBitmap:Boolean(element.reusable_bitmap)
         });
       });
       rawElements.forEach((element, index) => {
         const visualAssets = element.visual_assets || element.visualAssets || {};
         const sourceFile = typeof visualAssets.source_crop === 'string' ? findImportedFile(files, visualAssets.source_crop) : null;
-        const cleanName = visualAssets.clean_asset || firstValue(element, ['file','fileName','filename','asset','image']);
+        const cleanName = visualAssets.clean_layer || firstValue(element, ['file','fileName','filename','asset','image']);
         const cleanFile = typeof cleanName === 'string' ? findImportedFile(files, cleanName) : null;
         const assemblyFile = typeof visualAssets.assembly_preview === 'string' ? findImportedFile(files, visualAssets.assembly_preview) : null;
         if (sourceFile) imported[index].sourceCropUrl = URL.createObjectURL(sourceFile);
-        if (cleanFile) imported[index].cleanAssetUrl = URL.createObjectURL(cleanFile);
+        if (cleanFile) imported[index].cleanLayerUrl = URL.createObjectURL(cleanFile);
         if (assemblyFile) imported[index].assemblyAssetUrl = URL.createObjectURL(assemblyFile);
       });
 
@@ -591,18 +598,21 @@
           nodeKind:element.node_kind || element.nodeKind,
           renderMode:element.render_mode || element.renderMode,
           visualAssets:element.visual_assets || element.visualAssets,
-          cleanupStatus:(element.review || {}).cleanup_status,
+          layerReconstruction:element.layer_reconstruction,
+          reconstructionStatus:(element.layer_reconstruction || {}).status,
+          reconstructionError:(element.layer_reconstruction || {}).error,
           reusableBitmap:Boolean(element.reusable_bitmap)
         });
         const visualAssets = element.visual_assets || element.visualAssets || {};
         if (typeof visualAssets.source_crop === 'string' && visualAssets.source_crop !== '__source__') item.sourceCropUrl = visualAssets.source_crop;
-        if (typeof visualAssets.clean_asset === 'string') item.cleanAssetUrl = visualAssets.clean_asset;
+        if (typeof visualAssets.clean_layer === 'string') item.cleanLayerUrl = visualAssets.clean_layer;
         if (typeof visualAssets.assembly_preview === 'string') item.assemblyAssetUrl = visualAssets.assembly_preview;
-        if (!item.cleanAssetUrl && typeof element.file === 'string' && ['skin','artwork'].includes(item.nodeKind)) item.cleanAssetUrl = element.file;
+        if (!item.cleanLayerUrl && typeof element.file === 'string' && item.nodeKind !== 'native') item.cleanLayerUrl = element.file;
         return item;
       }).filter(item => item.rect.w > 0 && item.rect.h > 0);
       SOURCE = { width, height };
       SOURCE_NAME = session.source_name || 'UI source.png';
+      reconstructionCapability = session.layer_reconstruction_capability || reconstructionCapability;
       EXPORT_SLUG = exportSlug(session.title || SOURCE_NAME);
       const sourceUrl = session.source_image || 'source.png';
       $('#sourceImage').src = sourceUrl;
@@ -710,7 +720,7 @@
         const selected = item.uid === selectedUid;
         const cleanCrop = componentCache.get(item.uid);
         const sourceCrop = sourceCropCache.get(item.uid);
-        const crop = sourceCropsVisible ? sourceCrop : (['skin','artwork'].includes(item.nodeKind) && item.renderMode !== 'outline' ? cleanCrop : null);
+        const crop = sourceCropsVisible ? sourceCrop : cleanCrop;
         return `<div class="region ${selected ? 'selected' : ''}" data-id="${escapeHtml(item.uid)}" data-category="${item.category}" data-layer="${item.layer}" data-node-kind="${item.nodeKind}" data-render-mode="${item.renderMode}" style="z-index:${selected ? item.layer + 5 : item.layer};left:${rect.x / SOURCE.width * 100}%;top:${rect.y / SOURCE.height * 100}%;width:${rect.w / SOURCE.width * 100}%;height:${rect.h / SOURCE.height * 100}%">
           ${crop ? `<span class="component-crop" style="background-image:url('${crop}')"></span>` : ''}
           <span class="label">${item.nodeKind} · L${item.layer} · ${escapeHtml(item.id)}</span>
@@ -744,12 +754,12 @@
       $('#nodeKindInfo').textContent = `Node Kind\n${item.nodeKind}`;
       $('#renderModeInfo').textContent = `Render Mode\n${item.renderMode}`;
       $('#childrenInfo').textContent = `Children\n${children.length}`;
-      $('#assetStatusInfo').textContent = `Reusable Bitmap\n${item.reusableBitmap ? 'Yes' : 'No'} · ${item.cleanupStatus}`;
-      const cleanTarget = item.nodeKind === 'composite' ? children.find(child => child.id === `${item.id}.background`) : item;
-      $('#cleanParentButton').disabled = !cleanTarget || cleanTarget.nodeKind !== 'skin' || cleanTarget.cleanupStatus === 'clean';
+      $('#assetStatusInfo').textContent = `Layer Reconstruction\n${item.reconstructionStatus}${item.reconstructionError ? ` · ${item.reconstructionError}` : ''}`;
+      const cleanTarget = item;
+      $('#cleanParentButton').disabled = !cleanTarget || cleanTarget.nodeKind === 'native' || cleanTarget.reconstructionStatus === 'ready';
       const visualImage = selectedVisualMode === 'source' ? sourceCropCache.get(item.uid)
         : selectedVisualMode === 'clean' ? componentCache.get(item.uid) : item.assemblyAssetUrl;
-      const missingMessage = selectedVisualMode === 'clean' ? 'Clean asset not generated'
+      const missingMessage = selectedVisualMode === 'clean' ? 'Clean layer not generated'
         : selectedVisualMode === 'assembly' ? 'Assembly preview not generated' : 'Source crop not available';
       $('#maskPreview').className = visualImage ? 'actual-crop' : 'preview-message';
       $('#maskPreview').style.backgroundImage = visualImage ? `url('${visualImage}')` : '';
@@ -760,14 +770,14 @@
     function renderResults() {
       const base = resultTab === 'assets' ? defaultAssetItems() : items.filter(item => ['composite','native'].includes(item.nodeKind));
       const visible = base.filter(item => resultFilter === 'all' || item.nodeKind === resultFilter
-        || (resultFilter === 'needs_cleanup' && item.cleanupStatus === 'needs_cleanup')
+        || (resultFilter === 'pending' && !['ready','not_applicable'].includes(item.reconstructionStatus))
         || (resultFilter === 'ready' && item.reusableBitmap));
       $('#resultCount').textContent = `${visible.length} / ${base.length}`;
       $('#resultList').innerHTML = visible.map(item => {
         const componentImage = componentCache.get(item.uid);
         const preview = componentImage ? `<i class="actual-result" style="background-image:url('${componentImage}')"></i>` : `<i><i data-lucide="${item.nodeKind === 'composite' ? 'brackets' : item.icon}"></i></i>`;
         const children = items.filter(entry => entry.parent === item.id).length;
-        const meta = resultTab === 'structure' ? `${item.nodeKind} · ${children} children` : `${item.nodeKind} · ${item.reusableBitmap ? 'Ready' : 'Needs Cleanup'}`;
+        const meta = resultTab === 'structure' ? `${item.nodeKind} · ${children} children` : `${item.nodeKind} · ${item.reconstructionStatus}`;
         return `<div class="result-item ${resultTab === 'structure' ? 'structure' : ''} ${item.uid === selectedUid ? 'selected' : ''}" data-result-id="${escapeHtml(item.uid)}"><span class="result-thumb">${preview}</span><div><div class="result-name">${escapeHtml(item.id)}</div><div class="result-meta">${meta}</div></div></div>`;
       }).join('');
       document.querySelectorAll('.result-tab').forEach(button => button.classList.toggle('active', button.dataset.tab === resultTab));
@@ -1094,7 +1104,7 @@
       const exportName = `${EXPORT_SLUG}-component-candidates`;
       canvas.toBlob(blob => downloadBlob(blob, `${exportName}.png`), 'image/png');
       const manifest = {
-        schema_version:2,
+        schema_version:3,
         source:{ kind:'workbench_export', source_name:SOURCE_NAME, page_size:SOURCE },
         source_size:SOURCE,
         status:'pending_review',
@@ -1106,8 +1116,9 @@
           confidence:entry.item.confidence, reason:entry.item.reason, reuse:entry.item.reuse,
           padding:entry.item.padding, source_rect:entry.item.sourceRect || entry.item.rect,
           bounds:{ x:entry.item.rect.x, y:entry.item.rect.y, width:entry.item.rect.w, height:entry.item.rect.h },
-          visual_assets:{ source_crop:null, clean_asset:`${exportName}.png`, assembly_preview:null },
-          review:{ status:'pending_review', cleanup_status:'clean' }, reusable_bitmap:true,
+          visual_assets:{ source_crop:null, clean_layer:`${exportName}.png`, assembly_preview:null },
+          layer_reconstruction:{ status:'ready', method:'image_reconstruction', error:null },
+          review:{ status:'pending_review', cleanup_status:'ready' }, reusable_bitmap:true,
           atlas_rect:{ x:entry.x, y:entry.y, width:entry.w, height:entry.h }
         }))
       };
@@ -1185,26 +1196,74 @@
     document.querySelectorAll('.visual-tab').forEach(button => button.addEventListener('click', () => { selectedVisualMode = button.dataset.view; renderInspector(); }));
     document.querySelectorAll('.result-tab').forEach(button => button.addEventListener('click', () => { resultTab = button.dataset.tab; resultFilter = 'all'; renderResults(); if (window.lucide) window.lucide.createIcons(); }));
     document.querySelectorAll('.result-filter').forEach(button => button.addEventListener('click', () => { resultFilter = button.dataset.filter; renderResults(); if (window.lucide) window.lucide.createIcons(); }));
-    $('#cleanParentButton').addEventListener('click', () => {
-      const item = selectedItem();
-      if (!item) return;
-      const target = item.nodeKind === 'composite' ? items.find(entry => entry.parent === item.id && entry.id === `${item.id}.background`) : item;
-      if (!target || target.nodeKind !== 'skin' || target.cleanupStatus === 'clean') return;
-      pushHistory();
-      target.cleanupStatus = 'requested';
+    async function requestLayerReconstruction(target) {
       target.status = 'candidate';
       target.ready = false;
       target.reusableBitmap = false;
-      render();
-      showToast(`已为 ${target.id} 排队 Precision Reconstruction；工作台不会在前端伪造补图`);
+      target.reconstructionError = null;
+      target.layerReconstruction ||= { method:'image_reconstruction', error:null };
+      for (const status of ['requested','job_created','waiting_executor']) {
+        target.reconstructionStatus = status;
+        target.layerReconstruction.status = status;
+        render();
+        await Promise.resolve();
+      }
+      const executor = window.cowartReconstructionExecutor;
+      if (!reconstructionCapability.available || typeof executor !== 'function') {
+        target.reconstructionStatus = 'failed';
+        target.reconstructionError = reconstructionCapability.error || 'LAYER_RECONSTRUCTION_UNAVAILABLE';
+        target.layerReconstruction.status = 'failed';
+        target.layerReconstruction.error = target.reconstructionError;
+        render();
+        showToast(target.reconstructionError);
+        return;
+      }
+      try {
+        target.reconstructionStatus = 'reconstructing';
+        target.layerReconstruction.status = 'reconstructing';
+        render();
+        const result = await executor({ component_id:target.id, visual_assets:target.visualAssets, layer_reconstruction:target.layerReconstruction });
+        if (!result || !result.clean_layer) throw new Error('LAYER_RECONSTRUCTION_UNAVAILABLE');
+        target.visualAssets.clean_layer = result.clean_layer;
+        target.cleanLayerUrl = result.clean_layer;
+        target.reconstructionStatus = 'reconstructed';
+        target.layerReconstruction.status = 'reconstructed';
+        render();
+        target.reconstructionStatus = 'validation';
+        target.layerReconstruction.status = 'validation';
+        render();
+        if (result.validated !== true) throw new Error(result.error || 'Layer reconstruction validation failed');
+        target.reconstructionStatus = 'ready';
+        target.layerReconstruction.status = 'ready';
+        target.layerReconstruction.error = null;
+        target.reusableBitmap = ['skin','artwork'].includes(target.nodeKind);
+        target.ready = target.reusableBitmap;
+        buildComponentCrops();
+        render();
+      } catch (error) {
+        target.reconstructionStatus = 'failed';
+        target.reconstructionError = String(error?.message || error);
+        target.layerReconstruction.status = 'failed';
+        target.layerReconstruction.error = target.reconstructionError;
+        render();
+        showToast(target.reconstructionError);
+      }
+    }
+
+    $('#cleanParentButton').addEventListener('click', () => {
+      const item = selectedItem();
+      if (!item) return;
+      const target = item;
+      if (target.nodeKind === 'native' || target.reconstructionStatus === 'ready') return;
+      pushHistory();
+      requestLayerReconstruction(target);
     });
     $('#extractButton').addEventListener('click', () => {
       if (!items.length) return;
-      const pending = defaultAssetItems().filter(item => item.cleanupStatus !== 'clean');
+      const pending = defaultAssetItems().filter(item => item.reconstructionStatus !== 'ready');
       pushHistory();
-      pending.forEach(item => { item.cleanupStatus = 'requested'; item.status = 'candidate'; item.ready = false; item.reusableBitmap = false; });
-      render();
-      showToast(`已排队 ${pending.length} 个净化/提取任务；仅 clean_asset 可进入组件库`);
+      pending.forEach(item => requestLayerReconstruction(item));
+      showToast(`已创建 ${pending.length} 个 Layer Reconstruction 请求`);
     });
     $('#exportButton').addEventListener('click', exportCandidates);
     window.addEventListener('keydown', event => {

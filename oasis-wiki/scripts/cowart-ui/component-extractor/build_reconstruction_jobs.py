@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create one image-edit instruction file per reusable artwork or skin target."""
+"""Create provider-neutral image-reconstruction jobs in hierarchy order."""
 
 import argparse
 import json
@@ -13,13 +13,14 @@ from validate_extraction_plan import load_json, validate_plan
 def instruction_for(component):
     if component["mode"] == "reconstruct_skin":
         return (
-            "Use every equivalent source instance. Remove baked dynamic content: "
-            f"{', '.join(component['remove_content']) or 'none'}. Preserve border, material, gradient, highlight, "
-            "shadow, and corner proportions. Repair obscured regions. Output a text-free, dynamic-icon-free transparent PNG."
+            "Reconstruct the clean layer from its source crop. Remove the union mask for all listed descendants, "
+            "including native text, icons, artwork, shadows, and occluded pixels. Repair the removed regions with "
+            "semantically consistent background, border, material, lighting, and texture. Do not return a crop, "
+            "transparent hole, flat fill, HTML/CSS render, canvas paint, or browser screenshot."
         )
     return (
-        "Keep only the named artwork. Remove panel, card, text, badge, and button framing. Preserve silhouette, "
-        "material, lighting, and proportion. Repair occluded edges and output a transparent PNG."
+        "Extract only the named artwork as a transparent independent layer. Remove panel, card, text, badge, and "
+        "button framing, preserve the complete silhouette and occluded edges, and do not return a rectangular crop."
     )
 
 
@@ -29,23 +30,34 @@ def filename(target):
 
 def build_jobs(plan):
     validate_plan(plan)
+    components = {component["target_component_id"]: component for component in plan["components"]}
+    order = plan.get("reconstruction_order", [component["target_component_id"] for component in plan["components"]])
     jobs = []
-    for component in plan["components"]:
+    for sequence, target in enumerate(order):
+        component = components[target]
         if component["mode"] not in {"extract_artwork", "reconstruct_skin"}:
             continue
+        reconstruction = component.get("layer_reconstruction", {})
         jobs.append({
-            "artifact_type": "reconstruction_job",
-            "target_component_id": component["target_component_id"],
+            "schema_version": 1,
+            "artifact_type": "layer_reconstruction_job",
+            "target_component_id": target,
+            "sequence": sequence,
             "category": component["category"],
             "mode": component["mode"],
             "source_image": plan["source"]["image"],
+            "source_crop": component.get("visual_assets", {}).get("source_crop"),
             "instances": component["instances"],
-            "remove_content": component["remove_content"],
+            "remove_nodes": reconstruction.get("remove_nodes", component.get("remove_content", [])),
+            "mask": reconstruction.get("mask"),
+            "depends_on": reconstruction.get("depends_on", []),
             "transparent": True,
             "evaluate_nine_slice": component["evaluate_nine_slice"],
             "output": component["output"],
+            "executor": {"required_capability": "image_edit_inpainting", "provider": None},
             "instruction": instruction_for(component),
-            "status": "pending_ai_edit",
+            "status": "job_created",
+            "error": None,
         })
     return jobs
 
@@ -65,7 +77,7 @@ def main():
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(error, file=sys.stderr)
         return 1
-    print(f"Wrote {len(jobs)} reconstruction job(s): {args.output_dir}")
+    print(f"Wrote {len(jobs)} layer reconstruction job(s): {args.output_dir}")
     return 0
 
 

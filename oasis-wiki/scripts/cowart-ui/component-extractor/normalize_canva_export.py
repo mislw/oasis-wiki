@@ -207,7 +207,7 @@ def normalize(input_path: Path, output_dir: Path, allow_png_fallback: bool = Fal
             "element_id": prepared_item["element_id"],
             "name": str(element.get("name") or component_id),
             "category": category,
-            "file": semantics["visual_assets"].get("clean_asset"),
+            "file": semantics["visual_assets"].get("clean_layer"),
             "parent_id": parent_id,
             "layer": layer,
             "z_index": z_index,
@@ -242,7 +242,7 @@ def normalize(input_path: Path, output_dir: Path, allow_png_fallback: bool = Fal
         item["children"] = children_by_parent[item["component_id"]]
     root_children = children_by_parent["root"]
     manifest = {
-        "schema_version": 2,
+        "schema_version": 3,
         "batch_id": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
         "source": {
             "kind": "png_only_fallback" if source_name == "(png-only)" else "canva_magic_layers",

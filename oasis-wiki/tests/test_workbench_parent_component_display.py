@@ -39,10 +39,11 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
                     "bounds": {"x": 0, "y": 0, "width": 120, "height": 40},
                     "visual_assets": {
                         "source_crop": "__source__",
-                        "clean_asset": "assets/button-clean.png",
+                        "clean_layer": "assets/button-clean.png",
                         "assembly_preview": "preview/button-assembly.png",
                     },
-                    "review": {"status": "pending_review", "cleanup_status": "clean"},
+                    "layer_reconstruction": {"status": "ready", "method": "image_reconstruction", "error": None},
+                    "review": {"status": "pending_review", "cleanup_status": "ready"},
                 }],
             }), encoding="utf-8")
 
@@ -50,9 +51,9 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             session.mkdir()
             controls = create_ui_workbench.normalize_controls(controls_path, session, 320, 180)
             component = controls[0]
-            self.assertEqual(component["visual_assets"]["clean_asset"], "layers/button.primary.gold.png")
+            self.assertEqual(component["visual_assets"]["clean_layer"], "layers/button.primary.gold.png")
             self.assertEqual(component["visual_assets"]["assembly_preview"], "preview/button.primary.gold.png")
-            self.assertTrue((session / component["visual_assets"]["clean_asset"]).is_file())
+            self.assertTrue((session / component["visual_assets"]["clean_layer"]).is_file())
             self.assertTrue((session / component["visual_assets"]["assembly_preview"]).is_file())
             self.assertTrue(component["reusable_bitmap"])
 
@@ -63,7 +64,7 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             controls_path.write_text(json.dumps({
                 "artifact_type": "ui_tree",
                 "nodes": [
-                    {"id": "panel.main", "category": "panel", "bounds": {"x": 0, "y": 0, "width": 640, "height": 360}, "extraction": {"mode": "reconstruct_skin", "target_component_id": "panel.main.background"}},
+                    {"id": "panel.main", "category": "panel", "bounds": {"x": 0, "y": 0, "width": 640, "height": 360}, "extraction": {"mode": "reconstruct_skin", "target_component_id": "panel.main"}},
                     {"id": "button.draw.single", "category": "button", "bounds": {"x": 40, "y": 270, "width": 220, "height": 60}, "extraction": {"mode": "reconstruct_skin", "target_component_id": "button.draw.gold"}},
                     {"id": "text.draw.single", "category": "text", "bounds": {"x": 80, "y": 280, "width": 140, "height": 32}, "extraction": {"mode": "native", "target_component_id": "text.draw.single"}},
                 ],
@@ -75,8 +76,9 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             self.assertEqual(by_id["text.draw.single"]["parent_id"], "button.draw.single")
             self.assertEqual(by_id["panel.main"]["node_kind"], "composite")
             self.assertEqual(by_id["button.draw.single"]["node_kind"], "composite")
-            self.assertIn("panel.main.background", by_id)
-            self.assertIn("button.draw.single.background", by_id)
+            self.assertIn("background.root", by_id)
+            self.assertIsNone(by_id["panel.main"]["visual_assets"]["clean_layer"])
+            self.assertIsNone(by_id["button.draw.single"]["visual_assets"]["clean_layer"])
 
     def test_workbench_normalizes_parent_components_and_native_children(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -89,7 +91,7 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
                         "category": "panel",
                         "parent_id": "root",
                         "bounds": {"x": 0, "y": 0, "width": 640, "height": 360},
-                        "extraction": {"mode": "reconstruct_skin", "target_component_id": "panel.main.background"},
+                        "extraction": {"mode": "reconstruct_skin", "target_component_id": "panel.main"},
                     },
                     {
                         "id": "pool.cards",
@@ -133,17 +135,19 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             self.assertIn(by_id["text.draw.single"]["render_mode"], {"outline", "hidden"})
             self.assertEqual(by_id["pool.cards"]["node_kind"], "artwork")
             self.assertEqual(by_id["tabs.pool"]["node_kind"], "composite")
+            self.assertEqual(by_id["tabs.pool"]["layer_reconstruction"]["status"], "not_applicable")
 
-            panel_skin = by_id["panel.main.background"]
-            button_skin = by_id["button.draw.single.background"]
-            self.assertEqual(panel_skin["node_kind"], "skin")
-            self.assertEqual(button_skin["node_kind"], "skin")
-            self.assertEqual(button_skin["parent_id"], "button.draw.single")
-            self.assertIsNotNone(button_skin["visual_assets"]["source_crop"])
-            self.assertIsNone(button_skin["visual_assets"]["clean_asset"])
-            self.assertEqual(button_skin["review"]["cleanup_status"], "needs_cleanup")
+            panel = by_id["panel.main"]
+            button = by_id["button.draw.single"]
+            background = by_id["background.root"]
+            self.assertIsNotNone(panel["visual_assets"]["source_crop"])
+            self.assertIsNone(panel["visual_assets"]["clean_layer"])
+            self.assertIsNone(button["visual_assets"]["clean_layer"])
+            self.assertEqual(button["layer_reconstruction"]["status"], "pending")
+            self.assertIn("text.draw.single", button["layer_reconstruction"]["remove_nodes"])
+            self.assertIn("panel.main", background["layer_reconstruction"]["remove_nodes"])
 
-    def test_normalized_manifest_distinguishes_clean_assets_from_source_crops(self):
+    def test_normalized_manifest_distinguishes_clean_layers_from_source_crops(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source_dir = root / "source"
@@ -167,11 +171,11 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             by_id = {item["component_id"]: item for item in manifest["components"]}
 
             self.assertEqual(by_id["panel.main"]["node_kind"], "composite")
-            self.assertIsNone(by_id["panel.main"]["visual_assets"]["clean_asset"])
+            self.assertIsNone(by_id["panel.main"]["visual_assets"]["clean_layer"])
             self.assertIsNotNone(by_id["panel.main"]["visual_assets"]["source_crop"])
-            self.assertEqual(by_id["button.primary.gold"]["visual_assets"]["clean_asset"], "layers/button.primary.gold.png")
-            self.assertEqual(by_id["button.primary.gold"]["review"]["cleanup_status"], "clean")
-            self.assertIsNone(by_id["text.button.label"]["visual_assets"]["clean_asset"])
+            self.assertEqual(by_id["button.primary.gold"]["visual_assets"]["clean_layer"], "layers/button.primary.gold.png")
+            self.assertEqual(by_id["button.primary.gold"]["layer_reconstruction"]["status"], "ready")
+            self.assertIsNone(by_id["text.button.label"]["visual_assets"]["clean_layer"])
 
     def test_shape_plan_imports_only_clean_skin_and_artwork_assets(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -179,13 +183,13 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             write_png(root / "layers" / "button.png")
             write_png(root / "layers" / "cards.png")
             manifest = {
-                "schema_version": 2,
+                "schema_version": 3,
                 "source": {"page_size": {"width": 320, "height": 180}},
                 "components": [
-                    {"component_id": "panel.main", "node_kind": "composite", "render_mode": "outline", "parent_id": "root", "layer": 10, "z_index": 0, "bounds": {"x": 0, "y": 0, "width": 300, "height": 160}, "status": "pending_review", "visual_assets": {"source_crop": None, "clean_asset": None, "assembly_preview": None}, "review": {"status": "pending_review", "cleanup_status": "not_applicable"}},
-                    {"component_id": "button.primary.gold", "node_kind": "skin", "render_mode": "bitmap", "parent_id": "panel.main", "layer": 30, "z_index": 1, "bounds": {"x": 20, "y": 100, "width": 120, "height": 40}, "status": "pending_review", "visual_assets": {"source_crop": None, "clean_asset": "layers/button.png", "assembly_preview": None}, "review": {"status": "pending_review", "cleanup_status": "clean"}},
-                    {"component_id": "artwork.pool.cards", "node_kind": "artwork", "render_mode": "bitmap", "parent_id": "panel.main", "layer": 20, "z_index": 2, "bounds": {"x": 80, "y": 20, "width": 140, "height": 70}, "status": "pending_review", "visual_assets": {"source_crop": None, "clean_asset": "layers/cards.png", "assembly_preview": None}, "review": {"status": "pending_review", "cleanup_status": "clean"}},
-                    {"component_id": "text.button.label", "node_kind": "native", "render_mode": "outline", "parent_id": "button.primary.gold", "layer": 50, "z_index": 3, "bounds": {"x": 40, "y": 110, "width": 80, "height": 20}, "status": "pending_review", "visual_assets": {"source_crop": None, "clean_asset": None, "assembly_preview": None}, "review": {"status": "pending_review", "cleanup_status": "not_applicable"}},
+                    {"component_id": "panel.main", "node_kind": "composite", "render_mode": "outline", "parent_id": "root", "layer": 10, "z_index": 0, "bounds": {"x": 0, "y": 0, "width": 300, "height": 160}, "status": "pending_review", "visual_assets": {"source_crop": None, "clean_layer": None, "assembly_preview": None}, "layer_reconstruction": {"status": "pending", "method": "image_reconstruction"}, "review": {"status": "pending_review", "cleanup_status": "pending"}},
+                    {"component_id": "button.primary.gold", "node_kind": "skin", "render_mode": "bitmap", "parent_id": "panel.main", "layer": 30, "z_index": 1, "bounds": {"x": 20, "y": 100, "width": 120, "height": 40}, "status": "pending_review", "visual_assets": {"source_crop": None, "clean_layer": "layers/button.png", "assembly_preview": None}, "layer_reconstruction": {"status": "ready", "method": "image_reconstruction"}, "review": {"status": "pending_review", "cleanup_status": "ready"}},
+                    {"component_id": "artwork.pool.cards", "node_kind": "artwork", "render_mode": "bitmap", "parent_id": "panel.main", "layer": 20, "z_index": 2, "bounds": {"x": 80, "y": 20, "width": 140, "height": 70}, "status": "pending_review", "visual_assets": {"source_crop": None, "clean_layer": "layers/cards.png", "assembly_preview": None}, "layer_reconstruction": {"status": "ready", "method": "image_reconstruction"}, "review": {"status": "pending_review", "cleanup_status": "ready"}},
+                    {"component_id": "text.button.label", "node_kind": "native", "render_mode": "outline", "parent_id": "button.primary.gold", "layer": 50, "z_index": 3, "bounds": {"x": 40, "y": 110, "width": 80, "height": 20}, "status": "pending_review", "visual_assets": {"source_crop": None, "clean_layer": None, "assembly_preview": None}, "layer_reconstruction": {"status": "not_applicable"}, "review": {"status": "pending_review", "cleanup_status": "not_applicable"}},
                 ],
             }
             manifest_path = root / "layer-manifest.json"
@@ -196,37 +200,37 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             self.assertEqual({shape["component_id"] for shape in plan["shapes"]}, {"button.primary.gold", "artwork.pool.cards"})
             self.assertEqual(plan["move_groups"][0]["component_id"], "panel.main")
 
-    def test_clean_asset_gate_rejects_source_and_assembly_only_nodes(self):
+    def test_clean_layer_gate_rejects_source_and_assembly_only_nodes(self):
         skin = {
             "component_id": "button.primary.gold",
             "node_kind": "skin",
-            "visual_assets": {"source_crop": "source/button.png", "clean_asset": None, "assembly_preview": "preview/button.png"},
-            "review": {"cleanup_status": "needs_cleanup"},
+            "visual_assets": {"source_crop": "source/button.png", "clean_layer": None, "assembly_preview": "preview/button.png"},
+            "layer_reconstruction": {"status": "pending"},
         }
         composite = {
             "component_id": "panel.main",
             "node_kind": "composite",
-            "visual_assets": {"source_crop": "source/panel.png", "clean_asset": None, "assembly_preview": "preview/panel.png"},
-            "review": {"cleanup_status": "not_applicable"},
+            "visual_assets": {"source_crop": "source/panel.png", "clean_layer": None, "assembly_preview": "preview/panel.png"},
+            "layer_reconstruction": {"status": "pending"},
         }
         ready_skin = {
             "component_id": "button.primary.gold",
             "node_kind": "skin",
-            "visual_assets": {"source_crop": "source/button.png", "clean_asset": "layers/button.png", "assembly_preview": None},
-            "review": {"cleanup_status": "clean"},
+            "visual_assets": {"source_crop": "source/button.png", "clean_layer": "layers/button.png", "assembly_preview": None},
+            "layer_reconstruction": {"status": "ready"},
         }
 
         self.assertTrue(apply_component_decisions.activation_gate_errors(skin))
         self.assertTrue(apply_component_decisions.activation_gate_errors(composite))
         self.assertEqual(apply_component_decisions.activation_gate_errors(ready_skin), [])
 
-    def test_extraction_plan_marks_dirty_skin_without_clean_asset(self):
+    def test_extraction_plan_marks_dirty_skin_without_clean_layer(self):
         node = {
-            "id": "button.draw.single.background",
+            "id": "button.draw.single",
             "category": "button",
             "node_kind": "skin",
             "bounds": {"x": 0, "y": 0, "width": 120, "height": 40},
-            "visual_assets": {"source_crop": "source/button.png", "clean_asset": None, "assembly_preview": None},
+            "visual_assets": {"source_crop": "source/button.png", "clean_layer": None, "assembly_preview": None},
             "extraction": {
                 "mode": "reconstruct_skin",
                 "target_component_id": "button.draw.gold",
@@ -236,7 +240,7 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
         component = build_extraction_plan.extraction_component(node)
         self.assertEqual(component["node_kind"], "skin")
         self.assertEqual(component["render_mode"], "bitmap")
-        self.assertEqual(component["review"]["cleanup_status"], "needs_cleanup")
+        self.assertEqual(component["layer_reconstruction"]["status"], "pending")
         self.assertEqual(component["status"], "candidate")
 
     def test_workbench_template_has_structure_asset_and_visual_asset_views(self):
@@ -249,7 +253,13 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             "viewAssembly",
             "showSourceCrops",
             "defaultAssetItems",
-            "Clean asset not generated",
+            "Clean layer not generated",
+            "LAYER_RECONSTRUCTION_UNAVAILABLE",
+            "job_created",
+            "waiting_executor",
+            "reconstructing",
+            "reconstructed",
+            "validation",
             "净化母版",
         ):
             self.assertIn(marker, template)

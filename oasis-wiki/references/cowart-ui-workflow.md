@@ -50,3 +50,10 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 - 不覆盖或删除 Cowart 中既有图形；修订图保留版本关系。
 - 未经用户明确授权，不写入 UGC Lua、WidgetBlueprint、`.uasset`、`.umap` 或项目内风格档案。
 - 不打包 `.venv`、`__pycache__`、`.pyc`、临时 session、用户 profile 或 RedCliff 运行产物。
+# Layer Reconstruction 补充流程
+
+扁平 UI 图进入工作台后，必须依次执行：UI Tree 推断、人工校正、节点分类、从叶子到根的 Layer Reconstruction、Assembly Preview 验证、组件确认。正式资产字段统一为 `source_crop`、`clean_layer`、`assembly_preview`。
+
+`background.root`、Panel、Button、Artwork 等所有需要独立移动的视觉层都必须拥有自己的重建目标。Native 文本、数值和交互区不生成位图。父节点 Mask 使用 Alpha/真实 Mask、clean layer Alpha、语义分割、Bounds fallback 的优先级，并对所有可见后代做像素并集去重。
+
+没有实现 `image_edit_inpainting` 的 `ImageReconstructionExecutor` 时必须返回 `LAYER_RECONSTRUCTION_UNAVAILABLE`，保持 `clean_layer: null`，不得用裁切、透明挖洞、Canvas 填色、HTML/CSS 或浏览器截图代替。

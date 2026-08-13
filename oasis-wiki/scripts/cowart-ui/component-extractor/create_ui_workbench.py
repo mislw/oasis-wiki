@@ -100,15 +100,34 @@ def normalize_controls(
 ) -> list[dict[str, Any]]:
     if controls_path is None:
         return [{
-            "component_id": "background.ui.source",
+            "component_id": "background.root",
             "category": "background",
             "parent_id": "root",
             "layer": 0,
-            "z_index": 0,
+            "z_index": -100000,
             "bounds": {"x": 0, "y": 0, "width": width, "height": height},
             "status": "candidate",
             "confidence": 0.25,
             "reason": "No generated UI Tree was supplied; only the source image is available.",
+            "asset_policy": "reconstruction_candidate",
+            "node_kind": "skin",
+            "render_mode": "bitmap",
+            "visual_assets": {"source_crop": "__source__", "clean_layer": None, "assembly_preview": None},
+            "layer_reconstruction": {
+                "status": "pending",
+                "remove_nodes": [],
+                "direct_children": [],
+                "visible_descendants": [],
+                "native_descendants": [],
+                "artwork_descendants": [],
+                "mask": {"operation": "union", "deduplicate_pixels": True, "sources": []},
+                "method": "image_reconstruction",
+                "transparent": True,
+                "error": None,
+            },
+            "review": {"status": "candidate", "cleanup_status": "pending"},
+            "reusable_bitmap": False,
+            "children": [],
         }]
 
     data = json.loads(controls_path.read_text(encoding="utf-8-sig"))
@@ -197,7 +216,7 @@ def normalize_controls(
         raw_visual_assets = item.get("visual_assets") if isinstance(item.get("visual_assets"), dict) else {}
         asset_directories = {
             "source_crop": session_dir / "source",
-            "clean_asset": session_dir / "layers",
+            "clean_layer": session_dir / "layers",
             "assembly_preview": session_dir / "preview",
         }
         for asset_name, asset_directory in asset_directories.items():
@@ -241,7 +260,7 @@ def normalize_controls(
             "status": status,
             "confidence": float(item.get("confidence", 0.96)),
             "reason": "; ".join(reasons) or item.get("reason"),
-            "asset_policy": item.get("asset_policy") or ("native" if semantics["node_kind"] == "native" else "reconstruction_candidate" if semantics["review"]["cleanup_status"] == "needs_cleanup" else "layer"),
+            "asset_policy": item.get("asset_policy") or ("native" if semantics["node_kind"] == "native" else "layer" if semantics["layer_reconstruction"]["status"] == "ready" else "reconstruction_candidate"),
             "extraction": item.get("extraction") if isinstance(item.get("extraction"), dict) else None,
             **semantics,
         }
@@ -249,49 +268,80 @@ def normalize_controls(
             control["file"] = copied_file
         controls.append(control)
 
-        extraction = item.get("extraction") if isinstance(item.get("extraction"), dict) else {}
-        background_id = f"{component_id}.background"
-        if semantics["node_kind"] == "composite" and extraction.get("mode") == "reconstruct_skin" and background_id not in used:
-            background_source = semantics["visual_assets"].get("source_crop")
-            background_clean = semantics["visual_assets"].get("clean_asset")
-            control["visual_assets"]["clean_asset"] = None
-            control["reusable_bitmap"] = False
-            background_input = {
-                "node_kind": "skin",
-                "render_mode": "bitmap",
-                "status": "candidate",
-                "asset_policy": "reconstruction_candidate" if not background_clean else "layer",
-                "visual_assets": {
-                    "source_crop": background_source,
-                    "clean_asset": background_clean,
-                    "assembly_preview": None,
-                },
-                "review": {"status": "candidate", "cleanup_status": "clean" if background_clean else "needs_cleanup"},
-            }
-            background_semantics = normalize_node_semantics(background_input)
-            controls.append({
-                "component_id": background_id,
-                "element_id": f"{element_id}-background",
-                "category": control["category"],
-                "parent_id": component_id,
-                "layer": control["layer"],
-                "z_index": control["z_index"] - 0.5,
-                "bounds": dict(bounds),
-                "state": control["state"],
-                "status": background_semantics["review"]["status"],
-                "confidence": control["confidence"],
-                "reason": "Derived clean-skin target for a composite parent; source crop is trace-only until reconstruction completes.",
-                "asset_policy": background_input["asset_policy"],
-                "extraction": dict(extraction),
-                **background_semantics,
-            })
-            used.add(background_id)
-
     children_by_parent: dict[str, list[str]] = {}
     for control in controls:
         children_by_parent.setdefault(control["parent_id"], []).append(control["component_id"])
+    foreground_ids = [control["component_id"] for control in controls]
+    if "background.root" not in foreground_ids:
+        controls.append({
+            "component_id": "background.root",
+            "element_id": "background-root",
+            "category": "background",
+            "parent_id": "root",
+            "layer": 0,
+            "z_index": -100000,
+            "bounds": {"x": 0, "y": 0, "width": width, "height": height},
+            "state": "default",
+            "status": "candidate",
+            "confidence": 1.0,
+            "reason": "Root clean-background reconstruction target; source crop is trace-only.",
+            "asset_policy": "reconstruction_candidate",
+            "extraction": {"mode": "reconstruct_skin", "target_component_id": "background.root"},
+            "node_kind": "skin",
+            "render_mode": "bitmap",
+            "visual_assets": {"source_crop": "__source__", "clean_layer": None, "assembly_preview": None},
+            "layer_reconstruction": {"status": "pending", "method": "image_reconstruction", "transparent": True, "error": None},
+            "review": {"status": "candidate", "cleanup_status": "pending"},
+            "reusable_bitmap": False,
+        })
+        children_by_parent.setdefault("root", []).append("background.root")
+        children_by_parent.setdefault("background.root", [])
+
+    by_id = {control["component_id"]: control for control in controls}
+
+    def descendants(component_id: str) -> list[str]:
+        result: list[str] = []
+        for child_id in children_by_parent.get(component_id, []):
+            if child_id == "background.root":
+                continue
+            result.append(child_id)
+            result.extend(descendants(child_id))
+        return result
+
     for control in controls:
-        control["children"] = children_by_parent.get(control["component_id"], [])
+        component_id = control["component_id"]
+        control["children"] = [child for child in children_by_parent.get(component_id, []) if child != "background.root"]
+        remove_nodes = foreground_ids if component_id == "background.root" else descendants(component_id)
+        reconstruction = control.get("layer_reconstruction") if isinstance(control.get("layer_reconstruction"), dict) else {}
+        if control["node_kind"] == "native":
+            reconstruction["status"] = "not_applicable"
+            control["layer_reconstruction"] = reconstruction
+            continue
+        mask_sources = []
+        for remove_id in remove_nodes:
+            removed = by_id[remove_id]
+            clean_layer = removed.get("visual_assets", {}).get("clean_layer")
+            if clean_layer and removed.get("node_kind") != "native":
+                mask_sources.append({"node_id": remove_id, "source_type": "clean_layer_alpha", "path": clean_layer})
+            else:
+                mask_sources.append({"node_id": remove_id, "source_type": "bounds_fallback", "bounds": removed["bounds"], "padding": 2, "fallback_only": True})
+        reconstruction.update({
+            "remove_nodes": remove_nodes,
+            "direct_children": control["children"] if component_id != "background.root" else [item for item in children_by_parent.get("root", []) if item != "background.root"],
+            "visible_descendants": remove_nodes,
+            "native_descendants": [item for item in remove_nodes if by_id[item]["node_kind"] == "native"],
+            "artwork_descendants": [item for item in remove_nodes if by_id[item]["node_kind"] == "artwork"],
+            "mask": {
+                "operation": "union",
+                "deduplicate_pixels": True,
+                "priority": ["alpha_mask", "clean_layer_alpha", "semantic_mask", "bounds_fallback"],
+                "sources": mask_sources,
+            },
+            "method": "image_reconstruction",
+            "transparent": True,
+            "error": reconstruction.get("error"),
+        })
+        control["layer_reconstruction"] = reconstruction
     return controls
 
 
@@ -358,12 +408,18 @@ def main() -> int:
     shutil.copy2(image_path, session_dir / source_name)
     controls = normalize_controls(args.controls.resolve() if args.controls else None, session_dir, width, height)
     session = {
-        "schema_version": 2,
+        "schema_version": 3,
         "title": args.name,
         "source_image": source_name,
         "source_name": image_path.name,
         "source_size": {"width": width, "height": height},
         "controls": controls,
+        "layer_reconstruction_capability": {
+            "available": False,
+            "required_capability": "image_edit_inpainting",
+            "executor": None,
+            "error": "LAYER_RECONSTRUCTION_UNAVAILABLE",
+        },
         "visual_review": {
             "status": review["status"] if review else "unreviewed_diagnostic",
             "path": str(args.visual_review.resolve()) if args.visual_review else None,

@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from component_semantics import CLEANUP_STATUSES, NODE_KINDS, RENDER_MODES, activation_gate_errors
+from component_semantics import NODE_KINDS, RECONSTRUCTION_STATUSES, RENDER_MODES, activation_gate_errors
 
 
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)+$")
@@ -20,8 +20,8 @@ def validate_manifest(path: Path) -> list[str]:
     except Exception as exc:
         return [f"invalid JSON: {exc}"]
     schema_version = manifest.get("schema_version")
-    if schema_version not in (1, 2):
-        errors.append("schema_version must be 1 or 2")
+    if schema_version not in (1, 2, 3):
+        errors.append("schema_version must be 1, 2, or 3")
     source = manifest.get("source")
     page_size = source.get("page_size") if isinstance(source, dict) else None
     width = page_size.get("width") if isinstance(page_size, dict) else None
@@ -77,7 +77,10 @@ def validate_manifest(path: Path) -> list[str]:
             if not isinstance(visual_assets, dict):
                 errors.append(f"{prefix}.visual_assets is required")
             else:
-                for asset_name in ("source_crop", "clean_asset", "assembly_preview"):
+                expected_assets = ("source_crop", "clean_layer", "assembly_preview")
+                if schema_version == 3 and set(visual_assets) != set(expected_assets):
+                    errors.append(f"{prefix}.visual_assets must contain only source_crop, clean_layer, and assembly_preview")
+                for asset_name in expected_assets:
                     asset_value = visual_assets.get(asset_name)
                     if asset_value is not None and not isinstance(asset_value, str):
                         errors.append(f"{prefix}.visual_assets.{asset_name} must be a path or null")
@@ -86,8 +89,14 @@ def validate_manifest(path: Path) -> list[str]:
             if not isinstance(review, dict):
                 errors.append(f"{prefix}.review is required")
             else:
-                if review.get("cleanup_status") not in CLEANUP_STATUSES:
+                if review.get("cleanup_status") not in RECONSTRUCTION_STATUSES:
                     errors.append(f"{prefix}.review.cleanup_status is invalid")
+            reconstruction = component.get("layer_reconstruction")
+            if schema_version == 3:
+                if not isinstance(reconstruction, dict):
+                    errors.append(f"{prefix}.layer_reconstruction is required")
+                elif reconstruction.get("status") not in RECONSTRUCTION_STATUSES:
+                    errors.append(f"{prefix}.layer_reconstruction.status is invalid")
             reusable = component.get("reusable_bitmap")
             if reusable is True:
                 for gate_error in activation_gate_errors(component):

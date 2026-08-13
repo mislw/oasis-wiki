@@ -7,116 +7,87 @@ normalized-export/
   layer-manifest.json
   cowart-shape-plan.json
   source/
-    panel.shop.root.png
   layers/
-    button.purchase.primary.png
   preview/
-    panel.shop.root.png
 ```
 
-## Canonical manifest
+## Schema 3 node
 
 ```json
 {
-  "schema_version": 2,
-  "batch_id": "20260808T120000Z",
+  "schema_version": 3,
   "source": {
-    "kind": "canva_magic_layers",
-    "manifest_file": "export.json",
     "page_size": {"width": 1280, "height": 720}
   },
   "components": [
     {
-      "component_id": "button.purchase.primary",
-      "element_id": "canva-element-42",
-      "name": "Purchase button",
-      "category": "button",
-      "node_kind": "skin",
-      "render_mode": "bitmap",
-      "parent_id": "panel.shop.root",
-      "children": ["text.purchase.price"],
-      "layer": 60,
-      "z_index": 42,
-      "bounds": {"x": 900, "y": 590, "width": 230, "height": 72},
-      "rotation": 0,
-      "opacity": 1,
-      "mask": null,
-      "text": null,
-      "status": "pending_review",
-      "reason": null,
+      "component_id": "panel.main",
+      "parent_id": "root",
+      "children": ["button.draw.single", "artwork.pool"],
+      "node_kind": "composite",
+      "render_mode": "outline",
+      "asset_policy": "reconstruction_candidate",
+      "layer": 20,
+      "z_index": 10,
+      "bounds": {"x": 100, "y": 80, "width": 900, "height": 520},
+      "status": "candidate",
       "visual_assets": {
-        "source_crop": "source/button.purchase.primary.png",
-        "clean_asset": "layers/button.purchase.primary.png",
+        "source_crop": "source/panel.main.png",
+        "clean_layer": null,
         "assembly_preview": null
       },
-      "review": {
-        "status": "pending_review",
-        "cleanup_status": "clean"
+      "layer_reconstruction": {
+        "status": "pending",
+        "remove_nodes": ["button.draw.single", "text.draw.single", "artwork.pool"],
+        "direct_children": ["button.draw.single", "artwork.pool"],
+        "visible_descendants": ["button.draw.single", "text.draw.single", "artwork.pool"],
+        "native_descendants": ["text.draw.single"],
+        "artwork_descendants": ["artwork.pool"],
+        "mask": {
+          "operation": "union",
+          "deduplicate_pixels": true,
+          "priority": ["alpha_mask", "clean_layer_alpha", "semantic_mask", "bounds_fallback"],
+          "sources": []
+        },
+        "method": "image_reconstruction",
+        "transparent": true,
+        "error": null
       },
-      "reusable_bitmap": true
+      "review": {
+        "status": "candidate",
+        "cleanup_status": "pending"
+      },
+      "reusable_bitmap": false
     }
-  ],
-  "ui_tree": {
-    "root_id": "root",
-    "children": ["panel.shop.root"]
-  },
-  "warnings": []
+  ]
 }
 ```
 
-## Required fields
+## Required behavior
 
-- `source.page_size.width` and `height` must be positive.
-- Each component needs a unique lowercase dot-separated `component_id`.
-- `node_kind` must be `composite`, `skin`, `artwork`, or `native`.
-- `render_mode` must be `bitmap`, `outline`, `ghost`, `assembly`, or `hidden`.
-- `visual_assets` always distinguishes `source_crop`, `clean_asset`, and `assembly_preview`; every non-null path must resolve inside the normalized package.
-- `composite` and `native` do not require bitmap files. Their source crops are trace/debug evidence only.
-- `skin` and `artwork` are reusable only when `clean_asset` exists and `review.cleanup_status` is `clean`.
-- `parent_id` must be `root` or another component ID.
-- `layer` and `z_index` must be numeric.
-- `bounds` must be positive and remain within the page.
-- `status` and `review.status` must remain `pending_review` or `candidate`.
-- Parent references must be acyclic.
+- New manifests use `schema_version: 3`.
+- `visual_assets` contains exactly `source_crop`, `clean_layer`, and `assembly_preview`.
+- `source_crop` and `assembly_preview` cannot satisfy a clean-layer or component activation gate.
+- Every independently movable non-Native visual node may own a `clean_layer`, including Composite parents and `background.root`.
+- Native nodes keep `clean_layer: null` and `layer_reconstruction.status: not_applicable`.
+- A reusable Skin/Artwork additionally requires `clean_layer`, `layer_reconstruction.status: ready`, and developer confirmation.
+- Composite clean layers may render in Cowart and Assembly Preview but do not automatically become reusable library components.
+- All paths stay inside the package; bounds stay inside the page; parent references are acyclic.
 
-## Canva adapter aliases
+## Reconstruction states
 
-The first version accepts common aliases:
+Valid states are:
 
-| Canonical | Accepted aliases |
-|---|---|
-| elements | `elements`, `layers`, `components`, `items` |
-| element ID | `element_id`, `elementId`, `id`, `uuid` |
-| file | `file`, `fileName`, `filename`, `asset`, `image` |
-| parent | `parent_id`, `parentId`, `group_id`, `groupId`, `parent` |
-| z-index | `z_index`, `zIndex`, `z`, `order`, `index` |
-| bounds | `bounds`, `rect`, `frame`, or direct `x/y/width/height` |
-| page size | `page_size`, `pageSize`, `canvas`, `page`, or direct `width/height` |
+`not_applicable`, `pending`, `requested`, `job_created`, `waiting_executor`, `reconstructing`, `reconstructed`, `validation`, `ready`, `failed`.
 
-The existing component workbench format is also accepted: `source_size`, `source_rect`, `layout_rect`, and `atlas_rect`. Put `redcliff-component-candidates.json` beside `redcliff-component-candidates.png`; the normalizer splits the atlas into one PNG per component.
+`failed` must include an error reason. Missing image-edit capability uses `LAYER_RECONSTRUCTION_UNAVAILABLE`.
 
-Schema 1 remains readable for older packages. New normalizations emit schema 2. Unknown exporter fields stay under `source_fields` so no source evidence is lost.
+## Root background
 
-## Node and asset semantics
-
-- `composite` defaults to `outline` and belongs in the Workbench Structure view. A parent source crop may contain children, so it must never be used as a reusable bitmap.
-- `skin` and `artwork` default to `bitmap`, but the canvas and Cowart shape plan use only `clean_asset`.
-- `native` defaults to `outline` or `hidden` and remains an editor/UMG control.
-- `source_crop` is provenance, `clean_asset` is the reusable file, and `assembly_preview` is a recomposition check. Neither source nor assembly can satisfy the activation gate.
-- When a reconstructable node also has children, keep the original node as `composite` and create a sibling child such as `panel.main.background` or `button.draw.single.background` as `skin`.
-
-## PNG-only fallback
-
-PNG-only input cannot recover position, parent, rotation, or z-order reliably. The fallback mode therefore:
-
-- assigns every file to `root`
-- uses file order as `z_index`
-- places every layer at `(0, 0)` using its bitmap dimensions
-- sets `status: candidate`
-- records a warning and a review reason
-
-Do not treat fallback output as a completed UI Tree.
+Every flattened-UI reconstruction plan includes `background.root`. It covers the full page, removes every visible foreground node through a deduplicated union mask, and is reconstructed last.
 
 ## Cowart shape plan
 
-The plan contains image nodes only for clean `skin` and `artwork` assets, while nested `move_groups` retain every Composite/Native/Skin/Artwork node. Each image carries the canonical component ID and logical parent. An importer must preserve the original canvas records, insert new assets through Cowart MCP, then update only the returned new shape IDs.
+The shape plan imports only nodes that have a validated `clean_layer` and `layer_reconstruction.status: ready`. This includes clean Composite visual layers for editing, while the component-library activation gate remains limited to approved Skin/Artwork nodes. Nested `move_groups` retain the complete logical hierarchy so moving a parent also moves its descendants.
+
+Schema 1 and schema 2 may be read for migration, but new normalization and Workbench exports emit schema 3.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate deterministic extraction plans before any reconstruction work begins."""
+"""Validate deterministic extraction and layer-reconstruction plans."""
 
 import argparse
 import json
@@ -7,7 +7,7 @@ import re
 import sys
 from pathlib import Path, PurePosixPath
 
-from component_semantics import CLEANUP_STATUSES, NODE_KINDS, RENDER_MODES
+from component_semantics import NODE_KINDS, RECONSTRUCTION_STATUSES, RENDER_MODES
 
 
 VALID_MODES = {"native", "extract_artwork", "reconstruct_skin", "composite"}
@@ -31,10 +31,45 @@ def _valid_bounds(bounds, page_size):
     if not isinstance(bounds, dict):
         return False
     values = [bounds.get(key) for key in ("x", "y", "width", "height")]
-    if any(not isinstance(value, int) or isinstance(value, bool) for value in values):
+    if any(not isinstance(value, (int, float)) or isinstance(value, bool) for value in values):
         return False
     x, y, width, height = values
     return x >= 0 and y >= 0 and width > 0 and height > 0 and x + width <= page_size["width"] and y + height <= page_size["height"]
+
+
+def _validate_schema_three_component(component, prefix, mode, output, errors):
+    visual_assets = component.get("visual_assets")
+    if not isinstance(visual_assets, dict):
+        errors.append(f"{prefix}.visual_assets is required")
+        return
+    if set(visual_assets) != {"source_crop", "clean_layer", "assembly_preview"}:
+        errors.append(f"{prefix}.visual_assets must contain only source_crop, clean_layer, and assembly_preview")
+    clean_layer = visual_assets.get("clean_layer")
+    if clean_layer != output:
+        errors.append(f"{prefix}.output must equal visual_assets.clean_layer")
+
+    reconstruction = component.get("layer_reconstruction")
+    if not isinstance(reconstruction, dict):
+        errors.append(f"{prefix}.layer_reconstruction is required")
+        return
+    if reconstruction.get("status") not in RECONSTRUCTION_STATUSES:
+        errors.append(f"{prefix}.layer_reconstruction.status is invalid")
+    if mode == "native":
+        if clean_layer is not None:
+            errors.append(f"{prefix}.native must keep clean_layer null")
+        if reconstruction.get("status") != "not_applicable":
+            errors.append(f"{prefix}.native layer reconstruction must be not_applicable")
+        return
+    if mode in {"extract_artwork", "reconstruct_skin"}:
+        if not _is_relative_png(clean_layer):
+            errors.append(f"{prefix}.clean_layer must be a relative PNG path")
+        if reconstruction.get("method") != "image_reconstruction":
+            errors.append(f"{prefix}.layer_reconstruction.method must be image_reconstruction")
+        mask = reconstruction.get("mask")
+        if not isinstance(mask, dict) or mask.get("operation") != "union" or mask.get("deduplicate_pixels") is not True:
+            errors.append(f"{prefix}.layer_reconstruction.mask must use a deduplicating union")
+        if mode == "reconstruct_skin" and not component.get("source_content_clean") and not reconstruction.get("remove_nodes") and not component.get("remove_content") and component.get("target_component_id") != "background.root":
+            errors.append(f"{prefix}.reconstruct_skin requires descendant removal unless source_content_clean is true")
 
 
 def validation_errors(plan):
@@ -42,10 +77,11 @@ def validation_errors(plan):
     if not isinstance(plan, dict):
         return ["plan must be a JSON object"]
     schema_version = plan.get("schema_version")
-    if schema_version not in (1, 2):
-        errors.append("schema_version must be 1 or 2")
-    if plan.get("artifact_type") != "extraction_plan":
-        errors.append("artifact_type must be extraction_plan")
+    if schema_version not in (1, 2, 3):
+        errors.append("schema_version must be 1, 2, or 3")
+    expected_artifact = "layer_reconstruction_plan" if schema_version == 3 else "extraction_plan"
+    if plan.get("artifact_type") != expected_artifact:
+        errors.append(f"artifact_type must be {expected_artifact}")
 
     source = plan.get("source")
     if not isinstance(source, dict):
@@ -82,17 +118,11 @@ def validation_errors(plan):
             errors.append(f"{prefix}.mode must be one of {sorted(VALID_MODES)}")
         if component.get("status") not in VALID_STATUSES:
             errors.append(f"{prefix}.status must be candidate or pending_review")
-        if schema_version == 2:
+        if schema_version in {2, 3}:
             if component.get("node_kind") not in NODE_KINDS:
                 errors.append(f"{prefix}.node_kind is invalid")
             if component.get("render_mode") not in RENDER_MODES:
                 errors.append(f"{prefix}.render_mode is invalid")
-            visual_assets = component.get("visual_assets")
-            if not isinstance(visual_assets, dict):
-                errors.append(f"{prefix}.visual_assets is required")
-            review = component.get("review")
-            if not isinstance(review, dict) or review.get("cleanup_status") not in CLEANUP_STATUSES:
-                errors.append(f"{prefix}.review.cleanup_status is invalid")
         confidence = component.get("confidence")
         if not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or not 0 <= confidence <= 1:
             errors.append(f"{prefix}.confidence must be between 0 and 1")
@@ -113,8 +143,23 @@ def validation_errors(plan):
                 errors.append(f"{prefix}.{mode} output must be a relative PNG path")
             if component.get("transparent") is not True:
                 errors.append(f"{prefix}.{mode} must require transparent output")
-        if mode == "reconstruct_skin" and not component.get("source_content_clean") and not component.get("remove_content"):
+        if schema_version == 3:
+            _validate_schema_three_component(component, prefix, mode, output, errors)
+        elif mode == "reconstruct_skin" and not component.get("source_content_clean") and not component.get("remove_content"):
             errors.append(f"{prefix}.reconstruct_skin requires remove_content unless source_content_clean is true")
+
+    if schema_version == 3:
+        order = plan.get("reconstruction_order")
+        if not isinstance(order, list) or set(order) != seen_targets or len(order) != len(seen_targets):
+            errors.append("reconstruction_order must contain each target exactly once")
+        else:
+            positions = {target: index for index, target in enumerate(order)}
+            for component in components:
+                target = component.get("target_component_id")
+                reconstruction = component.get("layer_reconstruction", {})
+                for dependency in reconstruction.get("depends_on", []):
+                    if dependency not in positions or positions[dependency] >= positions[target]:
+                        errors.append(f"{target} dependency {dependency} must appear earlier in reconstruction_order")
     return errors
 
 
@@ -151,7 +196,7 @@ def main():
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(error, file=sys.stderr)
         return 1
-    print(f"Extraction plan is valid: {args.plan}")
+    print(f"Layer reconstruction plan is valid: {args.plan}")
     return 0
 
 

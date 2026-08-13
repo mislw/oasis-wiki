@@ -18,12 +18,17 @@ python scripts/cowart-ui/component-extractor/validate_extraction_plan.py --plan 
 python scripts/cowart-ui/component-extractor/build_reconstruction_jobs.py `
   --plan extraction-plan.json --output-dir reconstruction-jobs
 
+python scripts/cowart-ui/component-extractor/execute_reconstruction_jobs.py `
+  --jobs-dir reconstruction-jobs --output-root . `
+  --executor your_provider_module:YourImageReconstructionExecutor
+
 python scripts/cowart-ui/component-extractor/recompose_ui.py `
-  --plan extraction-plan.json --assets-dir . --background visual-final.png `
+  --plan extraction-plan.json --assets-dir . `
   --output reconstructed-preview.png
 
 python scripts/cowart-ui/component-extractor/validate_reconstruction.py `
   --plan extraction-plan.json --assets-dir . --preview reconstructed-preview.png `
+  --execution-report layer-reconstruction-execution.json `
   --output reconstruction-report.json
 ```
 
@@ -50,18 +55,18 @@ Use a three-stage, layer-first workflow. A flattened screenshot is a visual-revi
 
 ### Parent component display contract
 
-Workbench sessions and normalized manifests use schema 2 node semantics:
+Workbench sessions and normalized manifests use schema 3 node semantics:
 
-- `composite`: logical parent, default `render_mode: outline`; appears in Structure, never as a default bitmap asset.
-- `skin`: reusable UI background/frame/button skin; uses `clean_asset` only.
-- `artwork`: standalone art/icon/portrait; uses `clean_asset` only.
+- `composite`: logical parent that may own a reconstructed `clean_layer` while retaining independently movable children. It is not automatically reusable in the component library.
+- `skin`: reusable UI background/frame/button skin; uses `clean_layer` only.
+- `artwork`: standalone art/icon/portrait; uses `clean_layer` only.
 - `native`: text, numbers, prices, progress, timers, labels, and hit targets; appears in Structure and never enters a bitmap atlas.
 
-Every node has `visual_assets.source_crop`, `visual_assets.clean_asset`, and `visual_assets.assembly_preview`. Source crops can contain children and native content, so they are trace/debug inputs only. Assembly previews compare recomposition with the approved source and are never component-library assets.
+Every node has `visual_assets.source_crop`, `visual_assets.clean_layer`, and `visual_assets.assembly_preview`. Source crops can contain children and native content, so they are trace/debug inputs only. Assembly previews compare recomposition with the approved source and are never component-library assets.
 
-When a reconstructable node owns child controls, preserve it as a Composite and create a background Skin child, for example `panel.main` plus `panel.main.background`. The Workbench canvas renders Composite outlines first, then clean Skin/Artwork bitmaps, then Native outlines/placeholders. Source Crop display is off by default.
+When a reconstructable node owns child controls, preserve it as a Composite and place its reconstructed background in that node's own `visual_assets.clean_layer`. Do not create a derived `.background` source crop. The Workbench canvas renders validated clean layers plus Native outlines/placeholders. Source Crop display is off by default.
 
-`净化母版` only queues Precision Reconstruction (`requested`/`in_progress`) and later loads its result. The browser must not fill, smear, clone, or inpaint pixels to pretend a clean asset exists.
+`净化母版` follows `requested -> job_created -> waiting_executor -> reconstructing -> reconstructed -> validation -> ready`, or `failed` with a reason. The browser must not fill, smear, clone, or inpaint pixels. Without a provider implementing `ImageReconstructionExecutor.image_edit_inpainting`, it reports `LAYER_RECONSTRUCTION_UNAVAILABLE` and leaves `clean_layer` null.
 
 Resolve a Python runtime before running scripts. When `python` is not on PATH, use the Python path returned by `codex_app__load_workspace_dependencies`.
 
@@ -121,7 +126,7 @@ The approval command records a SHA-256 checksum. A later componentization run re
 1. Build the complete UI Tree from the approved image. It must include every movable or dynamic element, not only the outer containers.
 2. Prefer a real layered package, such as Canva Magic Layers, for `panel`, `card`, `button`, `icon`, `badge`, and decorative art.
 3. Keep text, values, counters, progress, and button labels as native controls in the UI Tree. Do not bake them into bitmap layers.
-4. A bitmap-only UI can produce `reconstruction_candidate` entries for review, but must not be represented as true independent layers. A Skin with only `source_crop` is `needs_cleanup`, not Ready. Create or import replacement transparent assets before marking the entries ready.
+4. A bitmap-only UI produces `reconstruction_candidate` entries. A node with only `source_crop` remains `pending`, not Ready. Reconstruction must cover `background.root`, every independently movable parent layer, Skin/Artwork nodes, and Native removal masks.
 5. Only then create the workbench, passing the locked visual review:
 
 ```powershell
@@ -187,7 +192,7 @@ Use `--allow-png-fallback` only when metadata is absent. Fallback nodes are `can
 python scripts/cowart-ui/component-extractor/validate_manifest.py <normalized-dir>/layer-manifest.json
 ```
 
-Stop on any validation error. Do not silently repair cycles, missing files, duplicate IDs, invalid bounds, or `active` status. Schema 1 packages remain readable; schema 2 additionally validates Node Kind, Render Mode, visual assets, and cleanup state.
+Stop on any validation error. Do not silently repair cycles, missing files, duplicate IDs, invalid bounds, or `active` status. Schema 1 and 2 packages remain readable for migration; schema 3 validates `clean_layer`, reconstruction state, and the formal visual-asset set.
 
 5. Generate the import plan:
 
@@ -197,7 +202,7 @@ python scripts/cowart-ui/component-extractor/build_cowart_shape_plan.py <normali
 
 6. Review the UI Tree before Cowart import. Every node must have one parent, one numeric layer, one z-index, and `pending_review` or `candidate` status. Never auto-promote a node to `active`.
 7. Read Cowart state for the user's active working directory. When the canvas has no saved snapshot, create one with `scripts/cowart-ui/component-extractor/create_cowart_blank_snapshot.mjs`, save it through Cowart MCP, and verify readback. Use manual blank-page saving only as the failure fallback.
-8. Import only Gate-approved `clean_asset` PNGs from Skin/Artwork nodes with `insert_cowart_image`. Put `componentId`, `logicalParentId`, `layer`, `zIndex`, `sourceBounds`, `nodeKind`, `assetSource`, and `reviewStatus` into `shapeMeta`. Composite/Native nodes remain in `move_groups`, not image shapes. Keep the original reference image and all existing shapes. After a successful import, call `render_cowart_canvas_widget` so the user sees the result immediately.
+8. Import only validated `clean_layer` PNGs with `insert_cowart_image`. Clean Composite parent layers may render as editable shapes, but only approved Skin/Artwork nodes may enter the reusable component library. Native nodes remain placeholders. Put `componentId`, `logicalParentId`, `layer`, `zIndex`, `sourceBounds`, `nodeKind`, `assetSource`, and `reviewStatus` into `shapeMeta`.
 9. Use `get_cowart_canvas_state`, then update only the newly inserted shape IDs to the plan coordinates and ordering through `save_cowart_canvas_state`. Preserve all unrelated records. Parent-child movement is represented by the plan's nested `move_groups`; apply grouping only when the Cowart snapshot schema validates it. If grouping cannot be validated, retain logical parent metadata and report the limitation instead of risking the canvas.
 10. Re-read the canvas and confirm all expected layer shapes exist, have correct bounds, and do not cover unrelated content.
 

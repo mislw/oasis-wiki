@@ -1,39 +1,117 @@
-# Precision Component Reconstruction
+# Layer Reconstruction / Clean Layer Extraction
 
-Use this workflow only after a flattened UI image has been visually approved. A flat screenshot is evidence of appearance, not proof of the original editable layers.
+Use this workflow only after the flattened UI bitmap has been visually approved. The bitmap proves appearance, but it is not an editable layer package.
 
-## Stage 2A: Component Recognition
+## Required pipeline
 
-Create a UI Tree that records bounds, category, and extraction metadata for every candidate. Group visually equivalent instances under one `target_component_id`; a six-offer exchange screen should produce one `button.purchase.gold` skin with six instances, not six cropped buttons.
+```text
+Flattened UI
+-> UI Tree Inference
+-> Manual Correction
+-> Node Classification
+-> Layer Reconstruction
+-> Assembly Validation
+-> Component Library / Export
+```
 
-Choose one mode per node:
+Layer Reconstruction covers every independently movable visual level, including `background.root`, panels, cards, buttons, and artwork. Native text, values, timers, progress, labels, and hit targets remain native and never produce bitmap layers.
 
-- `native`: text, numbers, prices, timers, counters, progress, labels, and hit targets. These never output PNG files.
-- `extract_artwork`: artwork, hero portraits, equipment, resource icons, and other isolated visuals. Output is a transparent PNG.
-- `reconstruct_skin`: panels, cards, buttons, frames, badges, headers, and scrollbars. Remove baked dynamic content, reconstruct the covered skin, record nine-slice suitability, and output a transparent PNG.
-- `composite`: complex cards assembled from children and layout. Composite nodes do not export a flattened bitmap by default.
+## Visual asset contract
 
-For each candidate, set `asset_policy: reconstruction_candidate`. That state cannot be treated as a library layer until the asset is reconstructed and reviewed.
+Every node uses exactly these visual asset fields:
 
-The schema 2 representation separates three files throughout Stage 2:
+- `source_crop`: provenance and comparison input. It may contain children, text, icons, shadows, or other baked content. It is never a reusable layer.
+- `clean_layer`: the reconstructed visual owned by this node. Descendant visuals and native content are removed, and all removed regions are repaired with coherent background, edges, material, and texture.
+- `assembly_preview`: validation output assembled from clean layers, artwork, and native placeholders. It is never a component asset.
 
-- `source_crop`: raw evidence, allowed to contain children and native content.
-- `clean_asset`: reconstructed or independently extracted reusable Skin/Artwork.
-- `assembly_preview`: clean parent plus children and native placeholders, used only for comparison.
+A rectangular crop, transparent hole, flat fill, browser paint, HTML/CSS render, Canvas fill, or Chromium screenshot is not a `clean_layer`.
 
-For a parent that contains independently controlled children, keep the parent as `node_kind: composite` and reconstruct a dedicated `*.background` Skin. Composite defaults to `render_mode: outline`; Native defaults to `outline` or `hidden`. Neither may become a bitmap library asset.
+## Node behavior
 
-## Stage 2B: Precision Reconstruction
+- `background.root`: remove every visible foreground node and reconstruct the complete root background.
+- `composite`: may own a `clean_layer` for its background while retaining children as independently movable nodes. It is not automatically reusable as a component-library bitmap.
+- `skin`: reconstruct the clean button, panel, frame, badge, header, card, or slot skin.
+- `artwork`: extract a complete transparent artwork layer and repair occluded edges.
+- `native`: keep `clean_layer: null` and `layer_reconstruction.status: not_applicable`.
 
-1. Run `build_extraction_plan.py` with `ui-tree.json`, approved `visual-review.json`, and the locked visual image.
-2. Run `validate_extraction_plan.py`. It rejects active status, unsafe paths, bitmap output for native/composite nodes, and a skin with neither `remove_content` nor a clean source.
-3. Run `build_reconstruction_jobs.py`. Each reusable target produces exactly one job, even when it has many instances.
-4. Perform semantic masking, text and icon removal, alpha separation, and occlusion repair with an image-edit model or a developer. The local scripts do not pretend to perform those semantic edits.
-5. Save transparent PNGs at each plan output path and run `recompose_ui.py` to place them back at every recorded position.
-6. Run `validate_reconstruction.py`. It checks files, PNG type, alpha support, preview existence, and review state. Its visual similarity is deliberately `null` because a developer must compare the preview with the approved source.
+Do not create a derived `panel.main.background` source crop to hide the problem. The owning parent node carries its own `clean_layer`.
 
-The Workbench `净化母版` action may create or queue the reconstruction job and reflect status, but it must not perform browser-side pixel filling. A Skin remains `needs_cleanup` until a real `clean_asset` is loaded and validated.
+## Hierarchy order
 
-## Review Gate
+Reconstruction is post-order: leaves are confirmed first, then their parents, and `background.root` is last.
 
-Every planned component remains `candidate` or `pending_review`. Reconstruction does not grant `active`. The activation Gate rejects Composite, Native, missing `clean_asset`, non-clean cleanup state, and source/assembly-only nodes. Only the existing Stage 3 Component Confirmation and a developer decision may add a clean Skin/Artwork component to the library.
+```text
+Text -> Native
+Button -> clean button layer
+Artwork -> transparent artwork layer
+Panel -> remove Button + Artwork + visible descendants -> clean panel layer
+Root -> remove Panel + all foreground descendants -> clean root background
+```
+
+Each parent records direct children, visible descendants, native descendants, and artwork descendants. The final removal mask is a deduplicating pixel union; the same pixel must not be applied twice.
+
+## Mask priority
+
+Use the highest available source for each removed node:
+
+1. Explicit child alpha or mask.
+2. Reconstructed child `clean_layer` alpha.
+3. Semantic segmentation mask.
+4. Bounds plus padding fallback.
+
+Bounds are planning and fallback metadata only. They are never proof of precise extraction.
+
+## Planning and execution
+
+The existing scripts remain the pipeline entry points:
+
+```text
+build_extraction_plan.py          # emits schema 3 layer_reconstruction_plan
+build_reconstruction_jobs.py      # provider-neutral jobs in leaf-to-root order
+execute_reconstruction_jobs.py    # pluggable ImageReconstructionExecutor
+recompose_ui.py                   # clean layers + native placeholders only
+validate_reconstruction.py        # executor, PNG, assembly provenance, movement evidence
+```
+
+`ImageReconstructionExecutor` is defined in `image_reconstruction_executor.py`. Providers must implement the `image_edit_inpainting` capability. Codex ImageGen, OpenAI Images, or another provider can be connected without changing the plan/job schema.
+
+No executor is bundled by default. When no capable executor is configured, execution fails closed with:
+
+`LAYER_RECONSTRUCTION_UNAVAILABLE`
+
+No output file is created and `clean_layer` remains null in the node/session data.
+
+## Workbench status
+
+The Workbench uses this state sequence:
+
+```text
+requested
+-> job_created
+-> waiting_executor
+-> reconstructing
+-> reconstructed
+-> validation
+-> ready
+```
+
+Any error transitions to `failed` with a visible reason. The browser may request an external executor through `window.cowartReconstructionExecutor`; it must never reconstruct pixels locally.
+
+## Assembly and residual validation
+
+Assembly Preview may use only:
+
+- clean root background
+- clean parent layers
+- clean child layers
+- artwork layers
+- native placeholders
+
+It must never use `source_crop` as an assembly layer.
+
+Acceptance requires both movement checks:
+
+1. Move a child from A to B. A must show only the expected parent clean layer, with no button, text, icon, shadow, or badge residue.
+2. Move a parent panel. Its original location must show only `background.root.clean_layer`, and all descendants must move with the parent.
+
+The Python tests provide deterministic pixel fixtures for both checks. Real UI output still requires executor evidence and developer visual review before component confirmation.

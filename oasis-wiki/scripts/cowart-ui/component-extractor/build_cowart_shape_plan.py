@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from validate_manifest import validate_manifest
-from component_semantics import activation_gate_errors
+from component_semantics import render_layer_gate_errors
 
 
 def build_move_group(component_id: str, children: dict[str, list[str]]) -> dict[str, Any]:
@@ -29,11 +29,11 @@ def build_plan(manifest_path: Path) -> dict[str, Any]:
         children.setdefault(item["component_id"], [])
     shapes = []
     for item in components:
-        if manifest.get("schema_version") == 2 and activation_gate_errors(item):
+        if manifest.get("schema_version") in {2, 3} and render_layer_gate_errors(item):
             continue
         bounds = item["bounds"]
         padding = max(0, float(item.get("padding", 0) or 0))
-        asset_value = item.get("visual_assets", {}).get("clean_asset") if manifest.get("schema_version") == 2 else item["file"]
+        asset_value = item.get("visual_assets", {}).get("clean_layer") if manifest.get("schema_version") in {2, 3} else item["file"]
         shapes.append({
             "component_id": item["component_id"],
             "asset_path": str((manifest_path.parent / asset_value).resolve()),
@@ -53,7 +53,7 @@ def build_plan(manifest_path: Path) -> dict[str, Any]:
                 "padding": padding,
                 "reviewStatus": item["status"],
                 "nodeKind": item.get("node_kind"),
-                "assetSource": "clean_asset" if manifest.get("schema_version") == 2 else "file",
+                "assetSource": "clean_layer" if manifest.get("schema_version") in {2, 3} else "file",
             },
         })
     return {

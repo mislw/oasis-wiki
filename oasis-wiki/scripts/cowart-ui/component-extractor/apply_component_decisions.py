@@ -58,7 +58,7 @@ def copy_asset(component: dict[str, Any], manifest_path: Path, atlas: Path | Non
             crop.save(target_dir / name)
             return name
     visual_assets = component.get("visual_assets") if isinstance(component.get("visual_assets"), dict) else {}
-    file_value = visual_assets.get("clean_asset") or component.get("file")
+    file_value = visual_assets.get("clean_layer") or component.get("file")
     if not isinstance(file_value, str):
         return None
     source = (manifest_path.parent / file_value).resolve()

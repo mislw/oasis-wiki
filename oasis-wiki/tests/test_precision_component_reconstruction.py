@@ -98,11 +98,13 @@ class PrecisionComponentReconstructionTests(unittest.TestCase):
             self.run_script("build_extraction_plan.py", "--ui-tree", ui_tree, "--visual-review", review, "--image", image, "--output", output)
 
             plan = json.loads(output.read_text(encoding="utf-8"))
-            self.assertEqual(2, len(plan["components"]))
+            self.assertEqual(3, len(plan["components"]))
             button = next(component for component in plan["components"] if component["target_component_id"] == "button.purchase.gold")
             native = next(component for component in plan["components"] if component["target_component_id"] == "text.offer.price")
+            background = next(component for component in plan["components"] if component["target_component_id"] == "background.root")
             self.assertEqual(3, len(button["instances"]))
             self.assertIsNone(native["output"])
+            self.assertIn("button.offer.01", background["layer_reconstruction"]["remove_nodes"])
 
     def test_rejects_skin_without_content_removal_or_clean_source(self):
         with tempfile.TemporaryDirectory() as temp:
