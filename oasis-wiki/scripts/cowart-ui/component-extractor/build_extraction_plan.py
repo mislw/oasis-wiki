@@ -160,10 +160,13 @@ def extraction_component(node, has_children=False, descendants=None, children=No
 def build_plan(ui_tree, visual_review, image_path):
     if ui_tree.get("artifact_type") != "ui_tree":
         raise ValueError("ui_tree artifact_type must be ui_tree")
-    if visual_review.get("artifact_type") != "visual_review" or visual_review.get("status") != "approved":
+    review_kind = visual_review.get("artifact_type") or visual_review.get("workflow_stage")
+    if review_kind != "visual_review" or visual_review.get("status") != "approved":
         raise ValueError("visual_review must be an approved visual_review artifact")
     image_sha256 = hashlib.sha256(Path(image_path).read_bytes()).hexdigest()
-    review_sha256 = visual_review.get("source_sha256", visual_review.get("sha256"))
+    approved_image = visual_review.get("approved_image")
+    approved_sha256 = approved_image.get("sha256") if isinstance(approved_image, dict) else None
+    review_sha256 = visual_review.get("source_sha256", visual_review.get("sha256", approved_sha256))
     if review_sha256 != image_sha256:
         raise ValueError("approved visual-review SHA-256 does not match image")
     page_size = ui_tree.get("page_size", {"width": 1920, "height": 1080})
