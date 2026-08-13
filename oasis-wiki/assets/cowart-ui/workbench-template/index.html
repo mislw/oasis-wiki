@@ -104,7 +104,8 @@
     .viewport.draw-mode .image-frame { cursor:crosshair; }
     .viewport.is-interacting, .viewport.is-interacting * { user-select:none; }
     .draft-region { pointer-events:none; border-style:dashed; }
-    .empty-note { position:absolute; left:18px; bottom:15px; color:#60716a; font-size:11px; }
+    .empty-note { position:absolute; left:18px; bottom:15px; padding:5px 7px; color:#60716a; background:rgba(255,255,255,.82); border:1px solid transparent; border-radius:4px; font-size:11px; }
+    .empty-note.annotation-only { color:#85551b; background:rgba(255,240,211,.95); border-color:#edcc8e; font-weight:700; }
     .layer-legend { position:absolute; z-index:5; left:12px; top:10px; display:flex; flex-wrap:wrap; gap:5px; max-width:calc(100% - 24px); pointer-events:none; }
     .layer-legend span { padding:3px 5px; color:#3b4742; background:rgba(255,255,255,.9); border:1px solid #d6ded9; border-radius:3px; box-shadow:0 2px 8px rgba(25,40,32,.08); font-size:9px; font-weight:700; }
 
@@ -192,7 +193,7 @@
       </aside>
       <section class="panel stage">
         <div class="canvas-tools"><div class="tool-group"><button class="tool-button active" id="selectTool" title="选择" aria-label="选择"><i data-lucide="mouse-pointer-2"></i></button><button class="tool-button" id="rectTool" title="矩形选区" aria-label="矩形选区"><i data-lucide="square-dashed-mouse-pointer"></i></button><button class="tool-button" id="lassoTool" title="手绘选区" aria-label="手绘选区"><i data-lucide="lasso-select"></i></button><button class="tool-button active" id="componentLayerButton" title="显示可移动组件图层" aria-label="显示可移动组件图层"><i data-lucide="layers-3"></i></button></div><div class="tool-group"><button class="tool-button" id="zoomIn" title="放大" aria-label="放大"><i data-lucide="zoom-in"></i></button><button class="tool-button" id="zoomOut" title="缩小" aria-label="缩小"><i data-lucide="zoom-out"></i></button><button class="tool-button" id="fitCanvas" title="适应画布" aria-label="适应画布"><i data-lucide="scan"></i></button><button class="tool-button" id="resetLayout" title="组件回到源图位置" aria-label="组件回到源图位置"><i data-lucide="rotate-ccw"></i></button><button class="tool-button" id="deleteTool" title="删除选区" aria-label="删除选区"><i data-lucide="trash-2"></i></button></div><label class="source-toggle"><input id="showSourceCrops" type="checkbox">显示 Source Crop</label><span class="zoom" id="zoomValue">82%</span></div>
-        <div class="viewport" id="viewport"><div class="layer-legend"><span>L0 背景</span><span>L10 主窗口</span><span>L20 容器</span><span>L30 卡片</span><span>L40 图标</span><span>L50 文本</span><span>L60 操作</span><span>L70 状态</span></div><div class="image-frame component-mode" id="imageFrame"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="UI 源图" id="sourceImage"><div id="regionLayer"></div></div><span class="empty-note">组件模式 · 拖动图像本体；拖父节点会带动全部子节点</span></div>
+        <div class="viewport" id="viewport"><div class="layer-legend"><span>L0 背景</span><span>L10 主窗口</span><span>L20 容器</span><span>L30 卡片</span><span>L40 图标</span><span>L50 文本</span><span>L60 操作</span><span>L70 状态</span></div><div class="image-frame component-mode" id="imageFrame"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="UI 源图" id="sourceImage"><div id="regionLayer"></div></div><span class="empty-note" id="canvasModeNote">组件模式 · 拖动图像本体；拖父节点会带动全部子节点</span></div>
       </section>
       <aside class="panel inspector">
         <div class="panel-header">控件属性 <span class="count" id="activeSelection">选区 01</span></div>
@@ -641,6 +642,14 @@
       $('#imageFrame').classList.toggle('component-mode', componentLayersVisible);
       $('#componentLayerButton').classList.toggle('active', componentLayersVisible);
       $('#showSourceCrops').checked = sourceCropsVisible;
+      const hasReadyCleanLayer = items.some(item => item.reconstructionStatus === 'ready' && Boolean(item.cleanLayerUrl));
+      const annotationOnly = !componentLayersVisible && !hasReadyCleanLayer;
+      $('#canvasModeNote').classList.toggle('annotation-only', annotationOnly);
+      $('#canvasModeNote').textContent = annotationOnly
+        ? '标注模式：拖动只调整选区；生成 Clean Layer 后才能移动控件图像。'
+        : componentLayersVisible
+          ? '组件模式 · 拖动图像本体；拖父节点会带动全部子节点'
+          : '原图标注视图';
       renderList();
       renderRegions();
       renderInspector();

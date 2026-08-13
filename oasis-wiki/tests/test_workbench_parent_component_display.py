@@ -262,6 +262,8 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             "validation",
             "syncInitialCanvasMode",
             "hasReadyCleanLayer",
+            "拖动只调整选区",
+            "生成 Clean Layer 后才能移动控件图像",
             "净化母版",
         ):
             self.assertIn(marker, template)
