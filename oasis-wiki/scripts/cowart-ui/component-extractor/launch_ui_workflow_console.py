@@ -110,7 +110,17 @@ class Workflow:
         source = Path(source_path).expanduser().resolve()
         if not source.is_file():
             raise FileNotFoundError(source)
-        return command(str(SCRIPT_ROOT / "create_visual_review.py"), "--image", str(source), "--name", self.read_state()["name"], "--output-root", str(self.directory / "visual"))
+        return command(
+            str(SCRIPT_ROOT / "create_visual_review.py"),
+            "--image",
+            str(source),
+            "--name",
+            self.read_state()["name"],
+            "--output-root",
+            str(self.directory / "visual"),
+            "--source-type",
+            "external_source",
+        )
 
     def approve_visual(self, final_path: str) -> dict[str, Any]:
         review = self.find_review()

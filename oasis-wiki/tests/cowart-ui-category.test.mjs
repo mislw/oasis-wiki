@@ -9,7 +9,6 @@ const wikiRoot = fileURLToPath(new URL("../", import.meta.url));
 const requiredFiles = [
   "references/cowart-ui-workflow.md",
   "references/cowart-ui/component-extractor.md",
-  "references/cowart-ui/precision-reconstruction.md",
   "references/cowart-ui/two-stage-workflow.md",
   "references/cowart-ui/layer-manifest.md",
   "references/cowart-ui/delivery.md",
@@ -18,18 +17,27 @@ const requiredFiles = [
   "scripts/cowart-ui/component-extractor/create_ui_workbench.py",
   "scripts/cowart-ui/component-extractor/create_cowart_blank_snapshot.mjs",
   "scripts/cowart-ui/component-extractor/apply_component_decisions.py",
+  "scripts/game-ui/generation_pipeline.py",
+  "scripts/game-ui/build_generation_prompt.py",
+  "scripts/game-ui/build_generation_package.py",
+  "scripts/game-ui/validate_generation_package.py",
+  "scripts/game-ui/prepare_image_generation.py",
+  "scripts/game-ui/generate_with_codex_provider.py",
+  "scripts/game-ui/record_generation_result.py",
+  "scripts/game-ui/create_style_review.py",
+  "scripts/cowart-ui/delivery/build_delivery_plan.py",
+  "scripts/cowart-ui/delivery/validate_delivery_plan.py",
+  "assets/cowart-ui/ui-spec-template.json",
+  "assets/cowart-ui/component-decisions-template.json",
+  "assets/cowart-ui/workflow-console/index.html",
+  "assets/cowart-ui/workbench-template/index.html",
+  "references/cowart-ui/precision-reconstruction.md",
+  "assets/cowart-ui/extraction-plan-template.json",
   "scripts/cowart-ui/component-extractor/build_extraction_plan.py",
   "scripts/cowart-ui/component-extractor/validate_extraction_plan.py",
   "scripts/cowart-ui/component-extractor/build_reconstruction_jobs.py",
   "scripts/cowart-ui/component-extractor/recompose_ui.py",
   "scripts/cowart-ui/component-extractor/validate_reconstruction.py",
-  "scripts/cowart-ui/delivery/build_delivery_plan.py",
-  "scripts/cowart-ui/delivery/validate_delivery_plan.py",
-  "assets/cowart-ui/ui-spec-template.json",
-  "assets/cowart-ui/component-decisions-template.json",
-  "assets/cowart-ui/extraction-plan-template.json",
-  "assets/cowart-ui/workflow-console/index.html",
-  "assets/cowart-ui/workbench-template/index.html",
 ];
 
 function walk(dir) {
@@ -46,7 +54,7 @@ test("Oasis Wiki exposes Cowart UI as a separate routed category", () => {
   }
 });
 
-test("Cowart UI category bundles the workflow and precision reconstruction resources", () => {
+test("Cowart UI category bundles all reusable workflow resources", () => {
   for (const file of requiredFiles) {
     assert.ok(existsSync(join(wikiRoot, file)), `missing ${file}`);
   }
@@ -56,8 +64,14 @@ test("Cowart UI category describes upstream design and automatic Cowart handoff"
   const content = readFileSync(join(wikiRoot, "references/cowart-ui-workflow.md"), "utf8");
   assert.match(content, /Game UI Design System|游戏 UI 设计系统/);
   assert.match(content, /自动.*Cowart|Cowart.*自动/s);
+  assert.match(content, /IMAGE_GENERATION_UNAVAILABLE/);
+  assert.match(content, /Codex 内置.*image_gen|image_gen.*Codex 内置/s);
+  assert.match(content, /codex_provider_direct/);
+  assert.match(content, /明确授权|显式授权/);
+  assert.match(content, /禁止使用 HTML\/CSS\/Chromium screenshot fallback/);
+  assert.match(content, /build_generation_package\.py/);
+  assert.doesNotMatch(content, /OPENAI_API_KEY/);
   assert.match(content, /scripts\/cowart-ui\/delivery/);
-  assert.match(content, /Precision Reconstruction|precision-reconstruction/);
 });
 
 test("Cowart UI bundle excludes environments, bytecode, and runtime outputs", () => {
@@ -67,4 +81,10 @@ test("Cowart UI bundle excludes environments, bytecode, and runtime outputs", ()
   const forbidden = roots.flatMap(walk).map((path) => relative(wikiRoot, path))
     .filter((path) => /(^|[\\/])(?:\.venv|__pycache__|sessions?)([\\/]|$)|\.pyc$/i.test(path));
   assert.deepEqual(forbidden, []);
+});
+
+test("bundled Skill includes the precision component reconstruction workflow", () => {
+  const content = readFileSync(join(wikiRoot, "references/cowart-ui-workflow.md"), "utf8");
+  assert.match(content, /Precision Component Reconstruction/);
+  assert.match(content, /reconstruction_candidate/);
 });

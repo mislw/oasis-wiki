@@ -13,14 +13,35 @@
 
 1. **设计约束**：先读 `references/game-ui-design-system.md`，解析项目风格档案和已有组件，确定 UI Tree、原生文本/数值控件与位图资源边界。
 2. **UI 规格**：从 `assets/cowart-ui/ui-spec-template.json` 创建并验证 `ui-spec.json`，再生成完整 `ui-tree.json`。
-3. **生成 UI 图**：按已解析的游戏风格生成完整候选图。图像生成是当前 Codex 会话动作，本地控制台不伪装成图像生成器。
-4. **自动交给 Cowart**：创建视觉评审包，读取 Cowart 状态；空画布时自动生成并保存有效空快照，插入候选图，回读验证后自动打开原生 Cowart。详见 `references/cowart-ui/component-extractor.md`。
-5. **视觉确认**：保留旧候选，把修订图放在来源图旁边。只有开发者明确确认后才锁定最终图。
-6. **组件化**：优先使用真实图层导出；验证图层清单、建立 Cowart shape plan 和可编辑工作台。扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
-7. **精细重建**：位图源图使用 `cowart-ui/precision-reconstruction.md` 的 Stage 2A/2B。区分 source crop、重建输出、`pending_review` 和明确确认的 active component。
-8. **组件确认**：只把明确批准的组件写入用户级项目风格档案，并运行 `scripts/game-ui/validate_library.py`。
-9. **交付计划**：运行 `scripts/cowart-ui/delivery/build_delivery_plan.py` 与 `scripts/cowart-ui/delivery/validate_delivery_plan.py`，生成 UMG 层级、Lua 绑定、数据归属和验收要求。详见 `references/cowart-ui/delivery.md`。
-10. **工程实施**：只有用户明确授权后，才返回 Oasis Wiki 的 MCP UI/功能开发分支修改 WidgetBlueprint、Lua、DataTable 或其他 UGC 资产。
+3. **解析原始参考图**：把用户给出的独立原图分类为 `style` 或 `layout`。聊天截图、浏览器截图、Cowart 截图和多图 collage 默认拒绝，除非用户明确授权。
+4. **构建 Generation Package**：运行 `scripts/game-ui/build_generation_package.py`，把原图复制进包内，并记录尺寸、SHA-256、角色和优先级。
+5. **编译 Prompt**：同时编译项目 Style Profile、已有组件、UI Tree、原生/位图边界和负面约束；Style Profile 只作补充，不能替代 Style Image。
+6. **真实图片生成**：优先把 Style Images、Layout Images 和 Compiled Prompt 一起传给 Codex 内置 `image_gen`。不要求用户配置外部 Key，也不使用通用 CLI fallback。内置工具不可用时输出 `IMAGE_GENERATION_UNAVAILABLE`；只有用户明确授权后，才允许 `codex_provider_direct` 从当前 Codex Provider 解析带渠道前缀的 `gpt-image-2` 模型并使用 Codex 托管认证。
+7. **Style Validation**：运行 `scripts/game-ui/create_style_review.py`，建立定性对比记录，状态保持 `pending_developer_review`，不得伪造相似度百分比。
+8. **自动交给 Cowart**：`ai_generated` 来源必须通过 Generation Result、输出 SHA 和候选图一致性检查；`external_source` 仍允许用户直接导入已有 UI 图。
+9. **组件化**：优先使用真实图层导出；扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
+10. **组件确认**：只把明确批准的组件写入用户级项目风格档案，并运行 `scripts/game-ui/validate_library.py`。
+11. **交付**：先生成并验证 RedCliff 交付计划；只有用户明确授权后，才修改 WidgetBlueprint、Lua、DataTable 或其他 UGC 资产。
+
+## Generation Package
+
+```powershell
+python scripts/game-ui/build_generation_package.py `
+  --ui-tree <ui-tree.json> `
+  --style-profile <profile.json> `
+  --references <references.json> `
+  --output <generation-package> `
+  --page-purpose "<page purpose>"
+
+python scripts/game-ui/validate_generation_package.py <generation-package>
+python scripts/game-ui/prepare_image_generation.py --package <generation-package> --available-tool image_gen
+
+# Only after explicit user authorization when image_gen is unavailable:
+python scripts/game-ui/prepare_image_generation.py --package <generation-package> --allow-provider-direct
+python scripts/game-ui/generate_with_codex_provider.py --package <generation-package> --user-authorized-provider-direct
+```
+
+`prepare_image_generation.py` 默认只接受 Codex 当前工具清单中的内置 `image_gen`，并输出真实调用所需的 prompt/reference 路径。工具缺失时以退出码 `3` 输出 `IMAGE_GENERATION_UNAVAILABLE`。用户显式授权 `--allow-provider-direct` 后，`generate_with_codex_provider.py` 才会读取 Codex 当前 Provider 配置和托管认证，解析实际模型名并生成图片；脚本不要求、打印或写入用户 Key。
 
 ## 快速入口
 
@@ -33,7 +54,7 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 ## 分类资源
 
 - `references/cowart-ui/component-extractor.md`：Stage 0-3、Cowart 自动交接、组件提取与工作台流程。
-- `references/cowart-ui/precision-reconstruction.md`：Stage 2A/2B 识别、净化、重组与审核 Gate。
+- `references/cowart-ui/precision-reconstruction.md`：Stage 2A/2B 识别、clean layer 重建、Assembly Preview 与审核 Gate。
 - `references/cowart-ui/two-stage-workflow.md`：视觉评审与组件化的阶段边界。
 - `references/cowart-ui/layer-manifest.md`：图层清单和导入契约。
 - `references/cowart-ui/delivery.md`：RedCliff UI 交付计划流程。
@@ -44,16 +65,33 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 
 ## 强制边界
 
+- 正式 AI Game UI 视觉稿禁止使用 HTML/CSS/Chromium screenshot fallback。HTML 仅可用于 debug、layout prototype、workbench 或失败诊断。
+- 正式后端优先为 Codex 内置 `image_gen`，凭据模式固定为 `codex_managed`；不得要求用户提供 Key。只有用户明确授权且内置工具缺失时，才允许 `codex_provider_direct`，并继续禁止通用 CLI 与 HTML/CSS/Chromium screenshot fallback。
+- 用户给出视觉参考图时，最终图片生成调用必须实际接收这些原始文件。只传 Style Profile、art direction 或 prompt 属于门禁失败。
+- 不得手写或伪造 `generation-result.json`；只能通过 `record_generation_result.py` 对真实存在且可读取的输出图片记录结果。
 - Cowart 视觉评审通过，不等于组件已确认；组件已确认，也不等于编辑器或 PIE 已验收。
 - 文本、数值、倒计时、进度、交互热区和状态必须保留为原生控件，不烘焙进 PNG。
-- 任意矩形 source crop 都不能自动作为 reusable component；Skin 必须完成重建并通过审核。
+- 任意矩形 `source_crop` 都不能自动作为 reusable component；Skin 和父层必须生成 `clean_layer` 并通过审核。
 - 不覆盖或删除 Cowart 中既有图形；修订图保留版本关系。
 - 未经用户明确授权，不写入 UGC Lua、WidgetBlueprint、`.uasset`、`.umap` 或项目内风格档案。
 - 不打包 `.venv`、`__pycache__`、`.pyc`、临时 session、用户 profile 或 RedCliff 运行产物。
-# Layer Reconstruction 补充流程
 
-扁平 UI 图进入工作台后，必须依次执行：UI Tree 推断、人工校正、节点分类、从叶子到根的 Layer Reconstruction、Assembly Preview 验证、组件确认。正式资产字段统一为 `source_crop`、`clean_layer`、`assembly_preview`。
+## Precision Component Reconstruction
 
-`background.root`、Panel、Button、Artwork 等所有需要独立移动的视觉层都必须拥有自己的重建目标。Native 文本、数值和交互区不生成位图。父节点 Mask 使用 Alpha/真实 Mask、clean layer Alpha、语义分割、Bounds fallback 的优先级，并对所有可见后代做像素并集去重。
+当审核通过的 UI 只有扁平位图、没有可信源图层包时，进入 `references/cowart-ui/precision-reconstruction.md`：
+
+1. 锁定审核图与 SHA-256，并建立包含原生控件、皮肤、图标、复合区域和候选控件的 UI Tree。
+2. 执行 Stage 2A Component Recognition，生成并验证 `extraction-plan.json`。
+3. 执行 Stage 2B Precision Reconstruction；共享皮肤必须综合等价实例重建，不得把任意矩形裁剪冒充可复用控件。
+4. 使用真实位图合成生成 `reconstructed-preview.png`，再与审核图对比并记录重建报告。
+5. 只有通过评审的候选项才能进入 Stage 3 Component Confirmation 和组件库。
+
+工作台必须区分 `reconstruction_candidate`、重建输出、`pending_review` 与开发者明确确认的 `active` 组件。
+
+### Layer Reconstruction 补充门禁
+
+扁平 UI 图进入工作台后，必须依次执行 UI Tree 推断、人工校正、节点分类、从叶子到根的 Layer Reconstruction、Assembly Preview 验证和组件确认。正式资产字段统一为 `source_crop`、`clean_layer`、`assembly_preview`。
+
+`background.root`、Panel、Button、Artwork 等所有需要独立移动的视觉层都必须拥有自己的重建目标。Native 文本、数值和交互区不生成位图。父节点 Mask 按真实 Alpha/Mask、clean layer Alpha、语义分割、Bounds fallback 的优先级计算，并对所有可见后代做像素并集去重。
 
 没有实现 `image_edit_inpainting` 的 `ImageReconstructionExecutor` 时必须返回 `LAYER_RECONSTRUCTION_UNAVAILABLE`，保持 `clean_layer: null`，不得用裁切、透明挖洞、Canvas 填色、HTML/CSS 或浏览器截图代替。

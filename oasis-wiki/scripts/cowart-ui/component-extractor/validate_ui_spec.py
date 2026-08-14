@@ -11,6 +11,7 @@ ID_PATTERN = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)+$")
 COMPONENT_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*){2,}$")
 STATUSES = {"pending_review", "candidate"}
 NATIVE_CATEGORIES = {"text", "button", "input", "progress", "counter"}
+REFERENCE_ROLES = {"style", "layout"}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -63,6 +64,32 @@ def validate_spec(spec: dict[str, Any]) -> list[str]:
     data_contract = spec.get("data_contract", [])
     if not isinstance(data_contract, list):
         errors.append("data_contract must be an array")
+    visual = spec.get("visual", {})
+    if not isinstance(visual, dict):
+        errors.append("visual must be an object")
+    else:
+        references = visual.get("reference_images", [])
+        if not isinstance(references, list):
+            errors.append("visual.reference_images must be an array")
+        else:
+            for index, reference in enumerate(references):
+                prefix = f"visual.reference_images[{index}]"
+                if not isinstance(reference, dict):
+                    errors.append(f"{prefix} must be an object")
+                    continue
+                if not isinstance(reference.get("source"), str) or not reference["source"].strip():
+                    errors.append(f"{prefix}.source is required")
+                role = reference.get("role")
+                if role not in REFERENCE_ROLES:
+                    errors.append(f"{prefix}.role must be style or layout")
+                priority = reference.get("priority")
+                if isinstance(priority, bool) or not isinstance(priority, (int, float)):
+                    errors.append(f"{prefix}.priority must be numeric")
+                copy_visual_style = reference.get("copy_visual_style")
+                if copy_visual_style is not None and not isinstance(copy_visual_style, bool):
+                    errors.append(f"{prefix}.copy_visual_style must be boolean")
+                if role == "layout" and copy_visual_style is True:
+                    errors.append(f"{prefix}.copy_visual_style must be false for layout references")
     nodes = spec.get("nodes")
     if not isinstance(nodes, list) or not nodes:
         return errors + ["nodes must be a non-empty array"]
