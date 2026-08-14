@@ -59,6 +59,7 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 - `references/cowart-ui/layer-manifest.md`：图层清单和导入契约。
 - `references/cowart-ui/delivery.md`：RedCliff UI 交付计划流程。
 - `references/cowart-ui/delivery-contract.md`：UMG/Lua/DataTable 映射与验收契约。
+- `references/oasis-ui-agent-interaction.md`：围绕现有流程的 Agent 提问、Approval Gate、Workbench/UMG/Lua 验收、回退与失败话术；只增加交互编排，不改变运行时功能。
 - `scripts/cowart-ui/component-extractor/`：规格、评审、Cowart 交接、图层规范化、工作台和组件确认脚本。
 - `scripts/cowart-ui/delivery/`：交付计划构建与验证脚本。
 - `assets/cowart-ui/`：UI 规格、组件决策和本地工作台模板。
@@ -72,9 +73,16 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 - Cowart 视觉评审通过，不等于组件已确认；组件已确认，也不等于编辑器或 PIE 已验收。
 - 文本、数值、倒计时、进度、交互热区和状态必须保留为原生控件，不烘焙进 PNG。
 - 任意矩形 `source_crop` 都不能自动作为 reusable component；Skin 和父层必须生成 `clean_layer` 并通过审核。
+- 从工作台交付到 UMG 时，不能把视觉图层全部平铺成同级 Widget。先参照项目中已工作的真实 WidgetTree，再按可独立移动的业务组件建立语义父容器；坐标保持、按钮身份、Z-order、事务回滚和验证规则见 `references/mcp-ui-widget.md` 的 `Refine An Existing Widget Hierarchy Without Moving The UI`。
 - 不覆盖或删除 Cowart 中既有图形；修订图保留版本关系。
 - 未经用户明确授权，不写入 UGC Lua、WidgetBlueprint、`.uasset`、`.umap` 或项目内风格档案。
 - 不打包 `.venv`、`__pycache__`、`.pyc`、临时 session、用户 profile 或 RedCliff 运行产物。
+
+## Oasis UI Agent 交互层
+
+执行本流程时同时遵循 `references/oasis-ui-agent-interaction.md`：Agent 先读取和推断，只询问一个真正缺失的关键决策；获得当前阶段确认后执行一个生产阶段；报告真实产物与验证结果；等待验收后再继续。视觉锁定、分层确认、UMG 计划、Widget 视觉结果、Lua/数据绑定和最终结果分别设门禁。
+
+这只是对话编排，不是新的持久化状态机。当前没有经过验证的通用任务存储、Companion 当前任务面板或跨重启自动恢复时，不得声称这些能力已经存在，也不得因此改动 Cowart、Workbench、MCP 或 Companion 运行时。
 
 ## Precision Component Reconstruction
 

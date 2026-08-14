@@ -7,7 +7,7 @@ description: Use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, 
 
 For game UI reference analysis, reusable control libraries, project-specific style routing, UI Tree planning, or screenshot-to-UI work, use the integrated Game UI Design System branch in `references/game-ui-design-system.md` before MCP WidgetBlueprint operations.
 
-For AI UI generation, automatic native Cowart handoff, editable layer extraction, component confirmation, or RedCliff delivery planning, use the separate Cowart UI Production branch in `references/cowart-ui-workflow.md`.
+For AI UI generation, automatic native Cowart handoff, editable layer extraction, component confirmation, or RedCliff delivery planning, use the separate Cowart UI Production branch in `references/cowart-ui-workflow.md`. For staged Agent questions, approvals, review gates, backtracking, and result reporting around that existing workflow, also read `references/oasis-ui-agent-interaction.md`.
 
 Use this skill for Oasis/绿洲启元 and 和平精英 UGC development questions. The bundled wiki is the source of truth for Lua APIs, editor workflows, gameplay systems, UI, templates, troubleshooting, and examples. The project-pattern references summarize generic UGC Lua architecture habits without private project names, local paths, or planning details.
 
@@ -46,7 +46,7 @@ Default to normal mode. Use teaching mode only when the user explicitly asks for
    - Config/balancing: table schema/usage lookup, `references/mcp-datatable.md` when editor tables are involved, and project code consumers.
    - UI/interaction: UIManager, `Script/UI`, existing button bindings, and `references/mcp-ui-widget.md` only for WidgetBlueprint work.
    - UI design system: `references/game-ui-design-system.md`, then only the required file under `references/game-ui/`. Resolve the project profile before extracting controls or generating a page.
-   - Cowart UI production: `references/cowart-ui-workflow.md`, then `references/cowart-ui/component-extractor.md` or `references/cowart-ui/delivery.md` for the active stage. Use the UI design system as its upstream style and UI Tree gate.
+   - Cowart UI production: `references/cowart-ui-workflow.md` and `references/oasis-ui-agent-interaction.md`, then `references/cowart-ui/component-extractor.md` or `references/cowart-ui/delivery.md` for the active stage. Use the UI design system as its upstream style and UI Tree gate. The interaction reference adds approval orchestration only; it does not add persistent task state or runtime communication.
    - Project safety: `references/pitfalls.md`, binary asset precautions, dirty file distinction, and backup rules.
 7. For MCP/editor automation, search `references/wiki/新增内容_1.37版本.md` for `UGCAskQ MCP 使用说明` when setup or official behavior is uncertain. Confirm the editor MCP Server is running locally, the SSE URL/port match the panel, call logging is enabled when debugging, and backups for `.uasset` files live outside the UGC project tree. If Codex direct/native MCP registration enters reconnect loops (`正在重新连接 1/5`, `正在重新连接 4/5`, `reconnecting`) or fails with stream-completion errors (`stream disconnected before completion`, missing `response.completed`), immediately stop retrying native MCP and use the local HTTP proxy workflow in `references/mcp-integration.md` instead. Also use the proxy when the user asks for `长连接 MCP` / `MCP 代理` / `绕过直连 MCP` / `让 Codex 用 MCP`.
 8. For log/debugging questions, inspect available project/editor logs first when possible, and distinguish PIE logs, local `Clientlog`/`DSlog`, phone logs, management-platform DS logs, MCP call logs (`Saved/log/MCP_YYYYMMDD.log`), and battle logs.
@@ -91,6 +91,7 @@ Additional distilled references:
 - `references/mcp-datatable.md`: MCP branch for config tables, DataTable/UAEDataTable lookup, low-token row reads, row mutation, and table-backed gameplay/UI.
 - `references/game-ui-design-system.md`: project-routed screenshot analysis, reusable control-library maintenance, UI Tree gates, generation workflow, and automatic UI validation.
 - `references/cowart-ui-workflow.md`: separate AI UI generation, automatic Cowart opening, editable component extraction, layer-manifest, confirmation, and RedCliff delivery category.
+- `references/oasis-ui-agent-interaction.md`: interaction-only orchestration for Cowart/UI stages, contextual approval gates, review prompts, backtracking, and fail-closed reporting without runtime changes.
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.
 - `references/teaching-mode.md`: code-teaching workflow and project-file read-only constraint.
 - `references/code-style.md`: lightweight project code style for comments, config tables, variable names, member variables, and methods.

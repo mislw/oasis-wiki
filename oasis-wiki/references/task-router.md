@@ -166,12 +166,13 @@ Trigger examples:
 Read:
 
 - `references/cowart-ui-workflow.md`
+- `references/oasis-ui-agent-interaction.md` for staged questions, contextual approvals, Workbench/UMG/Lua review gates, backtracking, and failure wording
 - `references/cowart-ui/component-extractor.md` for generation, Cowart review, layer extraction, workbench, and component decisions
 - `references/cowart-ui/delivery.md` only after visual and component approval
 - Upstream branch: `UI Design System` for project style, reusable components, and the mandatory UI Tree
 - Secondary branch: `MCP Operation` only after explicit authorization to inspect or modify real WidgetBlueprint assets
 
-This category owns the production pipeline and automatic Cowart handoff. It must not treat a visual-review bitmap as editable components, and it must not mutate UGC project files during visual review, component extraction, or delivery-plan generation.
+This category owns the production pipeline and automatic Cowart handoff. The UI Agent interaction reference only orchestrates the existing pipeline: ask only for missing information, keep one pending decision, stop at each approval gate, and report verified paths/results. It does not create persistent task state, Companion task UI, IPC, or automatic resume. The pipeline must not treat a visual-review bitmap as editable components, and it must not mutate UGC project files during visual review, component extraction, or delivery-plan generation.
 
 ### UI And Interaction
 
