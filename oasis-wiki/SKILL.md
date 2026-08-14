@@ -92,6 +92,7 @@ Additional distilled references:
 - `references/game-ui-design-system.md`: project-routed screenshot analysis, reusable control-library maintenance, UI Tree gates, generation workflow, and automatic UI validation.
 - `references/cowart-ui-workflow.md`: separate AI UI generation, automatic Cowart opening, editable component extraction, layer-manifest, confirmation, and RedCliff delivery category.
 - `references/oasis-ui-agent-interaction.md`: interaction-only orchestration for Cowart/UI stages, contextual approval gates, review prompts, backtracking, and fail-closed reporting without runtime changes.
+- `references/companion-versioning.md`: `M.YYMMDD.N` versioning contract for Companion and bundled Skill builds, including synchronized release metadata.
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.
 - `references/teaching-mode.md`: code-teaching workflow and project-file read-only constraint.
 - `references/code-style.md`: lightweight project code style for comments, config tables, variable names, member variables, and methods.
