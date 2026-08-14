@@ -243,6 +243,30 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
         self.assertEqual(component["layer_reconstruction"]["status"], "pending")
         self.assertEqual(component["status"], "candidate")
 
+    def test_completed_execution_report_enables_workbench_capability(self):
+        with tempfile.TemporaryDirectory() as temp:
+            report_path = Path(temp) / "layer-reconstruction-execution.json"
+            report_path.write_text(json.dumps({
+                "artifact_type": "layer_reconstruction_execution",
+                "status": "completed",
+                "executor_id": "codex-upstream-gpt-image-2",
+                "capability": "image_edit_inpainting",
+                "results": [],
+            }), encoding="utf-8")
+
+            capability = create_ui_workbench.load_reconstruction_capability(report_path)
+
+            self.assertTrue(capability["available"])
+            self.assertEqual("codex-upstream-gpt-image-2", capability["executor"])
+            self.assertIsNone(capability["error"])
+            self.assertEqual(str(report_path.resolve()), capability["execution_report"])
+
+    def test_missing_execution_report_keeps_workbench_fail_closed(self):
+        capability = create_ui_workbench.load_reconstruction_capability(None)
+
+        self.assertFalse(capability["available"])
+        self.assertEqual("LAYER_RECONSTRUCTION_UNAVAILABLE", capability["error"])
+
     def test_workbench_template_has_structure_asset_and_visual_asset_views(self):
         template = (WIKI_ROOT / "assets" / "cowart-ui" / "workbench-template" / "index.html").read_text(encoding="utf-8")
         for marker in (

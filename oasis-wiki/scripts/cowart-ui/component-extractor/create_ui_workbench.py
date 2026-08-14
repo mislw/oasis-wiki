@@ -49,6 +49,38 @@ def validate_visual_review(review_path: Path, image_path: Path) -> dict[str, Any
     return review
 
 
+def load_reconstruction_capability(execution_report_path: Path | None) -> dict[str, Any]:
+    unavailable = {
+        "available": False,
+        "required_capability": "image_edit_inpainting",
+        "executor": None,
+        "error": "LAYER_RECONSTRUCTION_UNAVAILABLE",
+        "execution_report": None,
+    }
+    if execution_report_path is None:
+        return unavailable
+    report_path = execution_report_path.resolve()
+    report = json.loads(report_path.read_text(encoding="utf-8-sig"))
+    valid = (
+        report.get("artifact_type") == "layer_reconstruction_execution"
+        and report.get("status") == "completed"
+        and report.get("capability") == "image_edit_inpainting"
+        and isinstance(report.get("executor_id"), str)
+        and bool(report["executor_id"])
+    )
+    if not valid:
+        unavailable["error"] = "LAYER_RECONSTRUCTION_UNAVAILABLE: invalid execution report"
+        unavailable["execution_report"] = str(report_path)
+        return unavailable
+    return {
+        "available": True,
+        "required_capability": "image_edit_inpainting",
+        "executor": report["executor_id"],
+        "error": None,
+        "execution_report": str(report_path),
+    }
+
+
 def first(mapping: dict[str, Any], keys: tuple[str, ...], default: Any = None) -> Any:
     for key in keys:
         if key in mapping and mapping[key] is not None:
@@ -381,6 +413,7 @@ def main() -> int:
     parser.add_argument("--image", required=True, type=Path)
     parser.add_argument("--controls", type=Path)
     parser.add_argument("--visual-review", type=Path, help="Approved visual-review.json from the Cowart review stage.")
+    parser.add_argument("--execution-report", type=Path, help="Completed layer-reconstruction-execution.json evidence.")
     parser.add_argument("--allow-unreviewed", action="store_true", help="Diagnostic only: bypass the required visual approval gate.")
     parser.add_argument("--name", default="Generated UI")
     parser.add_argument("--output-root", type=Path, default=Path.home() / ".codex" / "ui-workbenches")
@@ -414,12 +447,7 @@ def main() -> int:
         "source_name": image_path.name,
         "source_size": {"width": width, "height": height},
         "controls": controls,
-        "layer_reconstruction_capability": {
-            "available": False,
-            "required_capability": "image_edit_inpainting",
-            "executor": None,
-            "error": "LAYER_RECONSTRUCTION_UNAVAILABLE",
-        },
+        "layer_reconstruction_capability": load_reconstruction_capability(args.execution_report),
         "visual_review": {
             "status": review["status"] if review else "unreviewed_diagnostic",
             "path": str(args.visual_review.resolve()) if args.visual_review else None,

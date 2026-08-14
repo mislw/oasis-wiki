@@ -29,7 +29,7 @@ def build_report(plan, assets_dir, preview, execution_report=None, movement_repo
     for component in plan["components"]:
         clean_layer = component.get("visual_assets", {}).get("clean_layer") if schema_three else component.get("output")
         if clean_layer is None:
-            required = component.get("mode") != "native"
+            required = component.get("mode") not in {"native", "composite"}
             checks.append({"target_component_id": component["target_component_id"], "required": required, "ok": not required})
             if required:
                 errors.append(f"missing clean_layer path: {component['target_component_id']}")

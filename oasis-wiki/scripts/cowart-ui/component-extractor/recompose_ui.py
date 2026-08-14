@@ -69,6 +69,8 @@ def compose_preview(plan, assets_dir, placements=None, native_placeholders=True)
                     width=1,
                 )
             continue
+        if component["mode"] == "composite":
+            continue
         clean_layer = component.get("visual_assets", {}).get("clean_layer")
         if not clean_layer:
             raise ValueError(f"{component['target_component_id']} has no clean_layer; source_crop fallback is forbidden")
@@ -103,8 +105,9 @@ def main():
             canvas = compose_preview(plan, args.assets_dir, placements)
             sources = []
             for component in plan["components"]:
-                source_type = "native_placeholder" if component["mode"] == "native" else "clean_layer"
-                sources.append({"target_component_id": component["target_component_id"], "source_type": source_type})
+                if component["mode"] != "composite":
+                    source_type = "native_placeholder" if component["mode"] == "native" else "clean_layer"
+                    sources.append({"target_component_id": component["target_component_id"], "source_type": source_type})
         else:
             page_size = plan["source"]["page_size"]
             if args.background:

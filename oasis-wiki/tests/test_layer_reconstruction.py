@@ -215,6 +215,52 @@ class LayerReconstructionTests(unittest.TestCase):
             self.assertEqual("fake-image-edit", report["executor_id"])
             self.assertEqual("completed", report["status"])
 
+    def test_executor_resumes_reconstructed_jobs_without_calling_provider_again(self):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            jobs = directory / "jobs"
+            jobs.mkdir()
+            write_png(directory / "layers" / "panel.main.png", (2, 2), (1, 2, 3, 255))
+            (jobs / "panel.main.json").write_text(json.dumps({
+                "artifact_type": "layer_reconstruction_job",
+                "target_component_id": "panel.main",
+                "sequence": 0,
+                "depends_on": [],
+                "output": "layers/panel.main.png",
+                "status": "reconstructed",
+                "executor": {"required_capability": "image_edit_inpainting", "provider": "fake-image-edit"},
+            }), encoding="utf-8")
+            (directory / "fake_executor.py").write_text(
+                "from image_reconstruction_executor import ImageReconstructionExecutor\n"
+                "class FakeExecutor(ImageReconstructionExecutor):\n"
+                "    executor_id = 'fake-image-edit'\n"
+                "    def capabilities(self): return {'image_edit_inpainting'}\n"
+                "    def reconstruct(self, job, source_root, output_root):\n"
+                "        raise AssertionError('provider must not be called for reconstructed output')\n",
+                encoding="utf-8",
+            )
+            environment = dict(os.environ)
+            environment["PYTHONPATH"] = os.pathsep.join([str(directory), str(SCRIPT_ROOT), environment.get("PYTHONPATH", "")])
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT_ROOT / "execute_reconstruction_jobs.py"),
+                    "--jobs-dir", str(jobs),
+                    "--output-root", str(directory),
+                    "--executor", "fake_executor:FakeExecutor",
+                ],
+                capture_output=True,
+                check=False,
+                text=True,
+                env=environment,
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            report = json.loads((directory / "layer-reconstruction-execution.json").read_text(encoding="utf-8"))
+            self.assertTrue(report["results"][0]["reused"])
+            self.assertEqual("reconstructed", report["results"][0]["status"])
+
     def test_validation_rejects_pngs_without_executor_evidence_or_clean_assembly(self):
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp)
@@ -272,6 +318,71 @@ class LayerReconstructionTests(unittest.TestCase):
                 layer("button.draw.single", "panel.main", {"x": 2, "y": 2, "width": 2, "height": 2}, "layers/button.draw.single.png", 2),
             ],
         }
+
+    def test_composite_node_groups_children_without_requiring_bitmap_asset(self):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            write_png(directory / "layers" / "background.root.png", (10, 10), (10, 20, 30, 255))
+            write_png(directory / "layers" / "panel.main.png", (6, 6), (20, 160, 80, 255))
+            write_png(directory / "layers" / "button.draw.single.png", (2, 2), (220, 40, 40, 255))
+            plan = self.synthetic_plan()
+            composite = {
+                "target_component_id": "group.main",
+                "parent_id": "root",
+                "mode": "composite",
+                "node_kind": "composite",
+                "render_mode": "outline",
+                "status": "candidate",
+                "confidence": 1.0,
+                "z_index": 1,
+                "instances": [{
+                    "node_id": "group.main",
+                    "parent_id": "root",
+                    "bounds": {"x": 0, "y": 0, "width": 8, "height": 8},
+                }],
+                "visual_assets": {"source_crop": "source/group.png", "clean_layer": None, "assembly_preview": None},
+                "output": None,
+                "transparent": False,
+                "evaluate_nine_slice": False,
+                "source_content_clean": False,
+                "layer_reconstruction": {"status": "not_applicable"},
+            }
+            plan["components"].append(composite)
+            plan["reconstruction_order"].append("group.main")
+            panel = next(component for component in plan["components"] if component["target_component_id"] == "panel.main")
+            panel["parent_id"] = "group.main"
+            panel["instances"][0]["parent_id"] = "group.main"
+
+            preview = recompose_ui.compose_preview(plan, directory, placements={"group.main": {"x": 1, "y": 0}})
+
+            self.assertEqual((10, 20, 30, 255), preview.getpixel((1, 1)))
+            self.assertEqual((20, 160, 80, 255), preview.getpixel((2, 1)))
+            self.assertEqual((220, 40, 40, 255), preview.getpixel((3, 2)))
+            preview_path = directory / "assembly.png"
+            preview.save(preview_path)
+            preview_path.with_suffix(".png.json").write_text(json.dumps({
+                "artifact_type": "assembly_preview",
+                "source_crop_used": False,
+                "sources": [
+                    {"target_component_id": "background.root", "source_type": "clean_layer"},
+                    {"target_component_id": "panel.main", "source_type": "clean_layer"},
+                    {"target_component_id": "button.draw.single", "source_type": "clean_layer"},
+                ],
+            }), encoding="utf-8")
+            execution = {
+                "artifact_type": "layer_reconstruction_execution",
+                "status": "completed",
+                "executor_id": "fake-image-edit",
+                "capability": "image_edit_inpainting",
+                "results": [
+                    {"target_component_id": component_id, "status": "reconstructed"}
+                    for component_id in ("background.root", "panel.main", "button.draw.single")
+                ],
+            }
+
+            report = validate_reconstruction.build_report(plan, directory, preview_path, execution_report=execution)
+
+            self.assertEqual([], report["errors"])
 
     def test_moving_child_leaves_only_parent_clean_layer_at_old_position(self):
         with tempfile.TemporaryDirectory() as temp:

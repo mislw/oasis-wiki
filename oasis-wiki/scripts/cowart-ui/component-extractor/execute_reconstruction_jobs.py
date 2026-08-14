@@ -49,11 +49,22 @@ def main():
             path.write_text(json.dumps(job, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             print(job["error"], file=sys.stderr)
             return 1
+        output = args.output_root / job["output"]
+        if job.get("status") == "reconstructed" and output.is_file():
+            completed.add(job["target_component_id"])
+            results.append({
+                "target_component_id": job["target_component_id"],
+                "status": "reconstructed",
+                "executor_id": job.get("executor", {}).get("provider") or executor.executor_id,
+                "capability": "image_edit_inpainting",
+                "output": job["output"],
+                "reused": True,
+            })
+            continue
         job["status"] = "reconstructing"
         job["executor"]["provider"] = executor.executor_id
         path.write_text(json.dumps(job, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         result = executor.reconstruct(job, source_root, args.output_root)
-        output = args.output_root / job["output"]
         if not output.is_file():
             job["status"] = "failed"
             job["error"] = f"executor did not create clean layer: {output}"
