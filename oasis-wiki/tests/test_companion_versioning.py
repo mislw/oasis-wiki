@@ -14,7 +14,7 @@ SKILL = (ROOT / 'SKILL.md').read_text(encoding='utf-8')
 class CompanionVersioningTests(unittest.TestCase):
     def test_version_uses_major_date_iteration_format(self):
         self.assertRegex(VERSION, re.compile(r'^\d+\.\d{6}\.\d+$'))
-        self.assertEqual(VERSION, '1.260814.4')
+        self.assertEqual(VERSION, '1.260815.1')
 
     def test_versioning_contract_is_documented_and_routed(self):
         for marker in (
@@ -22,6 +22,14 @@ class CompanionVersioningTests(unittest.TestCase):
             'Asia/Shanghai',
             'one-based distributable iteration number',
             'Do not reuse',
+            'GitHub default branch',
+            'v{version}',
+            'not complete',
+            '`oasis-wiki` and `oasis-wiki-comp`',
+            'Windows MSI',
+            'M.YY.MMDD+N',
+            'M.YY.MMDD.N',
+            '`tauri.build.conf.json`',
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, GUIDE)
