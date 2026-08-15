@@ -14,7 +14,7 @@ SKILL = (ROOT / 'SKILL.md').read_text(encoding='utf-8')
 class CompanionVersioningTests(unittest.TestCase):
     def test_version_uses_major_date_iteration_format(self):
         self.assertRegex(VERSION, re.compile(r'^\d+\.\d{6}\.\d+$'))
-        self.assertEqual(VERSION, '1.260815.2')
+        self.assertEqual(VERSION, '1.260815.3')
 
     def test_versioning_contract_is_documented_and_routed(self):
         for marker in (
