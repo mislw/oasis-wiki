@@ -203,6 +203,22 @@ class GameUiProjectLibraryTests(unittest.TestCase):
         errors = validate_project_library(self.library_root, self.project_root, self.cache_root)
         self.assertTrue(any("cached preview is missing" in error for error in errors))
 
+    def test_complete_project_library_rejects_invalid_profile_schema(self) -> None:
+        self.write_valid_library()
+        profile = minimal_profile()
+        profile["schema_version"] = 2
+        write_json(self.library_root / "profile.json", profile)
+        errors = validate_project_library(self.library_root, self.project_root, self.cache_root)
+        self.assertIn("profile.schema_version must be 1", errors)
+
+    def test_complete_project_library_rejects_absolute_path_in_profile(self) -> None:
+        self.write_valid_library()
+        profile = minimal_profile()
+        profile["style_guide"] = {"source": r"C:\private\style.png"}
+        write_json(self.library_root / "profile.json", profile)
+        errors = validate_project_library(self.library_root, self.project_root, self.cache_root)
+        self.assertTrue(any("profile" in error and "absolute path" in error for error in errors))
+
     def test_validation_cli_prints_one_error_per_line(self) -> None:
         self.write_valid_library()
         assets = minimal_asset_catalog()

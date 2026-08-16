@@ -294,7 +294,10 @@ def validate_project_library(
     if errors:
         return sorted(set(errors))
 
-    errors.extend(validate_profile(values["profile"]))
+    if values["profile"].get("schema_version") != 1:
+        errors.append("profile.schema_version must be 1")
+    errors.extend(f"profile.{error}" for error in validate_profile(values["profile"]))
+    errors.extend(_absolute_path_errors(values["profile"], "profile"))
     errors.extend(validate_asset_catalog(values["assets"], project_root))
     errors.extend(validate_item_icon_catalog(values["items"], values["assets"]))
     errors.extend(
