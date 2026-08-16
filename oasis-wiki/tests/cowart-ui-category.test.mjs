@@ -25,6 +25,13 @@ const requiredFiles = [
   "scripts/game-ui/generate_with_codex_provider.py",
   "scripts/game-ui/record_generation_result.py",
   "scripts/game-ui/create_style_review.py",
+  "scripts/game-ui/project_library.py",
+  "scripts/game-ui/validate_project_library.py",
+  "scripts/game-ui/initialize_project_library.py",
+  "scripts/game-ui/index_project_assets.py",
+  "scripts/game-ui/import_project_previews.py",
+  "scripts/game-ui/build_item_icon_catalog.py",
+  "scripts/game-ui/resolve_project_references.py",
   "scripts/cowart-ui/delivery/build_delivery_plan.py",
   "scripts/cowart-ui/delivery/validate_delivery_plan.py",
   "assets/cowart-ui/ui-spec-template.json",
@@ -87,4 +94,18 @@ test("bundled Skill includes the precision component reconstruction workflow", (
   const content = readFileSync(join(wikiRoot, "references/cowart-ui-workflow.md"), "utf8");
   assert.match(content, /Precision Component Reconstruction/);
   assert.match(content, /reconstruction_candidate/);
+});
+
+test("Game UI Design System documents project library generation references", () => {
+  const files = [
+    "references/game-ui-design-system.md",
+    "references/game-ui/schemas.md",
+    "references/game-ui/workflow.md",
+    "references/game-ui/validation-rules.md",
+    "references/game-ui/output-templates.md",
+  ];
+  const content = files.map((file) => readFileSync(join(wikiRoot, file), "utf8")).join("\n");
+  assert.match(content, /project_library_asset/);
+  assert.match(content, /classified[^\n]*(?:not|不是|不等于)[^\n]*active/i);
+  assert.match(content, /local cache paths?[^\n]*(?:never|不得|不进入)[^\n]*committed manifests?/i);
 });

@@ -30,6 +30,12 @@ Use this branch for UI screenshots, component extraction/correction, project sty
 - Preserve old versions and append history for every correction.
 - Stop final generation when the UI Tree is missing, a parent is missing, serious layer/interaction conflicts exist, a deprecated/rejected control is used, or a known control was redesigned without approval.
 
+## Project libraries
+
+A project library combines project-owned manifests under `.game-ui-system/` with a derived user-local preview cache. Run `initialize_project_library.py`, `index_project_assets.py`, `import_project_previews.py`, `build_item_icon_catalog.py`, and `resolve_project_references.py` in that order before building a page that depends on existing project assets.
+
+An asset with `catalog_status: classified` is not an `active` component. Only explicit developer confirmation may promote a component to `active`. Local cache paths never enter committed manifests; catalogs store `sha256:` preview keys, and generated reference metadata uses `source_kind: project_library_asset` when resolving the corresponding local file.
+
 ## Oasis integration
 
 - Use this branch for visual structure and reusable style decisions.
@@ -38,6 +44,7 @@ Use this branch for UI screenshots, component extraction/correction, project sty
 - Read project files freely. Modify UGC code, `.uasset`, `.umap`, or project-local profiles only with explicit authorization.
 - Keep writable component profiles under `%USERPROFILE%/.codex/game-ui-design-system/projects/<slug>/profile.json` by default.
 - Use `scripts/game-ui/build_generation_package.py` and `scripts/game-ui/validate_generation_package.py` before formal bitmap generation. Use `record_generation_result.py` and `create_style_review.py` before an `ai_generated` Cowart handoff.
+- Pass resolved project assets with `--library-references`; only explicit `--references` participate in UI Tree reference alignment.
 
 ## Save validation
 

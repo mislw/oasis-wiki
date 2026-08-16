@@ -28,6 +28,10 @@
 
 Automatic report fields: page, total controls, direct reuse, state extensions, new candidates, reuse rate, hierarchy conflicts, missing parents, style conflicts, interaction risks, issues, recommendations, and review status.
 
+## Project library
+
+Report asset inventory, preview cache, item-icon synchronization, component confirmation, reference resolution, and Generation Package as separate states. Include measured asset/item/preview/component counts, unresolved candidates with reasons, contact-sheet paths, requested `project_library_asset` provenance, and the exact components still awaiting developer confirmation. Report ImageGen, Cowart, UMG, and PIE separately; none is implied by catalog validation.
+
 ## Correction
 
 1. 修正对象

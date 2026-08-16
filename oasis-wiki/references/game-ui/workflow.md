@@ -1,5 +1,28 @@
 # Workflow
 
+## 0. Project library preparation
+
+Use this order for a project-backed page:
+
+```text
+detect project
+-> load project profile
+-> validate/index assets
+-> import external editor exports into local cache
+-> synchronize UGCObject read-only export
+-> review state families
+-> confirm components active
+-> resolve project references
+-> build UI Tree
+-> build and validate Generation Package
+-> ImageGen
+-> Cowart review
+```
+
+The editor export step is read-only: export PNG/TGA/JPEG files to a user-local staging directory, normalize them with `import_project_previews.py`, and review the generated contact sheets. Duplicate export stems require an explicit asset-to-file mapping. Synchronize item names, descriptions, and icons from a normalized `UGCObject` export with `build_item_icon_catalog.py`; do not parse `.uasset` binary strings.
+
+Review state families before mapping assets to components. A classified raw asset is not an active component. After explicit confirmation, use `resolve_project_references.py --library-root <project>/.game-ui-system` and pass its output to `build_generation_package.py --library-references`.
+
 ## 1. Reference image analysis
 
 1. Identify page type, purpose, and main operations.
@@ -24,7 +47,7 @@
 3. Classify controls as direct reuse, state extension, or new candidate.
 4. Create new controls as `pending_review` and state why existing controls cannot satisfy the need.
 5. Build the complete UI Tree.
-6. Build and validate a Generation Package containing the original reference files, their dimensions and SHA-256, the UI Tree, Style Profile, compiled prompt, and generation request.
+6. Resolve approved project-library assets, then build and validate a Generation Package containing explicit references, supplemental `project_library_asset` references, their dimensions and SHA-256, the UI Tree, Style Profile, compiled prompt, and generation request.
 7. Invoke the Codex built-in `image_gen` tool with every listed Style Image, every listed Layout Image, and the compiled prompt. Codex manages credentials; do not request a user Key. If the tool is unavailable, stop with `IMAGE_GENERATION_UNAVAILABLE` unless the user explicitly authorizes `codex_provider_direct`; the authorized runner resolves the current provider's channel-prefixed `gpt-image-2` model and uses Codex-managed authentication. Never use HTML/CSS/Chromium as a final-image fallback.
 8. Record only a real output with `record_generation_result.py`, then create a qualitative style review.
 9. Send the validated result to Cowart as `ai_generated`; use `external_source` only for an existing image supplied directly by the user.

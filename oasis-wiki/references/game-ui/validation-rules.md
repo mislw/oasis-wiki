@@ -24,6 +24,9 @@
 - Existing controls redesigned without correction approval.
 - New controls missing `pending_review`.
 - Page structure conflicts with the requirement.
+- A requested project component is not `active`.
+- A semantic item is unresolved, its asset needs a fresh preview, or the cached preview is missing.
+- A `project_library_asset` preview key does not match the referenced image SHA-256.
 
 ## Checks
 
@@ -34,3 +37,6 @@
 - Decoration does not intercept input.
 - Children remain inside the visible parent unless overflow is explicitly allowed.
 - Colors, corners, borders, shadows, typography, icons, and states match the resolved project profile.
+- Asset IDs, component IDs, semantic keys, and item IDs are unique within their catalogs.
+- Committed project manifests contain only project-relative files, Unreal object paths, and preview keys. Local cache paths never enter committed manifests.
+- `classified` describes a reviewed raw asset; it is not equal to component status `active`.
