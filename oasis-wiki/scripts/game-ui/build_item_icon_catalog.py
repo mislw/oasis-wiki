@@ -19,12 +19,11 @@ from project_library import (
 
 FIELD_ALIASES = {
     "item_id": ("ItemID", "项目ItemID"),
-    "name": ("Name", "物品名称"),
-    "description": ("Description", "物品描述"),
-    "icon_asset": ("SmallIcon", "小icon"),
+    "name": ("ItemName", "物品名称"),
+    "description": ("ItemDesc", "物品描述"),
+    "icon": ("ItemIcon", "小icon", "SmallIcon"),
 }
 
-MISSING_ICON_ASSET = "/RedCliff/Asset/UIresources/Missing/Missing.Missing"
 SEMANTIC_KEY = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")
 
 
@@ -106,7 +105,7 @@ def _semantic_key_for(
     previous_key = previous.get(item_id, {}).get("semantic_key")
     if isinstance(previous_key, str) and SEMANTIC_KEY.fullmatch(previous_key):
         return previous_key
-    return f"item.{item_id}"
+    return f"item.id_{item_id}"
 
 
 def _aliases_for(
@@ -161,10 +160,10 @@ def build_item_icon_catalog(
 
         name = _required_text(_field(values, "name"), "name", item_id)
         description = _required_text(_field(values, "description"), "description", item_id)
-        raw_icon = _field(values, "icon_asset")
-        icon_asset = raw_icon.strip() if isinstance(raw_icon, str) and raw_icon.strip() else MISSING_ICON_ASSET
+        raw_icon = _field(values, "icon")
+        icon_asset = raw_icon.strip() if isinstance(raw_icon, str) and raw_icon.strip() else None
         asset_id = asset_by_path.get(icon_asset)
-        items.append({
+        item = {
             "semantic_key": _semantic_key_for(item_id, previous, semantic_overrides),
             "item_id": item_id,
             "name": name,
@@ -175,7 +174,14 @@ def build_item_icon_catalog(
             "source_table": export["load_path"],
             "row_fingerprint": _fingerprint(row),
             "resolution_status": "resolved" if asset_id is not None else "candidate",
-        })
+        }
+        if asset_id is None:
+            item["resolution_reason"] = (
+                "missing icon field"
+                if icon_asset is None
+                else "icon asset is absent from asset catalog"
+            )
+        items.append(item)
 
     return {
         "schema_version": 1,
@@ -198,11 +204,22 @@ def _parse_alias_override(value: str) -> tuple[int, list[str]]:
     return int(raw_item_id), [alias.strip() for alias in aliases.split(",") if alias.strip()]
 
 
+def _alias_overrides(values: list[str]) -> dict[int, list[str]]:
+    result: dict[int, list[str]] = {}
+    for value in values:
+        item_id, aliases = _parse_alias_override(value)
+        combined = result.setdefault(item_id, [])
+        for alias in aliases:
+            if alias not in combined:
+                combined.append(alias)
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build a semantic UGCObject item-icon catalog.")
-    parser.add_argument("--ugcobject-export", required=True, type=Path)
+    parser.add_argument("--table-export", required=True, type=Path)
     parser.add_argument("--asset-catalog", required=True, type=Path)
-    parser.add_argument("--previous-catalog", type=Path)
+    parser.add_argument("--previous", type=Path)
     parser.add_argument("--semantic-key", action="append", default=[])
     parser.add_argument("--alias", action="append", default=[])
     parser.add_argument("--output", required=True, type=Path)
@@ -210,11 +227,11 @@ def main() -> int:
 
     try:
         semantic_overrides = dict(_parse_semantic_override(value) for value in args.semantic_key)
-        alias_overrides = dict(_parse_alias_override(value) for value in args.alias)
+        alias_overrides = _alias_overrides(args.alias)
         catalog = build_item_icon_catalog(
-            read_json_object(args.ugcobject_export),
+            read_json_object(args.table_export),
             read_json_object(args.asset_catalog),
-            read_json_object(args.previous_catalog) if args.previous_catalog else None,
+            read_json_object(args.previous) if args.previous else None,
             semantic_overrides,
             alias_overrides,
         )

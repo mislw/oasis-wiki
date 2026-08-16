@@ -187,21 +187,29 @@ def validate_item_icon_catalog(
         else:
             item_ids.add(item_id)
 
-        icon_asset = entry.get("icon_asset")
-        if not isinstance(icon_asset, str) or not UNREAL_OBJECT_PATH.fullmatch(icon_asset):
-            errors.append(f"{prefix}.icon_asset must be a normalized Unreal object path")
-
         resolution_status = entry.get("resolution_status")
         if resolution_status not in ITEM_RESOLUTION_STATUSES:
             errors.append(f"{prefix}.resolution_status is invalid: {resolution_status}")
+        icon_asset = entry.get("icon_asset")
         asset_id = entry.get("asset_id")
         if resolution_status == "resolved":
+            if not isinstance(icon_asset, str) or not UNREAL_OBJECT_PATH.fullmatch(icon_asset):
+                errors.append(f"{prefix}.icon_asset must be a normalized Unreal object path")
             if not isinstance(asset_id, str) or asset_id not in known_assets:
                 errors.append(f"{prefix} references missing asset_id: {asset_id}")
             elif known_assets[asset_id].get("source_asset") != icon_asset:
                 errors.append(f"{prefix}.icon_asset does not match asset_id {asset_id}")
-        elif asset_id is not None and asset_id not in known_assets:
-            errors.append(f"{prefix} references missing asset_id: {asset_id}")
+        elif resolution_status == "candidate":
+            if icon_asset is not None and (
+                not isinstance(icon_asset, str) or not UNREAL_OBJECT_PATH.fullmatch(icon_asset)
+            ):
+                errors.append(f"{prefix}.icon_asset must be null or a normalized Unreal object path")
+            if asset_id is not None and asset_id not in known_assets:
+                errors.append(f"{prefix} references missing asset_id: {asset_id}")
+            if not isinstance(entry.get("resolution_reason"), str) or not entry[
+                "resolution_reason"
+            ].strip():
+                errors.append(f"{prefix}.resolution_reason is required for candidate status")
 
         fingerprint = entry.get("row_fingerprint")
         if not isinstance(fingerprint, str) or not PREVIEW_KEY.fullmatch(fingerprint):

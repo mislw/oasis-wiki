@@ -31,6 +31,7 @@ from import_project_previews import (  # type: ignore  # noqa: E402
 )
 from build_item_icon_catalog import build_item_icon_catalog  # type: ignore  # noqa: E402
 from initialize_project_library import initialize_library  # type: ignore  # noqa: E402
+from resolve_project_references import resolve_project_references  # type: ignore  # noqa: E402
 
 
 PREVIEW_KEY = "sha256:" + "0" * 64
@@ -645,15 +646,15 @@ class GameUiProjectLibraryTests(unittest.TestCase):
     def test_item_catalog_accepts_english_field_aliases(self) -> None:
         export = ugcobject_export({
             "ItemID": 1001,
-            "Name": "Dragon Jade",
-            "Description": "Premium currency",
-            "SmallIcon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+            "ItemName": "Dragon Jade",
+            "ItemDesc": "Premium currency",
+            "ItemIcon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
         })
 
         catalog = build_item_icon_catalog(export, minimal_asset_catalog(), None, {}, {})
 
         item = catalog["items"][0]
-        self.assertEqual(item["semantic_key"], "item.1001")
+        self.assertEqual(item["semantic_key"], "item.id_1001")
         self.assertEqual(item["name"], "Dragon Jade")
         self.assertEqual(item["asset_id"], ASSET_ID)
         self.assertEqual(item["resolution_status"], "resolved")
@@ -661,8 +662,8 @@ class GameUiProjectLibraryTests(unittest.TestCase):
     def test_item_catalog_rejects_duplicate_item_ids(self) -> None:
         export = ugcobject_export({
             "ItemID": 1001,
-            "Name": "Dragon Jade",
-            "Description": "Premium currency",
+            "ItemName": "Dragon Jade",
+            "ItemDesc": "Premium currency",
             "SmallIcon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
         })
         export["rows"].append({
@@ -681,17 +682,36 @@ class GameUiProjectLibraryTests(unittest.TestCase):
     def test_item_catalog_keeps_missing_icon_as_candidate(self) -> None:
         export = ugcobject_export({
             "ItemID": 1002,
-            "Name": "Mystery Token",
-            "Description": "No icon yet",
+            "ItemName": "Mystery Token",
+            "ItemDesc": "No icon yet",
         }, row_name="1002")
 
         catalog = build_item_icon_catalog(export, minimal_asset_catalog(), None, {}, {})
 
         item = catalog["items"][0]
-        self.assertEqual(item["semantic_key"], "item.1002")
-        self.assertEqual(item["icon_asset"], "/RedCliff/Asset/UIresources/Missing/Missing.Missing")
+        self.assertEqual(item["semantic_key"], "item.id_1002")
+        self.assertIsNone(item["icon_asset"])
         self.assertIsNone(item["asset_id"])
         self.assertEqual(item["resolution_status"], "candidate")
+        self.assertEqual(item["resolution_reason"], "missing icon field")
+        self.assertEqual(validate_item_icon_catalog(catalog, minimal_asset_catalog()), [])
+
+    def test_item_catalog_explains_icon_missing_from_asset_catalog(self) -> None:
+        export = ugcobject_export({
+            "ItemID": 1002,
+            "ItemName": "Mystery Token",
+            "ItemDesc": "Unknown icon",
+            "ItemIcon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Unknown.Unknown",
+        }, row_name="1002")
+
+        catalog = build_item_icon_catalog(export, minimal_asset_catalog(), None, {}, {})
+
+        item = catalog["items"][0]
+        self.assertEqual(item["resolution_status"], "candidate")
+        self.assertEqual(
+            item["resolution_reason"],
+            "icon asset is absent from asset catalog",
+        )
 
     def test_item_catalog_preserves_semantic_key_and_aliases_on_resync(self) -> None:
         previous = minimal_item_icon_catalog()
@@ -699,8 +719,8 @@ class GameUiProjectLibraryTests(unittest.TestCase):
         previous["items"][0]["aliases"] = ["old alias"]
         export = ugcobject_export({
             "ItemID": 1001,
-            "Name": "Dragon Jade",
-            "Description": "Updated text",
+            "ItemName": "Dragon Jade",
+            "ItemDesc": "Updated text",
             "SmallIcon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
         })
 
@@ -728,14 +748,16 @@ class GameUiProjectLibraryTests(unittest.TestCase):
             [
                 sys.executable,
                 str(SCRIPT_DIR / "build_item_icon_catalog.py"),
-                "--ugcobject-export",
+                "--table-export",
                 str(export_path),
                 "--asset-catalog",
                 str(assets_path),
                 "--semantic-key",
                 "1001=currency.dragon_jade",
                 "--alias",
-                "1001=付费货币,CommodityCoin",
+                "1001=付费货币",
+                "--alias",
+                "1001=CommodityCoin",
                 "--output",
                 str(output_path),
             ],
@@ -751,6 +773,183 @@ class GameUiProjectLibraryTests(unittest.TestCase):
         self.assertEqual(item["aliases"], ["付费货币", "CommodityCoin"])
         self.assertNotIn(str(self.root), json.dumps(catalog))
         self.assertEqual(validate_item_icon_catalog(catalog, minimal_asset_catalog()), [])
+
+    def test_resolver_rejects_every_non_active_component(self) -> None:
+        for status in ("pending_review", "candidate", "deprecated", "rejected"):
+            with self.subTest(status=status):
+                with self.assertRaisesRegex(
+                    ProjectLibraryError, "button.primary.gold is not active"
+                ):
+                    resolve_project_references(
+                        minimal_profile(status),
+                        minimal_asset_catalog(),
+                        minimal_item_icon_catalog(),
+                        minimal_component_asset_catalog(),
+                        self.cache_root,
+                        ["button.primary.gold"],
+                        [],
+                    )
+
+    def test_resolver_returns_component_and_dragon_jade_previews(self) -> None:
+        assets = minimal_asset_catalog()
+        button_asset = dict(assets["assets"][0])
+        button_asset.update({
+            "asset_id": "redcliff.uiresources.common.button_confirm",
+            "source_asset": "/RedCliff/Asset/UIresources/Common/Button_Confirm.Button_Confirm",
+            "source_file": "Asset/UIresources/Common/Button_Confirm.uasset",
+            "category": "Common",
+            "preview_key": "sha256:" + "2" * 64,
+        })
+        assets["assets"].append(button_asset)
+        components = minimal_component_asset_catalog()
+        components["components"][0]["states"]["default"] = [button_asset["asset_id"]]
+        for key, color in ((PREVIEW_KEY, "green"), (button_asset["preview_key"], "gold")):
+            preview = preview_path_for_key(self.cache_root, key)
+            preview.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGBA", (20, 20), color).save(preview)
+
+        result = resolve_project_references(
+            minimal_profile("active"),
+            assets,
+            minimal_item_icon_catalog(),
+            components,
+            self.cache_root,
+            ["button.primary.gold"],
+            ["currency.dragon_jade"],
+        )
+
+        self.assertEqual(result["schema_version"], 1)
+        self.assertEqual(len(result["references"]), 2)
+        self.assertTrue(
+            all(reference["source_kind"] == "project_library_asset" for reference in result["references"])
+        )
+        by_asset = {reference["library"]["asset_id"]: reference for reference in result["references"]}
+        self.assertEqual(
+            by_asset[button_asset["asset_id"]]["library"]["component_ids"],
+            ["button.primary.gold"],
+        )
+        self.assertEqual(
+            by_asset[ASSET_ID]["library"]["semantic_keys"],
+            ["currency.dragon_jade"],
+        )
+
+    def test_resolver_collapses_duplicate_asset_usage_with_provenance(self) -> None:
+        preview = preview_path_for_key(self.cache_root, PREVIEW_KEY)
+        preview.parent.mkdir(parents=True)
+        Image.new("RGBA", (20, 20), "gold").save(preview)
+
+        result = resolve_project_references(
+            minimal_profile("active"),
+            minimal_asset_catalog(),
+            minimal_item_icon_catalog(),
+            minimal_component_asset_catalog(),
+            self.cache_root,
+            ["button.primary.gold"],
+            ["currency.dragon_jade"],
+        )
+
+        self.assertEqual(len(result["references"]), 1)
+        library = result["references"][0]["library"]
+        self.assertEqual(library["component_ids"], ["button.primary.gold"])
+        self.assertEqual(library["semantic_keys"], ["currency.dragon_jade"])
+        self.assertEqual(library["states"], ["default"])
+
+    def test_resolver_rejects_unresolved_semantic_key(self) -> None:
+        items = minimal_item_icon_catalog()
+        items["items"][0].update({
+            "resolution_status": "candidate",
+            "asset_id": None,
+            "resolution_reason": "icon asset is absent from asset catalog",
+        })
+        with self.assertRaisesRegex(ProjectLibraryError, "currency.dragon_jade is not resolved"):
+            resolve_project_references(
+                minimal_profile("active"),
+                minimal_asset_catalog(),
+                items,
+                minimal_component_asset_catalog(),
+                self.cache_root,
+                [],
+                ["currency.dragon_jade"],
+            )
+
+    def test_resolver_rejects_missing_cached_preview(self) -> None:
+        with self.assertRaisesRegex(ProjectLibraryError, "cached preview is missing"):
+            resolve_project_references(
+                minimal_profile("active"),
+                minimal_asset_catalog(),
+                minimal_item_icon_catalog(),
+                minimal_component_asset_catalog(),
+                self.cache_root,
+                [],
+                ["currency.dragon_jade"],
+            )
+
+    def test_resolver_rejects_asset_that_requires_a_fresh_preview(self) -> None:
+        assets = minimal_asset_catalog()
+        assets["assets"][0]["catalog_status"] = "indexed"
+        preview = preview_path_for_key(self.cache_root, PREVIEW_KEY)
+        preview.parent.mkdir(parents=True)
+        Image.new("RGBA", (20, 20), "gold").save(preview)
+
+        with self.assertRaisesRegex(ProjectLibraryError, "asset is not preview-ready"):
+            resolve_project_references(
+                minimal_profile("active"),
+                assets,
+                minimal_item_icon_catalog(),
+                minimal_component_asset_catalog(),
+                self.cache_root,
+                [],
+                ["currency.dragon_jade"],
+            )
+
+    def test_resolver_rejects_duplicate_semantic_keys(self) -> None:
+        items = minimal_item_icon_catalog()
+        duplicate = dict(items["items"][0])
+        duplicate["item_id"] = 1002
+        items["items"].append(duplicate)
+        preview = preview_path_for_key(self.cache_root, PREVIEW_KEY)
+        preview.parent.mkdir(parents=True)
+        Image.new("RGBA", (20, 20), "gold").save(preview)
+
+        with self.assertRaisesRegex(ProjectLibraryError, "duplicate semantic_key"):
+            resolve_project_references(
+                minimal_profile("active"),
+                minimal_asset_catalog(),
+                items,
+                minimal_component_asset_catalog(),
+                self.cache_root,
+                [],
+                ["currency.dragon_jade"],
+            )
+
+    def test_resolver_cli_writes_project_library_references(self) -> None:
+        self.write_valid_library()
+        output_path = self.root / "references.json"
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_DIR / "resolve_project_references.py"),
+                "--library-root",
+                str(self.library_root),
+                "--cache-root",
+                str(self.cache_root),
+                "--component",
+                "button.primary.gold",
+                "--semantic-key",
+                "currency.dragon_jade",
+                "--output",
+                str(output_path),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        resolved = json.loads(output_path.read_text(encoding="utf-8"))
+        self.assertEqual(resolved["references"][0]["source_kind"], "project_library_asset")
+        self.assertNotIn(str(self.library_root), json.dumps(resolved))
 
 
 if __name__ == "__main__":
