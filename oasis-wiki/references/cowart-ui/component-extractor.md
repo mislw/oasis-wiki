@@ -70,7 +70,15 @@ When a reconstructable node owns child controls, preserve it as a Composite and 
 
 Resolve a Python runtime before running scripts. When `python` is not on PATH, use the Python path returned by `codex_app__load_workspace_dependencies`.
 
-For a visible local control surface, launch the workflow console. It orchestrates only local scripts and local session files; all AI image generation or edits remain Codex actions in the active conversation:
+For the native Companion control surface, open or focus the UI generation workflow:
+
+```powershell
+python scripts/cowart-ui/component-extractor/open_ui_workflow.py
+```
+
+The launcher writes a validated command to `%USERPROFILE%\.oasis-companion\handoffs`. A running Companion consumes that inbox directly and must not start a duplicate `oasis-companion.exe`; this prevents the short-lived Tauri event window from flashing during Skill handoffs. If Companion is not running, the launcher starts it once with `--background --no-autostart-sync`, and the new instance consumes the queued command after startup.
+
+Keep the localhost workflow console as the browser fallback. It orchestrates only local scripts and local session files; all AI image generation or edits remain Codex actions in the active conversation:
 
 ```powershell
 python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --name "<page name>"
@@ -125,7 +133,9 @@ The approval command records a SHA-256 checksum. A later componentization run re
 
 1. Build the complete UI Tree from the approved image. It must include every movable or dynamic element, not only the outer containers.
 2. Prefer a real layered package, such as Canva Magic Layers, for `panel`, `card`, `button`, `icon`, `badge`, and decorative art.
-3. Keep text, values, counters, progress, and button labels as native controls in the UI Tree. Do not bake them into bitmap layers.
+3. Keep text, values, counters, progress, and button labels as native controls in the UI Tree. Do not bake them into bitmap layers. Set `display_text` for the workbench preview; when only `content_hint` is present, `create_ui_workbench.py` copies it into `display_text`. Optional `text_style` fields preserve Workbench TextBlock preview settings such as `font_size`, `color`, outline, shadow, alignment, and wrapping.
+
+A native close button must retain visible content after background reconstruction. Preserve its clean artwork or give the native node an explicit close glyph such as `display_text: "×"`. An empty native close hit target is invalid. For IDs containing a `close` token, `create_ui_workbench.py` supplies the `×` glyph and readable centered text defaults when neither `display_text` nor `content_hint` is present.
 4. A bitmap-only UI produces `reconstruction_candidate` entries. A node with only `source_crop` remains `pending`, not Ready. Reconstruction must cover `background.root`, every independently movable parent layer, Skin/Artwork nodes, and Native removal masks.
 5. Only then create the workbench, passing the locked visual review:
 
@@ -133,7 +143,15 @@ The approval command records a SHA-256 checksum. A later componentization run re
 python scripts/cowart-ui/component-extractor/create_ui_workbench.py --image <ui-final.png> --controls <ui-tree.json> --visual-review <visual-review.json> --name "<page name>"
 ```
 
-The generated preview is a composition check. The independent layer files and `layer-manifest.json` are authoritative for editing.
+The generated preview is a composition check. Oasis Companion is the primary review surface: the script starts the read-only loopback server, queues its URL and session directory in the Companion handoff inbox, and registers the generated UI in the left page navigator. A running Companion receives this without a duplicate process. Each page keeps its own image, control tree, and assets. Generating the same `page_id` again updates that navigation entry to the latest session without deleting older session directories. The printed local URL and `Open UI Workbench.url` remain available as browser fallbacks. The independent layer files and `layer-manifest.json` are authoritative for editing.
+
+The page ID defaults to a stable value derived from `--name`; use `--page-id <lowercase-id>` when the caller owns a clearer durable identity. Companion persists the page catalog and selected page, so registered sessions remain available after restart without the original localhost process. Use `--companion-executable <path>` for a nonstandard Companion installation or an isolated test binary. Use `--no-start` only when another process will manage review: it disables both the loopback server and Companion handoff.
+
+When Codex creates the session, `session.json.agent_context` records the current `CODEX_THREAD_ID`, `CODEX_SESSION_ID`, and workspace as provenance. It does not capture a Codex executable path. Editor delivery opens `codex://threads/new?prompt=...&path=...` so Codex Desktop creates a separate implementation task in the registered project workspace. If the guarded foreground submit cannot verify Codex, the new task remains open with the delivery prompt pre-filled and waits for the user to press Enter.
+
+Before editor delivery, use the Workbench or UI Workflow selector to search the running editor and select exactly one editor-returned `UGCWidgetBlueprint` or `WidgetBlueprint`. Plain text searches are limited to the current project's `/Asset/UI` subtree and return at most 100 matching WidgetBlueprints; enter a complete project-local directory or `load_path` to search elsewhere. The selected asset identity is its complete `load_path`, such as `/RedCliff/Asset/UI/CurrencyExchange.CurrencyExchange`; never rebuild it from a display name. Companion performs a 只读 MCP 预检 with fixed backend-owned `ue_read` and `ue_py` calls. It must not call `ue_plan_submit`, pass `skip_prv`, or create a delivery directory during search and preflight.
+
+The preflight verifies that the filesystem workspace matches the editor project, the selected class is allowed, and exactly one candidate has the selected `load_path`. It persists the editor project root, class, MCP server identity, check time, and evidence ID with the page task. A workspace, query, or target change invalidates that evidence. The final confirmation performs 最终重验 before freezing `delivery-request.json`; a missing or changed asset stops delivery before any editor write. Do not infer a target from a directory and 不得从 `/Game/` 路径推断项目资产。
 
 ### Stage 3: Component confirmation
 
@@ -169,7 +187,7 @@ After approval, do not stop at the image when the user expects editable controls
 python scripts/cowart-ui/component-extractor/create_ui_workbench.py --image <ui-final.png> --controls <ui-tree.json> --visual-review <visual-review.json> --name "<page name>"
 ```
 
-4. Return the printed local URL as a clickable link. The script also creates `Open UI Workbench.url` beside the session files.
+4. Review the session in the Oasis Companion `ui-workbench` window. Return the printed local URL as a clickable fallback link; the script also creates `Open UI Workbench.url` beside the session files.
 5. Keep all generated controls at `pending_review` or `candidate`; never mark them `active` automatically.
 
 If no UI Tree is supplied, the script creates only one `candidate` source-image node. This is a failure-safe fallback, not automatic component recognition. It is allowed only with `--allow-unreviewed` for diagnostics, never for a component handoff.

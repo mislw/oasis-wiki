@@ -46,10 +46,11 @@ python scripts/game-ui/generate_with_codex_provider.py --package <generation-pac
 ## 快速入口
 
 ```powershell
+python scripts/cowart-ui/component-extractor/open_ui_workflow.py
 python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --name "<page name>"
 ```
 
-控制台只编排本地脚本和会话文件。Codex 负责调用 Cowart 的画布读取、空快照保存、图片插入和原生画布打开能力。
+`open_ui_workflow.py` 打开或聚焦 Companion 原生 `UI 生图工具链`；`launch_ui_workflow_console.py` 保留为 localhost 浏览器回退。Codex 负责调用 Cowart 的画布读取、空快照保存、图片插入和原生画布打开能力。
 
 ## 分类资源
 

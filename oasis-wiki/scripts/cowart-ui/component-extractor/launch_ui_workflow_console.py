@@ -23,6 +23,26 @@ HTML_TEMPLATE = WIKI_ROOT / "assets" / "cowart-ui" / "workflow-console" / "index
 PROFILE = Path.home() / ".codex" / "game-ui-design-system" / "projects" / "redcliff" / "profile.json"
 
 
+def derive_workflow_stages(
+    *,
+    tree_exists: bool,
+    review_status: str | None,
+    workbench_exists: bool,
+    delivery_exists: bool,
+) -> dict[str, str]:
+    visual = "completed" if review_status == "approved" else "in_progress" if review_status else "not_started"
+    return {
+        "source": "completed",
+        "ui_tree": "completed" if tree_exists else "not_started",
+        "visual": visual,
+        "layering": "completed" if workbench_exists else "not_started",
+        "workbench": "awaiting_confirmation" if workbench_exists else "not_started",
+        "umg": "awaiting_confirmation" if delivery_exists else "not_started",
+        "logic": "not_started",
+        "review": "not_started",
+    }
+
+
 def slug(value: str) -> str:
     value = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return value or "generated-ui"
@@ -79,16 +99,25 @@ class Workflow:
             approved = review_data.get("approved_image")
             if isinstance(approved, dict):
                 final = self.safe_relative(review.parent / approved["file"])
+        tree_exists = (self.directory / "ui-tree.json").is_file()
+        delivery_exists = (self.directory / "delivery-plan.json").is_file()
+        state = self.read_state()
         return {
             "session": str(self.directory),
-            "state": self.read_state(),
+            "state": state,
             "ui_spec": (self.directory / "ui-spec.json").read_text(encoding="utf-8"),
-            "tree_exists": (self.directory / "ui-tree.json").is_file(),
+            "tree_exists": tree_exists,
             "review": str(review) if review else None,
             "review_status": review_data.get("status") if review_data else None,
             "preview": preview,
             "final": final,
-            "delivery_exists": (self.directory / "delivery-plan.json").is_file(),
+            "delivery_exists": delivery_exists,
+            "workflow_stages": derive_workflow_stages(
+                tree_exists=tree_exists,
+                review_status=review_data.get("status") if review_data else None,
+                workbench_exists=bool(state.get("workbench_url")),
+                delivery_exists=delivery_exists,
+            ),
             "profile": {"path": str(PROFILE), "components": len(profile.get("components", [])), "pages": len(profile.get("pages", [])), "statuses": status_counts},
         }
 
