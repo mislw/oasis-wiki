@@ -1,0 +1,233 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+WIKI_ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = WIKI_ROOT / "scripts" / "game-ui"
+sys.path.insert(0, str(SCRIPT_DIR))
+
+from project_library import (  # type: ignore  # noqa: E402
+    preview_path_for_key,
+    validate_asset_catalog,
+    validate_component_asset_catalog,
+    validate_item_icon_catalog,
+    validate_project_library,
+)
+
+
+PREVIEW_KEY = "sha256:" + "0" * 64
+ASSET_ID = "redcliff.uiresources.common.icon_item.icon_item_10"
+
+
+def write_json(path: Path, value: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def minimal_profile(status: str = "active") -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "project": {"name": "RedCliff", "slug": "redcliff", "aliases": []},
+        "style_guide": {},
+        "components": [{
+            "component_id": "button.primary.gold",
+            "name": "Primary Button",
+            "category": "button",
+            "description": "Primary action",
+            "states": ["default"],
+            "parent_types": ["panel"],
+            "layer": 60,
+            "reusable": True,
+            "confidence": 1.0,
+            "status": status,
+            "version": 1,
+            "confirmed_by": "developer" if status == "active" else None,
+        }],
+        "pages": [],
+        "history": [],
+    }
+
+
+def minimal_asset_catalog() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "project": {"name": "RedCliff", "slug": "redcliff"},
+        "assets": [{
+            "asset_id": ASSET_ID,
+            "source_asset": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+            "source_file": "Asset/UIresources/Common/Icon_Item/Icon_Item_10.uasset",
+            "category": "Common/Icon_Item",
+            "catalog_status": "previewed",
+            "preview_key": PREVIEW_KEY,
+        }],
+    }
+
+
+def minimal_item_icon_catalog() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "project": {"name": "RedCliff", "slug": "redcliff"},
+        "items": [{
+            "semantic_key": "currency.dragon_jade",
+            "item_id": 1001,
+            "name": "Dragon Jade",
+            "description": "Premium currency",
+            "icon_asset": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+            "asset_id": ASSET_ID,
+            "aliases": ["CommodityCoin"],
+            "source_table": "Asset/Data/Table/UGCObject",
+            "row_fingerprint": "sha256:" + "1" * 64,
+            "resolution_status": "resolved",
+        }],
+    }
+
+
+def minimal_component_asset_catalog() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "project": {"name": "RedCliff", "slug": "redcliff"},
+        "components": [{
+            "component_id": "button.primary.gold",
+            "states": {"default": [ASSET_ID]},
+        }],
+    }
+
+
+class GameUiProjectLibraryTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.project_root = self.root / "RedCliff"
+        self.library_root = self.project_root / ".game-ui-system"
+        self.cache_root = self.root / "cache"
+        source = self.project_root / "Asset/UIresources/Common/Icon_Item/Icon_Item_10.uasset"
+        source.parent.mkdir(parents=True)
+        source.write_bytes(b"synthetic-uasset")
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
+    def write_valid_library(self) -> None:
+        write_json(self.library_root / "profile.json", minimal_profile())
+        write_json(self.library_root / "catalogs/assets.json", minimal_asset_catalog())
+        write_json(self.library_root / "catalogs/item-icons.json", minimal_item_icon_catalog())
+        write_json(
+            self.library_root / "catalogs/component-assets.json",
+            minimal_component_asset_catalog(),
+        )
+        preview = preview_path_for_key(self.cache_root, PREVIEW_KEY)
+        preview.parent.mkdir(parents=True)
+        preview.write_bytes(b"cached-preview")
+
+    def test_asset_catalog_rejects_machine_absolute_source_file(self) -> None:
+        catalog = minimal_asset_catalog()
+        catalog["assets"][0]["source_file"] = r"E:\private\Icon.uasset"
+        self.assertIn(
+            "source_file must be project-relative",
+            "\n".join(validate_asset_catalog(catalog, self.project_root)),
+        )
+
+    def test_asset_catalog_rejects_duplicate_ids_and_invalid_preview_keys(self) -> None:
+        catalog = minimal_asset_catalog()
+        duplicate = dict(catalog["assets"][0])
+        duplicate["preview_key"] = "sha256:not-a-digest"
+        catalog["assets"].append(duplicate)
+        errors = validate_asset_catalog(catalog, self.project_root)
+        self.assertTrue(any("duplicate asset_id" in error for error in errors))
+        self.assertTrue(any("preview_key is invalid" in error for error in errors))
+
+    def test_asset_catalog_rejects_non_normalized_unreal_path(self) -> None:
+        catalog = minimal_asset_catalog()
+        catalog["assets"][0]["source_asset"] = r"\RedCliff\Asset\Icon.Icon"
+        errors = validate_asset_catalog(catalog, self.project_root)
+        self.assertTrue(any("source_asset must be a normalized Unreal object path" in error for error in errors))
+
+    def test_item_catalog_rejects_duplicate_item_ids_and_missing_assets(self) -> None:
+        catalog = minimal_item_icon_catalog()
+        duplicate = dict(catalog["items"][0])
+        duplicate["semantic_key"] = "currency.dragon_jade_duplicate"
+        duplicate["asset_id"] = "redcliff.uiresources.missing.icon"
+        catalog["items"].append(duplicate)
+        errors = validate_item_icon_catalog(catalog, minimal_asset_catalog())
+        self.assertTrue(any("duplicate item_id" in error for error in errors))
+        self.assertTrue(any("references missing asset_id" in error for error in errors))
+
+    def test_item_catalog_rejects_absolute_paths_anywhere(self) -> None:
+        catalog = minimal_item_icon_catalog()
+        catalog["items"][0]["aliases"].append(r"C:\private\alias")
+        errors = validate_item_icon_catalog(catalog, minimal_asset_catalog())
+        self.assertTrue(any("machine-specific absolute path" in error for error in errors))
+
+    def test_item_catalog_rejects_posix_absolute_paths_anywhere(self) -> None:
+        catalog = minimal_item_icon_catalog()
+        catalog["items"][0]["aliases"].append("/opt/private/alias")
+        errors = validate_item_icon_catalog(catalog, minimal_asset_catalog())
+        self.assertTrue(any("machine-specific absolute path" in error for error in errors))
+
+    def test_component_catalog_requires_known_profile_component(self) -> None:
+        profile = minimal_profile()
+        profile["components"] = []
+        errors = validate_component_asset_catalog(
+            minimal_component_asset_catalog(), minimal_asset_catalog(), profile
+        )
+        self.assertTrue(any("missing from profile" in error for error in errors))
+
+    def test_component_catalog_allows_pending_component_for_review(self) -> None:
+        errors = validate_component_asset_catalog(
+            minimal_component_asset_catalog(), minimal_asset_catalog(), minimal_profile("pending_review")
+        )
+        self.assertEqual(errors, [])
+
+    def test_component_catalog_rejects_missing_asset_reference(self) -> None:
+        catalog = minimal_component_asset_catalog()
+        catalog["components"][0]["states"]["default"] = ["redcliff.uiresources.missing.icon"]
+        errors = validate_component_asset_catalog(catalog, minimal_asset_catalog(), minimal_profile())
+        self.assertTrue(any("references missing asset_id" in error for error in errors))
+
+    def test_complete_project_library_validates_with_cache(self) -> None:
+        self.write_valid_library()
+        self.assertEqual(
+            validate_project_library(self.library_root, self.project_root, self.cache_root),
+            [],
+        )
+
+    def test_complete_project_library_reports_missing_cached_preview(self) -> None:
+        self.write_valid_library()
+        preview_path_for_key(self.cache_root, PREVIEW_KEY).unlink()
+        errors = validate_project_library(self.library_root, self.project_root, self.cache_root)
+        self.assertTrue(any("cached preview is missing" in error for error in errors))
+
+    def test_validation_cli_prints_one_error_per_line(self) -> None:
+        self.write_valid_library()
+        assets = minimal_asset_catalog()
+        assets["assets"][0]["source_file"] = r"E:\private\Icon.uasset"
+        write_json(self.library_root / "catalogs/assets.json", assets)
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_DIR / "validate_project_library.py"),
+                "--project-root",
+                str(self.project_root),
+                "--library-root",
+                str(self.library_root),
+                "--cache-root",
+                str(self.cache_root),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 1)
+        lines = [line for line in result.stdout.splitlines() if line]
+        self.assertTrue(lines)
+        self.assertTrue(all(line.startswith("ERROR: ") for line in lines))
+
+
+if __name__ == "__main__":
+    unittest.main()
