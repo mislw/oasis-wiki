@@ -113,8 +113,12 @@ class GameUiGenerationTests(unittest.TestCase):
         write_json(path, build_tree(minimal_spec(references)))
         return path
 
-    def write_reference_metadata(self, references: list[dict[str, object]]) -> Path:
-        path = self.root / "references.json"
+    def write_reference_metadata(
+        self,
+        references: list[dict[str, object]],
+        name: str = "references.json",
+    ) -> Path:
+        path = self.root / name
         write_json(path, {"schema_version": 1, "references": references})
         return path
 
@@ -219,6 +223,121 @@ class GameUiGenerationTests(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("at least one style reference", (result.stderr + result.stdout).lower())
+
+    def test_project_library_reference_can_supply_required_style_image(self) -> None:
+        library_refs = self.write_reference_metadata(
+            [{
+                "source": str(self.style),
+                "role": "style",
+                "priority": 1,
+                "source_kind": "project_library_asset",
+                "library": {
+                    "asset_id": "redcliff.uiresources.common.icon_item.icon_item_10",
+                    "preview_key": "sha256:" + sha256_file(self.style),
+                    "component_ids": ["item.currency.dragon_jade"],
+                    "semantic_keys": ["currency.dragon_jade"],
+                    "states": ["default"],
+                    "source_asset": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+                },
+            }],
+            name="library-references.json",
+        )
+        explicit_refs = self.write_reference_metadata([], name="explicit-references.json")
+        package = self.root / "library-package"
+
+        result = self.run_script(
+            "scripts/game-ui/build_generation_package.py",
+            "--ui-tree",
+            self.write_tree([]),
+            "--style-profile",
+            self.profile,
+            "--references",
+            explicit_refs,
+            "--library-references",
+            library_refs,
+            "--output",
+            package,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        manifest = json.loads((package / "reference-manifest.json").read_text(encoding="utf-8"))
+        reference = manifest["references"][0]
+        self.assertEqual(reference["source_kind"], "project_library_asset")
+        self.assertEqual(
+            reference["library"]["semantic_keys"],
+            ["currency.dragon_jade"],
+        )
+        prompt = (package / "generation-prompt.txt").read_text(encoding="utf-8")
+        self.assertIn("PROJECT LIBRARY REFERENCES", prompt)
+        self.assertIn("currency.dragon_jade", prompt)
+        self.assertIn("Icon_Item_10.Icon_Item_10", prompt)
+        self.assertNotIn(str(self.style), prompt)
+
+    def test_project_library_reference_rejects_preview_hash_mismatch(self) -> None:
+        library_refs = self.write_reference_metadata(
+            [{
+                "source": str(self.style),
+                "role": "style",
+                "priority": 1,
+                "source_kind": "project_library_asset",
+                "library": {
+                    "asset_id": "redcliff.uiresources.common.icon_item.icon_item_10",
+                    "preview_key": "sha256:" + "0" * 64,
+                    "source_asset": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+                },
+            }],
+            name="library-references.json",
+        )
+
+        result = self.run_script(
+            "scripts/game-ui/build_generation_package.py",
+            "--ui-tree",
+            self.write_tree([]),
+            "--style-profile",
+            self.profile,
+            "--references",
+            self.write_reference_metadata([], name="explicit-references.json"),
+            "--library-references",
+            library_refs,
+            "--output",
+            self.root / "package",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("preview_key", result.stderr + result.stdout)
+
+    def test_project_library_reference_rejects_missing_cached_file(self) -> None:
+        library_refs = self.write_reference_metadata(
+            [{
+                "source": str(self.root / "missing.png"),
+                "role": "style",
+                "priority": 1,
+                "source_kind": "project_library_asset",
+                "library": {
+                    "asset_id": "redcliff.uiresources.common.icon_item.icon_item_10",
+                    "preview_key": "sha256:" + "0" * 64,
+                    "source_asset": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+                },
+            }],
+            name="library-references.json",
+        )
+
+        result = self.run_script(
+            "scripts/game-ui/build_generation_package.py",
+            "--ui-tree",
+            self.write_tree([]),
+            "--style-profile",
+            self.profile,
+            "--references",
+            self.write_reference_metadata([], name="explicit-references.json"),
+            "--library-references",
+            library_refs,
+            "--output",
+            self.root / "package",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("source is not a file", result.stderr + result.stdout)
 
     def test_valid_style_and_layout_package_records_images_hashes_and_dimensions(self) -> None:
         package = self.build_valid_package()

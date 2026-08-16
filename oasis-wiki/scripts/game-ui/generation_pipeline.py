@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,8 +12,13 @@ from PIL import Image
 
 
 REFERENCE_ROLES = {"style", "layout"}
-TRUSTED_SOURCE_KINDS = {"input_image_attachment", "user_provided_file"}
+TRUSTED_SOURCE_KINDS = {
+    "input_image_attachment",
+    "user_provided_file",
+    "project_library_asset",
+}
 REVIEW_SOURCE_KINDS = {"html_screenshot", "browser_screenshot", "cowart_screenshot", "collage"}
+PREVIEW_KEY = re.compile(r"^sha256:[0-9a-f]{64}$")
 STYLE_REVIEW_CHECKS = (
     "header_language",
     "panel_language",
@@ -89,13 +95,14 @@ def normalize_reference(reference: dict[str, Any], index: int) -> dict[str, Any]
     source_kind = reference.get("source_kind")
     if source_kind not in TRUSTED_SOURCE_KINDS | REVIEW_SOURCE_KINDS:
         raise GenerationPipelineError(
-            f"{prefix}.source_kind must identify an input_image_attachment, user_provided_file, or review-only screenshot source"
+            f"{prefix}.source_kind must identify an input image, project library asset, or review-only screenshot source"
         )
     user_authorized = reference.get("user_authorized", False)
     if source_kind in REVIEW_SOURCE_KINDS and user_authorized is not True:
         raise GenerationPipelineError(f"{prefix}.user_authorized must be true for {source_kind}")
     width, height = image_size(source)
-    return {
+    digest = sha256_file(source)
+    normalized = {
         "source": source,
         "role": role,
         "priority": priority,
@@ -104,11 +111,44 @@ def normalize_reference(reference: dict[str, Any], index: int) -> dict[str, Any]
         "user_authorized": bool(user_authorized),
         "width": width,
         "height": height,
-        "sha256": sha256_file(source),
+        "sha256": digest,
     }
+    if source_kind == "project_library_asset":
+        library = reference.get("library")
+        if not isinstance(library, dict):
+            raise GenerationPipelineError(f"{prefix}.library is required")
+        asset_id = library.get("asset_id")
+        preview_key = library.get("preview_key")
+        source_asset = library.get("source_asset")
+        if not isinstance(asset_id, str) or not asset_id:
+            raise GenerationPipelineError(f"{prefix}.library.asset_id is required")
+        if not isinstance(preview_key, str) or not PREVIEW_KEY.fullmatch(preview_key):
+            raise GenerationPipelineError(f"{prefix}.library.preview_key is invalid")
+        if preview_key != f"sha256:{digest}":
+            raise GenerationPipelineError(
+                f"{prefix}.library.preview_key does not match the source image"
+            )
+        if not isinstance(source_asset, str) or not source_asset.startswith("/"):
+            raise GenerationPipelineError(f"{prefix}.library.source_asset is required")
+        normalized_library = {
+            "asset_id": asset_id,
+            "preview_key": preview_key,
+            "source_asset": source_asset,
+        }
+        for field in ("component_ids", "semantic_keys", "states"):
+            values = library.get(field, [])
+            if not isinstance(values, list) or not all(
+                isinstance(value, str) for value in values
+            ):
+                raise GenerationPipelineError(f"{prefix}.library.{field} must be strings")
+            normalized_library[field] = list(dict.fromkeys(values))
+        normalized["library"] = normalized_library
+    return normalized
 
 
-def load_reference_inputs(metadata_path: Path) -> list[dict[str, Any]]:
+def load_reference_inputs(
+    metadata_path: Path, require_style: bool = True
+) -> list[dict[str, Any]]:
     metadata = read_json(metadata_path)
     if metadata.get("schema_version") != 1:
         raise GenerationPipelineError("reference metadata schema_version must be 1")
@@ -120,7 +160,7 @@ def load_reference_inputs(metadata_path: Path) -> list[dict[str, Any]]:
         if not isinstance(reference, dict):
             raise GenerationPipelineError(f"references[{index}] must be an object")
         normalized.append(normalize_reference(reference, index))
-    if not any(reference["role"] == "style" for reference in normalized):
+    if require_style and not any(reference["role"] == "style" for reference in normalized):
         raise GenerationPipelineError("at least one style reference image is required; a style profile or prompt cannot replace it")
     return normalized
 
@@ -167,6 +207,12 @@ def compile_generation_prompt(
     references = reference_manifest.get("references", [])
     style_references = [item for item in references if item.get("role") == "style"]
     layout_references = [item for item in references if item.get("role") == "layout"]
+    library_references = [
+        item["library"]
+        for item in references
+        if item.get("source_kind") == "project_library_asset"
+        and isinstance(item.get("library"), dict)
+    ]
     native_components = [item for item in ui_tree.get("components", []) if item.get("asset_policy") == "native"]
     bitmap_components = [item for item in ui_tree.get("components", []) if item.get("asset_policy") != "native"]
     purpose = page_purpose.strip() or str(ui_tree.get("page", {}).get("purpose", ""))
@@ -191,6 +237,10 @@ def compile_generation_prompt(
             "- required content",
             "Do NOT copy their visual style.",
             dump(layout_references),
+            "",
+            "PROJECT LIBRARY REFERENCES",
+            "These approved project assets provide reusable component and item provenance.",
+            dump(library_references),
             "",
             "STYLE PROFILE",
             "The profile is supplementary and must not replace the STYLE reference images.",
@@ -253,13 +303,27 @@ def build_generation_package(
     output_dir: Path,
     page_purpose: str = "",
     reuse_components: Iterable[str] = (),
+    library_reference_metadata_path: Path | None = None,
 ) -> Path:
     ui_tree = read_json(ui_tree_path.resolve())
     style_profile = read_json(style_profile_path.resolve())
     if ui_tree.get("artifact_type") != "ui_tree":
         raise GenerationPipelineError("ui-tree must be produced by build_ui_tree.py")
-    references = load_reference_inputs(reference_metadata_path.resolve())
-    assert_tree_reference_alignment(ui_tree, references)
+    explicit_references = load_reference_inputs(
+        reference_metadata_path.resolve(),
+        require_style=library_reference_metadata_path is None,
+    )
+    assert_tree_reference_alignment(ui_tree, explicit_references)
+    library_references = (
+        load_reference_inputs(library_reference_metadata_path.resolve(), require_style=False)
+        if library_reference_metadata_path is not None
+        else []
+    )
+    references = [*explicit_references, *library_references]
+    if not any(reference["role"] == "style" for reference in references):
+        raise GenerationPipelineError(
+            "at least one style reference image is required; a style profile or prompt cannot replace it"
+        )
     output = output_dir.resolve()
     if output.exists() and any(output.iterdir()):
         raise GenerationPipelineError(f"output directory must be empty: {output}")
@@ -275,19 +339,20 @@ def build_generation_package(
         suffix = reference["source"].suffix.lower() or ".png"
         target = reference_dir / f"{reference_id}{suffix}"
         shutil.copy2(reference["source"], target)
-        manifest_items.append(
-            {
-                "id": reference_id,
-                "file": relative_file(target, output),
-                "role": role,
-                "priority": reference["priority"],
-                "copy_visual_style": reference["copy_visual_style"],
-                "source_kind": reference["source_kind"],
-                "width": reference["width"],
-                "height": reference["height"],
-                "sha256": sha256_file(target),
-            }
-        )
+        manifest_item = {
+            "id": reference_id,
+            "file": relative_file(target, output),
+            "role": role,
+            "priority": reference["priority"],
+            "copy_visual_style": reference["copy_visual_style"],
+            "source_kind": reference["source_kind"],
+            "width": reference["width"],
+            "height": reference["height"],
+            "sha256": sha256_file(target),
+        }
+        if "library" in reference:
+            manifest_item["library"] = reference["library"]
+        manifest_items.append(manifest_item)
     manifest = {"schema_version": 1, "references": manifest_items}
     shutil.copy2(ui_tree_path.resolve(), output / "ui-tree.json")
     shutil.copy2(style_profile_path.resolve(), output / "style-profile.json")
@@ -352,6 +417,26 @@ def validate_generation_package(package_dir: Path) -> dict[str, Any]:
             raise GenerationPipelineError(f"reference dimensions do not match: {item.get('file')}")
         if item.get("sha256") != sha256_file(image_path):
             raise GenerationPipelineError(f"reference sha256 does not match: {item.get('file')}")
+        if item.get("source_kind") == "project_library_asset":
+            library = item.get("library")
+            if not isinstance(library, dict):
+                raise GenerationPipelineError("project library reference is missing provenance")
+            if not isinstance(library.get("asset_id"), str) or not library["asset_id"]:
+                raise GenerationPipelineError("project library asset_id is missing")
+            if not isinstance(library.get("source_asset"), str) or not library[
+                "source_asset"
+            ].startswith("/"):
+                raise GenerationPipelineError("project library source_asset is missing")
+            for field in ("component_ids", "semantic_keys", "states"):
+                values = library.get(field)
+                if not isinstance(values, list) or not all(
+                    isinstance(value, str) for value in values
+                ):
+                    raise GenerationPipelineError(
+                        f"project library {field} must be an array of strings"
+                    )
+            if library.get("preview_key") != f"sha256:{item.get('sha256')}":
+                raise GenerationPipelineError("project library preview_key does not match")
     prompt_path = package / str(request.get("prompt_file", ""))
     if not prompt_path.is_file() or request.get("prompt_sha256") != sha256_file(prompt_path):
         raise GenerationPipelineError("generation prompt is missing or its sha256 does not match")

@@ -13,6 +13,7 @@ def main() -> int:
     parser.add_argument("--ui-tree", required=True, type=Path)
     parser.add_argument("--style-profile", required=True, type=Path)
     parser.add_argument("--references", required=True, type=Path)
+    parser.add_argument("--library-references", type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--page-purpose", default="")
     parser.add_argument("--reuse-component", action="append", default=[])
@@ -25,6 +26,7 @@ def main() -> int:
             args.output,
             args.page_purpose,
             args.reuse_component,
+            args.library_references,
         )
     except GenerationPipelineError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
