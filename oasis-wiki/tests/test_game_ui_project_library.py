@@ -29,6 +29,7 @@ from import_project_previews import (  # type: ignore  # noqa: E402
     group_assets_by_categories,
     import_previews,
 )
+from build_item_icon_catalog import build_item_icon_catalog  # type: ignore  # noqa: E402
 from initialize_project_library import initialize_library  # type: ignore  # noqa: E402
 
 
@@ -95,6 +96,17 @@ def minimal_item_icon_catalog() -> dict[str, object]:
             "source_table": "Asset/Data/Table/UGCObject",
             "row_fingerprint": "sha256:" + "1" * 64,
             "resolution_status": "resolved",
+        }],
+    }
+
+
+def ugcobject_export(values: dict[str, object], row_name: str = "1001") -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "load_path": "/RedCliff/Asset/Data/Table/UGCObject.UGCObject",
+        "rows": [{
+            "row_name": row_name,
+            "values": values,
         }],
     }
 
@@ -602,6 +614,143 @@ class GameUiProjectLibraryTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("ERROR: cannot import preview", result.stdout)
         self.assertEqual(catalog_path.read_bytes(), original)
+
+    def test_dragon_jade_resolves_to_icon_item_10(self) -> None:
+        export = ugcobject_export({
+            "项目ItemID": 1001,
+            "物品名称": "龙玉",
+            "物品描述": "高级货币，用于兑换珍稀资源",
+            "小icon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+        })
+
+        catalog = build_item_icon_catalog(
+            export,
+            minimal_asset_catalog(),
+            None,
+            {1001: "currency.dragon_jade"},
+            {1001: ["付费货币", "CommodityCoin"]},
+        )
+
+        item = catalog["items"][0]
+        self.assertEqual(item["semantic_key"], "currency.dragon_jade")
+        self.assertEqual(item["item_id"], 1001)
+        self.assertEqual(item["name"], "龙玉")
+        self.assertEqual(item["description"], "高级货币，用于兑换珍稀资源")
+        self.assertEqual(item["asset_id"], ASSET_ID)
+        self.assertEqual(item["resolution_status"], "resolved")
+        self.assertEqual(item["aliases"], ["付费货币", "CommodityCoin"])
+        self.assertRegex(item["row_fingerprint"], r"^sha256:[0-9a-f]{64}$")
+        self.assertEqual(validate_item_icon_catalog(catalog, minimal_asset_catalog()), [])
+
+    def test_item_catalog_accepts_english_field_aliases(self) -> None:
+        export = ugcobject_export({
+            "ItemID": 1001,
+            "Name": "Dragon Jade",
+            "Description": "Premium currency",
+            "SmallIcon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+        })
+
+        catalog = build_item_icon_catalog(export, minimal_asset_catalog(), None, {}, {})
+
+        item = catalog["items"][0]
+        self.assertEqual(item["semantic_key"], "item.1001")
+        self.assertEqual(item["name"], "Dragon Jade")
+        self.assertEqual(item["asset_id"], ASSET_ID)
+        self.assertEqual(item["resolution_status"], "resolved")
+
+    def test_item_catalog_rejects_duplicate_item_ids(self) -> None:
+        export = ugcobject_export({
+            "ItemID": 1001,
+            "Name": "Dragon Jade",
+            "Description": "Premium currency",
+            "SmallIcon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+        })
+        export["rows"].append({
+            "row_name": "duplicate",
+            "values": {
+                "项目ItemID": 1001,
+                "物品名称": "Duplicate",
+                "物品描述": "Duplicate row",
+                "小icon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+            },
+        })
+
+        with self.assertRaisesRegex(ProjectLibraryError, "duplicate item_id"):
+            build_item_icon_catalog(export, minimal_asset_catalog(), None, {}, {})
+
+    def test_item_catalog_keeps_missing_icon_as_candidate(self) -> None:
+        export = ugcobject_export({
+            "ItemID": 1002,
+            "Name": "Mystery Token",
+            "Description": "No icon yet",
+        }, row_name="1002")
+
+        catalog = build_item_icon_catalog(export, minimal_asset_catalog(), None, {}, {})
+
+        item = catalog["items"][0]
+        self.assertEqual(item["semantic_key"], "item.1002")
+        self.assertEqual(item["icon_asset"], "/RedCliff/Asset/UIresources/Missing/Missing.Missing")
+        self.assertIsNone(item["asset_id"])
+        self.assertEqual(item["resolution_status"], "candidate")
+
+    def test_item_catalog_preserves_semantic_key_and_aliases_on_resync(self) -> None:
+        previous = minimal_item_icon_catalog()
+        previous["items"][0]["semantic_key"] = "currency.dragon_jade"
+        previous["items"][0]["aliases"] = ["old alias"]
+        export = ugcobject_export({
+            "ItemID": 1001,
+            "Name": "Dragon Jade",
+            "Description": "Updated text",
+            "SmallIcon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+        })
+
+        catalog = build_item_icon_catalog(export, minimal_asset_catalog(), previous, {}, {})
+
+        item = catalog["items"][0]
+        self.assertEqual(item["semantic_key"], "currency.dragon_jade")
+        self.assertEqual(item["aliases"], ["old alias"])
+        self.assertEqual(item["description"], "Updated text")
+
+    def test_item_catalog_cli_writes_dragon_jade_mapping(self) -> None:
+        export = ugcobject_export({
+            "项目ItemID": 1001,
+            "物品名称": "龙玉",
+            "物品描述": "高级货币，用于兑换珍稀资源",
+            "小icon": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+        })
+        export_path = self.root / "ugcobject-export.json"
+        assets_path = self.library_root / "catalogs/assets.json"
+        output_path = self.library_root / "catalogs/item-icons.json"
+        write_json(export_path, export)
+        write_json(assets_path, minimal_asset_catalog())
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_DIR / "build_item_icon_catalog.py"),
+                "--ugcobject-export",
+                str(export_path),
+                "--asset-catalog",
+                str(assets_path),
+                "--semantic-key",
+                "1001=currency.dragon_jade",
+                "--alias",
+                "1001=付费货币,CommodityCoin",
+                "--output",
+                str(output_path),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        catalog = json.loads(output_path.read_text(encoding="utf-8"))
+        item = catalog["items"][0]
+        self.assertEqual(item["semantic_key"], "currency.dragon_jade")
+        self.assertEqual(item["aliases"], ["付费货币", "CommodityCoin"])
+        self.assertNotIn(str(self.root), json.dumps(catalog))
+        self.assertEqual(validate_item_icon_catalog(catalog, minimal_asset_catalog()), [])
 
 
 if __name__ == "__main__":
