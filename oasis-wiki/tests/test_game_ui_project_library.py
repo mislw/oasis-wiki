@@ -5,7 +5,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
+
+from PIL import Image
 
 
 WIKI_ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +16,7 @@ SCRIPT_DIR = WIKI_ROOT / "scripts" / "game-ui"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from project_library import (  # type: ignore  # noqa: E402
+    ProjectLibraryError,
     preview_path_for_key,
     validate_asset_catalog,
     validate_component_asset_catalog,
@@ -20,6 +24,11 @@ from project_library import (  # type: ignore  # noqa: E402
     validate_project_library,
 )
 from index_project_assets import build_asset_catalog  # type: ignore  # noqa: E402
+from import_project_previews import (  # type: ignore  # noqa: E402
+    build_contact_sheet,
+    group_assets_by_categories,
+    import_previews,
+)
 from initialize_project_library import initialize_library  # type: ignore  # noqa: E402
 
 
@@ -108,6 +117,8 @@ class GameUiProjectLibraryTests(unittest.TestCase):
         self.project_root = self.root / "RedCliff"
         self.library_root = self.project_root / ".game-ui-system"
         self.cache_root = self.root / "cache"
+        self.staging = self.root / "staging"
+        self.staging.mkdir()
         source = self.project_root / "Asset/UIresources/Common/Icon_Item/Icon_Item_10.uasset"
         source.parent.mkdir(parents=True)
         source.write_bytes(b"synthetic-uasset")
@@ -329,6 +340,268 @@ class GameUiProjectLibraryTests(unittest.TestCase):
         self.assertEqual(entry["tags"], ["currency"])
         self.assertEqual(entry["preview_key"], PREVIEW_KEY)
         self.assertEqual(history, [])
+
+    def test_preview_import_caches_rgba_png_by_hash(self) -> None:
+        assets = minimal_asset_catalog()
+        entry = assets["assets"][0]
+        entry["catalog_status"] = "indexed"
+        entry.pop("preview_key")
+        source = self.staging / "Icon_Item_10.tga"
+        Image.new("RGBA", (48, 48), (20, 180, 90, 255)).save(source)
+
+        updated = import_previews(assets, self.staging, self.cache_root, {})
+
+        imported = updated["assets"][0]
+        self.assertRegex(imported["preview_key"], r"^sha256:[0-9a-f]{64}$")
+        self.assertEqual(imported["catalog_status"], "previewed")
+        self.assertEqual(imported["preview_width"], 48)
+        self.assertEqual(imported["preview_height"], 48)
+        self.assertEqual(imported["preview_mode"], "RGBA")
+        cached = preview_path_for_key(self.cache_root, imported["preview_key"])
+        self.assertTrue(cached.is_file())
+        with Image.open(cached) as image:
+            self.assertEqual(image.mode, "RGBA")
+        digest = imported["preview_key"].removeprefix("sha256:")
+        metadata = json.loads(
+            (self.cache_root / "metadata" / f"{digest}.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(metadata["width"], 48)
+        self.assertEqual(metadata["height"], 48)
+        self.assertEqual(metadata["mode"], "RGBA")
+        self.assertRegex(metadata["source_export_sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(metadata["preview_sha256"], digest)
+        self.assertNotIn(str(self.staging), json.dumps(metadata))
+
+    def test_duplicate_export_stems_require_explicit_mapping(self) -> None:
+        assets = minimal_asset_catalog()
+        assets["assets"][0]["catalog_status"] = "indexed"
+        assets["assets"][0].pop("preview_key")
+        duplicate = dict(assets["assets"][0])
+        duplicate["asset_id"] = "redcliff.uiresources.preferential.icon_item_10"
+        duplicate["source_asset"] = (
+            "/RedCliff/Asset/UIresources/Preferential/Icon_Item_10.Icon_Item_10"
+        )
+        duplicate["source_file"] = "Asset/UIresources/Preferential/Icon_Item_10.uasset"
+        duplicate["category"] = "Preferential"
+        assets["assets"].append(duplicate)
+        Image.new("RGB", (16, 16), "red").save(self.staging / "Icon_Item_10.png")
+
+        with self.assertRaisesRegex(ProjectLibraryError, "ambiguous export stem"):
+            import_previews(assets, self.staging, self.cache_root, {})
+
+    def test_explicit_mapping_resolves_duplicate_export_stems(self) -> None:
+        assets = minimal_asset_catalog()
+        assets["assets"][0]["catalog_status"] = "indexed"
+        assets["assets"][0].pop("preview_key")
+        duplicate = dict(assets["assets"][0])
+        duplicate["asset_id"] = "redcliff.uiresources.preferential.icon_item_10"
+        duplicate["source_asset"] = (
+            "/RedCliff/Asset/UIresources/Preferential/Icon_Item_10.Icon_Item_10"
+        )
+        duplicate["source_file"] = "Asset/UIresources/Preferential/Icon_Item_10.uasset"
+        duplicate["category"] = "Preferential"
+        assets["assets"].append(duplicate)
+        common = self.staging / "common.png"
+        preferential = self.staging / "preferential.png"
+        Image.new("RGB", (16, 16), "red").save(common)
+        Image.new("RGB", (24, 24), "blue").save(preferential)
+
+        updated = import_previews(
+            assets,
+            self.staging,
+            self.cache_root,
+            {
+                ASSET_ID: common,
+                duplicate["asset_id"]: preferential,
+            },
+        )
+
+        self.assertEqual(
+            [entry["preview_width"] for entry in updated["assets"]],
+            [16, 24],
+        )
+
+    def test_corrupt_preview_does_not_mutate_asset_catalog(self) -> None:
+        assets = minimal_asset_catalog()
+        assets["assets"][0]["catalog_status"] = "indexed"
+        assets["assets"][0].pop("preview_key")
+        original = deepcopy(assets)
+        (self.staging / "Icon_Item_10.png").write_bytes(b"not-an-image")
+
+        with self.assertRaisesRegex(ProjectLibraryError, "cannot import preview"):
+            import_previews(assets, self.staging, self.cache_root, {})
+
+        self.assertEqual(assets, original)
+
+    def test_category_groups_prefer_specific_paths_without_duplicates(self) -> None:
+        assets = minimal_asset_catalog()["assets"]
+        common = dict(assets[0])
+        common.update({
+            "asset_id": "redcliff.uiresources.common.button_confirm",
+            "source_file": "Asset/UIresources/Common/Button_Confirm.uasset",
+            "source_asset": "/RedCliff/Asset/UIresources/Common/Button_Confirm.Button_Confirm",
+            "category": "Common",
+        })
+        groups = group_assets_by_categories(
+            [assets[0], common],
+            ["Common", "Common/Icon_Item"],
+        )
+
+        self.assertEqual(
+            [entry["asset_id"] for entry in groups["Common/Icon_Item"]],
+            [ASSET_ID],
+        )
+        self.assertEqual(
+            [entry["asset_id"] for entry in groups["Common"]],
+            [common["asset_id"]],
+        )
+
+    def test_contact_sheet_uses_cached_previews(self) -> None:
+        source = self.staging / "Icon_Item_10.png"
+        Image.new("RGBA", (48, 48), (20, 180, 90, 255)).save(source)
+        assets = minimal_asset_catalog()
+        assets["assets"][0]["catalog_status"] = "indexed"
+        assets["assets"][0].pop("preview_key")
+        updated = import_previews(assets, self.staging, self.cache_root, {})
+        output = self.cache_root / "contact-sheets" / "common-icon-item.png"
+
+        result = build_contact_sheet(updated["assets"], self.cache_root, output, columns=2)
+
+        self.assertEqual(result, output)
+        with Image.open(output) as sheet:
+            self.assertEqual(sheet.mode, "RGBA")
+            self.assertGreater(sheet.width, 48)
+            self.assertGreater(sheet.height, 48)
+
+    def test_preview_cli_filters_categories_and_builds_contact_sheets(self) -> None:
+        assets = minimal_asset_catalog()
+        icon = assets["assets"][0]
+        icon["catalog_status"] = "indexed"
+        icon.pop("preview_key")
+        common = dict(icon)
+        common.update({
+            "asset_id": "redcliff.uiresources.common.button_confirm",
+            "source_file": "Asset/UIresources/Common/Button_Confirm.uasset",
+            "source_asset": "/RedCliff/Asset/UIresources/Common/Button_Confirm.Button_Confirm",
+            "category": "Common",
+        })
+        assets["assets"].append(common)
+        catalog_path = self.library_root / "catalogs/assets.json"
+        write_json(catalog_path, assets)
+        Image.new("RGB", (20, 20), "green").save(self.staging / "Icon_Item_10.png")
+        Image.new("RGB", (30, 20), "gold").save(self.staging / "Button_Confirm.jpg")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_DIR / "import_project_previews.py"),
+                "--asset-catalog",
+                str(catalog_path),
+                "--staging",
+                str(self.staging),
+                "--cache-root",
+                str(self.cache_root),
+                "--category",
+                "Common",
+                "--category",
+                "Common/Icon_Item",
+                "--contact-sheets",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        updated = json.loads(catalog_path.read_text(encoding="utf-8"))
+        self.assertTrue(all(entry["catalog_status"] == "previewed" for entry in updated["assets"]))
+        self.assertTrue(
+            (self.cache_root / "contact-sheets/common-icon-item.png").is_file()
+        )
+        self.assertTrue((self.cache_root / "contact-sheets/common.png").is_file())
+        catalog_text = json.dumps(updated)
+        self.assertNotIn(str(self.staging), catalog_text)
+        self.assertNotIn(str(self.cache_root), catalog_text)
+
+    def test_preview_cli_allows_full_mapping_with_category_filter(self) -> None:
+        assets = minimal_asset_catalog()
+        icon = assets["assets"][0]
+        icon["catalog_status"] = "indexed"
+        icon.pop("preview_key")
+        preferential = dict(icon)
+        preferential.update({
+            "asset_id": "redcliff.uiresources.preferential.icon_item_10",
+            "source_file": "Asset/UIresources/Preferential/Icon_Item_10.uasset",
+            "source_asset": "/RedCliff/Asset/UIresources/Preferential/Icon_Item_10.Icon_Item_10",
+            "category": "Preferential",
+        })
+        assets["assets"].append(preferential)
+        catalog_path = self.library_root / "catalogs/assets.json"
+        mapping_path = self.root / "mapping.json"
+        write_json(catalog_path, assets)
+        Image.new("RGB", (20, 20), "green").save(self.staging / "common.png")
+        Image.new("RGB", (30, 20), "gold").save(self.staging / "preferential.png")
+        write_json(mapping_path, {
+            "mappings": {
+                ASSET_ID: "common.png",
+                preferential["asset_id"]: "preferential.png",
+            }
+        })
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_DIR / "import_project_previews.py"),
+                "--asset-catalog",
+                str(catalog_path),
+                "--staging",
+                str(self.staging),
+                "--cache-root",
+                str(self.cache_root),
+                "--mapping",
+                str(mapping_path),
+                "--category",
+                "Common/Icon_Item",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        updated = json.loads(catalog_path.read_text(encoding="utf-8"))
+        by_id = {entry["asset_id"]: entry for entry in updated["assets"]}
+        self.assertEqual(by_id[ASSET_ID]["catalog_status"], "previewed")
+        self.assertEqual(by_id[preferential["asset_id"]]["catalog_status"], "indexed")
+
+    def test_preview_cli_preserves_catalog_when_export_is_corrupt(self) -> None:
+        assets = minimal_asset_catalog()
+        assets["assets"][0]["catalog_status"] = "indexed"
+        assets["assets"][0].pop("preview_key")
+        catalog_path = self.library_root / "catalogs/assets.json"
+        write_json(catalog_path, assets)
+        original = catalog_path.read_bytes()
+        (self.staging / "Icon_Item_10.png").write_bytes(b"not-an-image")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_DIR / "import_project_previews.py"),
+                "--asset-catalog",
+                str(catalog_path),
+                "--staging",
+                str(self.staging),
+                "--cache-root",
+                str(self.cache_root),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("ERROR: cannot import preview", result.stdout)
+        self.assertEqual(catalog_path.read_bytes(), original)
 
 
 if __name__ == "__main__":
