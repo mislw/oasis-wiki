@@ -157,6 +157,10 @@ Use when the user asks to generate or revise a game UI image, automatically plac
 
 Trigger examples:
 
+- `做一下 UI 生成`
+- `我有一个 UI 需要生图`
+- `帮我做个 UI`
+- `启动 UI 生图工具`
 - `按照游戏风格生成这个 UI，生成后自动打开 Cowart`
 - `把这张 UI 拆成可移动组件`
 - `导入 Magic Layers 并恢复层级`

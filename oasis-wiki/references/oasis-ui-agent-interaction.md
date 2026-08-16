@@ -1,24 +1,16 @@
 # Oasis UI Agent 交互编排
 
-本参考只规定 Agent 如何围绕现有 Cowart/UI Workflow 与用户交互，不改变任何生产功能。
-
-```text
-INTERACTION_ONLY_NO_RUNTIME_CHANGE
-```
+本参考规定 Agent 如何使用当前 Cowart、UI Workflow、Workbench 和编辑器交付能力。
 
 ## 能力边界
 
-继续使用现有 Game UI Design System、图片生成、Layer Reconstruction、Workbench、MCP、WidgetBlueprint、Lua 和 PIE 流程。不要新增或假装已经存在：
+Companion 现有运行时会持久保存每个 UI 页面的八阶段任务、来源 Codex task、目标工作区、WidgetBlueprint 只读预检证据和进度更新。Agent 可以报告这些已实现状态，但仍必须把“已保存”“已投递”“已写入编辑器”“已回读”“PIE 已验证”分别陈述。
 
-- 持久化 UI Task 状态机；
-- `current_ui_task` 或跨重启 pending decision；
-- 新的 IPC、WebSocket、HTTP、文件监听或命令桥；
-- Companion 当前任务面板、待验收徽标或自动打开当前任务；
-- 自动跨越现有授权门禁的后台执行。
+WidgetBlueprint 交付必须先在 Workbench 或 UI Workflow 中搜索运行中的编辑器，并选择一个编辑器返回的 `UGCWidgetBlueprint` 或 `WidgetBlueprint`。普通文本搜索只扫描当前项目的 `/Asset/UI` 子树并最多返回 100 个匹配项；其他目录必须输入完整的项目内目录或 `load_path`。完整 `load_path` 是唯一资产身份。不得从 `/Game/`、显示名称、目录名或 UI 页面标题推断目标。
 
-当前 Workflow Console 的 `console-state.json` 只证明单次工作目录状态；它不是通用 Agent Task Store。Companion 可以显示 Agent、MCP 和 Skill 状态，但在运行时代码真正支持以前，Agent 不得声称 Companion 已同步当前 UI 阶段。
+Companion 使用固定后端代码执行只读 MCP 预检：只调用 `ue_read` 和 `ue_py`，不调用 `ue_plan_submit`，不传 `skip_prv`，不创建交付目录，也不修改 WidgetBlueprint、Lua、DataTable、`.uasset`、`.umap` 或关卡。预检要求工作区与当前编辑器项目匹配、资产类型受支持且精确 `load_path` 只返回一个候选。
 
-如果没有持久化状态，恢复任务时应读取当前对话、实际产物、工作目录和编辑器状态进行只读重发现。无法确认时说明可能过期，并询问一个最关键的问题，不得假装自动恢复成功。
+成功证据与页面任务一起持久保存。工作区、搜索内容或目标变化会使证据失效。用户点击最终交付时，Companion 必须先执行最终重验，再冻结 schema 2 的 `delivery-request.json` 并创建新 Codex task。重验失败时停止，不得进行编辑器写入。
 
 ## 交互总协议
 
@@ -63,6 +55,16 @@ COMPLETE
 不要把内部十几个脚本步骤全部暴露为阶段。阶段代表用户能理解和验收的生产结果。
 
 ## SOURCE
+
+### 自然语言启动
+
+用户表达“做一下 UI 生成”“我有一个 UI 需要生图”“帮我做个 UI”“启动 UI 生图工具”或同义意图时，直接启动或聚焦 Companion 的 `UI 生图工具链`：
+
+```powershell
+python scripts/cowart-ui/component-extractor/open_ui_workflow.py
+```
+
+启动后立即进入 SOURCE，在当前对话中读取已有任务或询问一个真正缺失的来源信息。不要等待用户再次说“开始”，不要只回复工具位置，也不要新开一个脱离当前 Agent 上下文的对话。启动失败时报告脚本返回的 `companion_not_found`，同时继续保留文字流程和 localhost 静态回退。
 
 开始新 UI 时自然询问来源，不要求用户填写固定表格：
 
@@ -363,4 +365,4 @@ FAILED
 确认后执行：<next gated action>
 ```
 
-这是对话协议，不是持久化承诺。`do not claim persisted task state`：在真正增加并验证任务存储、通信桥和 Companion UI 前，不得声称重启后会自动恢复、自动显示当前任务或自动打开当前 Workbench。
+这是对话协议。Companion 可以恢复已经写入 UI Workflow Store 和 Workbench page catalog 的任务与页面；Agent 仍需读取当前 store、交付文件和编辑器状态，不得把未持久化的聊天推断或未执行的运行时验收说成已恢复。

@@ -1,7 +1,7 @@
 interface:
   display_name: "Oasis Wiki"
   short_description: "Use Oasis UGC docs, UI systems, and safe MCP workflows."
-  default_prompt: "Use $oasis-wiki for Oasis UGC Lua, project-routed game UI component libraries, and UGCAskQ MCP work. Build a UI Tree before visual generation, preserve control status/history, search official references before conclusions, and use teaching mode only when explicitly requested."
+  default_prompt: "Use $oasis-wiki for Oasis UGC Lua, project-routed game UI component libraries, UI image generation, and UGCAskQ MCP work. Natural-language UI generation requests should open the native Companion UI workflow and continue SOURCE in this task. Build a UI Tree before visual generation, preserve control status/history, and search official references before conclusions."
 
 policy:
   allow_implicit_invocation: true

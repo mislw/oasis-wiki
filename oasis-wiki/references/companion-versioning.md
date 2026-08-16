@@ -18,26 +18,25 @@ Example:
 
 This means major generation `1`, date `2026-08-14`, and the fourth distributable iteration made that day.
 
+Windows MSI builds use a separate valid SemVer mapping in `tauri.build.conf.json`:
+
+```text
+M.YY.MMDD+N
+```
+
+For example, canonical version `1.260816.1` maps to MSI build version `1.26.816+1`. Tauri and WiX expose that build as Windows file version `1.26.816.1`. Always build the MSI with `--config tauri.build.conf.json`; the canonical product and Skill version remain unchanged.
+
 ## Release Contract
 
 Before calling a Companion version complete, keep these values synchronized:
 
 - `package.json` and `package-lock.json`;
 - `src-tauri/tauri.conf.json`;
+- `tauri.build.conf.json`, using the `M.YY.MMDD+N` MSI mapping;
 - `src-tauri/Cargo.toml` and the root package entry in `src-tauri/Cargo.lock`;
 - `CURRENT_SKILL_VERSION` in `src-tauri/src/skill/mod.rs`;
 - the Companion/Skill version displayed by `src/windows/Settings.tsx`;
 - bundled and installed Skill `VERSION` markers;
-- the generated installer compatibility version and any published Git tag or release name.
-
-## Windows MSI Compatibility
-
-The product and Skill keep the canonical `M.YYMMDD.N` version. The Windows MSI build config uses valid SemVer `M.YY.MMDD+N` in `tauri.build.conf.json` because WiX restricts the minor field to 255. Tauri converts its numeric build metadata to WiX `M.YY.MMDD.N`. For example, product version `1.260815.1` uses config version `1.26.815+1` and maps only its MSI metadata to `1.26.815.1`; this mapping is not a product downgrade.
-
-## GitHub Synchronization Gate
-
-Every distributable iteration must exist on the GitHub default branch with a pushed `v{version}` tag. A local build, test run, or installation is not complete by itself.
-
-When a Companion release bundles Skill changes, both `oasis-wiki` and `oasis-wiki-comp` must contain the matching release commits on their GitHub default branches and both repositories must publish the matching tag. If any commit or tag push fails, the release is not complete and must be reported as incomplete.
+- the generated executable version and any published Git tag or release name.
 
 Do not reuse an already published `M.YYMMDD.N`. Do not infer `N` from Git commit count; choose the next unused distributable iteration for that date.

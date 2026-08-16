@@ -7,6 +7,12 @@ from pathlib import Path
 
 
 class QuietHandler(SimpleHTTPRequestHandler):
+    def end_headers(self) -> None:
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        super().end_headers()
+
     def log_message(self, format: str, *args: object) -> None:
         pass
 

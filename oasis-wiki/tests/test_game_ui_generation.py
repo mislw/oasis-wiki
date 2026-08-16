@@ -6,7 +6,9 @@ import json
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from PIL import Image
@@ -107,6 +109,17 @@ class GameUiGenerationTests(unittest.TestCase):
             capture_output=True,
             check=False,
         )
+
+    def load_provider_module(self):
+        script = WIKI_ROOT / "scripts" / "game-ui" / "generate_with_codex_provider.py"
+        sys.path.insert(0, str(script.parent))
+        spec = importlib.util.spec_from_file_location("generate_with_codex_provider", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        return module
 
     def write_tree(self, references: list[dict[str, object]]) -> Path:
         path = self.root / "ui-tree.json"
@@ -316,13 +329,7 @@ class GameUiGenerationTests(unittest.TestCase):
         self.assertNotIn("bearer", serialized)
 
     def test_provider_direct_resolves_channel_prefixed_image_model(self) -> None:
-        script = WIKI_ROOT / "scripts" / "game-ui" / "generate_with_codex_provider.py"
-        sys.path.insert(0, str(script.parent))
-        spec = importlib.util.spec_from_file_location("generate_with_codex_provider", script)
-        self.assertIsNotNone(spec)
-        self.assertIsNotNone(spec.loader)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        module = self.load_provider_module()
         self.assertEqual(
             module.resolve_provider_model(
                 ["[EXPRESS]gemini-3-pro-image", "[l]gpt-image-2"],
@@ -335,6 +342,221 @@ class GameUiGenerationTests(unittest.TestCase):
                 ["[a]gpt-image-2", "[b]gpt-image-2"],
                 "gpt-image-2",
             )
+
+    def test_provider_direct_falls_back_to_dsh_profile(self) -> None:
+        module = self.load_provider_module()
+        codex_home = self.root / "codex-home"
+        codex_home.mkdir()
+        (codex_home / "config.toml").write_text('model = "gpt-5.6-sol"\n', encoding="utf-8")
+        write_json(codex_home / "auth.json", {})
+        dsh_home = self.root / "dsh-home"
+        dsh_home.mkdir()
+        (dsh_home / "settings.yaml").write_text(
+            """llm-pi-ai:
+  providers:
+    chirei:
+      apiKeyEnv: CHIREI_API_KEY
+      baseURL: https://proxy.example/v1
+      models:
+        - id: "[l]gpt-5.6-sol"
+        - id: "[l]gpt-image-2"
+agent-default-model:
+  provider: chirei
+  model: "[l]gpt-5.6-sol"
+""",
+            encoding="utf-8",
+        )
+        (dsh_home / ".credentials.yaml").write_text(
+            "CHIREI_API_KEY: dsh-test-secret\n",
+            encoding="utf-8",
+        )
+
+        connection = module.load_configured_provider(codex_home, dsh_home)
+
+        self.assertEqual(connection.base_url, "https://proxy.example/v1")
+        self.assertEqual(connection.api_key, "dsh-test-secret")
+        self.assertEqual(connection.configured_models, ("[l]gpt-5.6-sol", "[l]gpt-image-2"))
+        self.assertEqual(connection.source, "dsh")
+
+    def test_provider_direct_prefers_complete_codex_provider(self) -> None:
+        module = self.load_provider_module()
+        codex_home = self.root / "codex-home"
+        codex_home.mkdir()
+        (codex_home / "config.toml").write_text(
+            'model_provider = "custom"\n[model_providers.custom]\nbase_url = "https://codex.example/v1"\n',
+            encoding="utf-8",
+        )
+        write_json(codex_home / "auth.json", {"OPENAI_API_KEY": "codex-test-secret"})
+        dsh_home = self.root / "dsh-home"
+        dsh_home.mkdir()
+        (dsh_home / "settings.yaml").write_text(
+            """llm-pi-ai:
+  providers:
+    chirei:
+      apiKeyEnv: CHIREI_API_KEY
+      baseURL: https://proxy.example/v1
+      models:
+        - id: "[l]gpt-image-2"
+agent-default-model:
+  provider: chirei
+""",
+            encoding="utf-8",
+        )
+        (dsh_home / ".credentials.yaml").write_text(
+            "CHIREI_API_KEY: dsh-test-secret\n",
+            encoding="utf-8",
+        )
+
+        connection = module.load_configured_provider(codex_home, dsh_home)
+
+        self.assertEqual(connection.base_url, "https://codex.example/v1")
+        self.assertEqual(connection.api_key, "codex-test-secret")
+        self.assertEqual(connection.source, "codex")
+
+    def test_provider_direct_missing_dsh_credential_is_secret_safe(self) -> None:
+        module = self.load_provider_module()
+        codex_home = self.root / "codex-home"
+        codex_home.mkdir()
+        (codex_home / "config.toml").write_text('model = "gpt-5.6-sol"\n', encoding="utf-8")
+        write_json(codex_home / "auth.json", {})
+        dsh_home = self.root / "dsh-home"
+        dsh_home.mkdir()
+        (dsh_home / "settings.yaml").write_text(
+            """llm-pi-ai:
+  providers:
+    chirei:
+      apiKeyEnv: CHIREI_API_KEY
+      baseURL: https://proxy.example/v1
+      models:
+        - id: "[l]gpt-image-2"
+agent-default-model:
+  provider: chirei
+""",
+            encoding="utf-8",
+        )
+        (dsh_home / ".credentials.yaml").write_text(
+            "OTHER_KEY: should-never-appear\n",
+            encoding="utf-8",
+        )
+
+        with self.assertRaises(module.GenerationPipelineError) as caught:
+            module.load_configured_provider(codex_home, dsh_home)
+
+        message = str(caught.exception)
+        self.assertIn("CHIREI_API_KEY", message)
+        self.assertNotIn("should-never-appear", message)
+
+    def test_provider_direct_uses_dependency_free_multi_image_transport(self) -> None:
+        module = self.load_provider_module()
+        generated_bytes = self.output.read_bytes()
+        captured: dict[str, object] = {}
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, format: str, *args: object) -> None:
+                return
+
+            def do_GET(self) -> None:
+                captured["get_path"] = self.path
+                captured["get_authorization"] = self.headers.get("Authorization")
+                payload = json.dumps({"data": [{"id": "[l]gpt-image-2"}]}).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+            def do_POST(self) -> None:
+                length = int(self.headers.get("Content-Length", "0"))
+                captured["post_path"] = self.path
+                captured["post_authorization"] = self.headers.get("Authorization")
+                captured["post_content_type"] = self.headers.get("Content-Type")
+                captured["post_body"] = self.rfile.read(length)
+                payload = json.dumps(
+                    {"data": [{"b64_json": __import__("base64").b64encode(generated_bytes).decode("ascii")}]}
+                ).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            connection = module.ProviderConnection(
+                base_url=f"http://127.0.0.1:{server.server_port}/v1",
+                api_key="transport-test-secret",
+                configured_models=("[l]gpt-image-2",),
+                source="dsh",
+            )
+            models = module.list_provider_models(connection)
+            model = module.resolve_provider_model(models, "gpt-image-2")
+            response = module.create_image_edit(
+                connection,
+                model,
+                "Generate a matching game UI.",
+                [self.style, self.layout],
+                "auto",
+                "high",
+            )
+            output = self.root / "transport-output.png"
+            module.save_image_response(response["data"][0], output)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+        body = captured["post_body"]
+        self.assertIsInstance(body, bytes)
+        self.assertEqual(captured["get_path"], "/v1/models")
+        self.assertEqual(captured["post_path"], "/v1/images/edits")
+        self.assertEqual(captured["get_authorization"], "Bearer transport-test-secret")
+        self.assertEqual(captured["post_authorization"], "Bearer transport-test-secret")
+        self.assertIn("multipart/form-data; boundary=", str(captured["post_content_type"]))
+        self.assertEqual(body.count(b'name="image[]"'), 2)
+        self.assertIn(b'name="model"', body)
+        self.assertIn(b"[l]gpt-image-2", body)
+        self.assertIn(b'name="prompt"', body)
+        self.assertEqual(output.read_bytes(), generated_bytes)
+
+    def test_provider_direct_http_errors_are_bounded_and_secret_safe(self) -> None:
+        module = self.load_provider_module()
+        secret = "http-error-test-secret"
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, format: str, *args: object) -> None:
+                return
+
+            def do_GET(self) -> None:
+                payload = (secret + ":" + ("x" * 2000)).encode("utf-8")
+                self.send_response(500)
+                self.send_header("Content-Type", "text/plain")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            connection = module.ProviderConnection(
+                base_url=f"http://127.0.0.1:{server.server_port}/v1",
+                api_key=secret,
+                configured_models=("[l]gpt-image-2",),
+                source="dsh",
+            )
+            with self.assertRaises(module.GenerationPipelineError) as caught:
+                module.list_provider_models(connection)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+        message = str(caught.exception)
+        self.assertNotIn(secret, message)
+        self.assertIn("HTTP 500", message)
+        self.assertLess(len(message), 800)
 
     def test_provider_direct_runner_requires_explicit_user_authorization(self) -> None:
         package = self.build_valid_package()

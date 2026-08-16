@@ -15,6 +15,7 @@ const requiredFiles = [
   "references/cowart-ui/delivery-contract.md",
   "scripts/cowart-ui/component-extractor/validate_ui_spec.py",
   "scripts/cowart-ui/component-extractor/create_ui_workbench.py",
+  "scripts/cowart-ui/component-extractor/open_ui_workflow.py",
   "scripts/cowart-ui/component-extractor/create_cowart_blank_snapshot.mjs",
   "scripts/cowart-ui/component-extractor/apply_component_decisions.py",
   "scripts/game-ui/generation_pipeline.py",

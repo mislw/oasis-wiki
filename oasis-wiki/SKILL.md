@@ -1,6 +1,6 @@
 ---
 name: oasis-wiki
-description: Use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGCProjects workspaces, UGC Lua, UGCAskQ MCP/editor automation, DataTable/WidgetBlueprint, logs/debugging, project planning, game UI design systems, Cowart UI generation and editable component extraction. Trigger on common UGC classes and APIs including GameMode, GameState, PlayerController, UIManager, EventDefine, UnrealNetwork, LuaQuickFireEvent, UGCGameSystem, RPC and replication. Search bundled references before technical guidance or code, route known projects through local memory/profile data, default to concise normal mode, and modify project files only when explicitly authorized.
+description: Use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, UGC Lua, UGCAskQ MCP/editor automation, DataTable/WidgetBlueprint, logs/debugging, project planning, game UI systems, Cowart UI generation, or requests such as 做一下 UI 生成, 我有一个 UI 需要生图, 帮我做个 UI, and 启动 UI 生图工具. Trigger on common UGC classes and APIs including GameMode, GameState, PlayerController, UIManager, EventDefine, UnrealNetwork, LuaQuickFireEvent, UGCGameSystem, RPC, and replication.
 ---
 
 # Oasis Wiki
@@ -8,6 +8,8 @@ description: Use for Oasis/绿洲启元/绿洲起源/和平精英 UGC projects, 
 For game UI reference analysis, reusable control libraries, project-specific style routing, UI Tree planning, or screenshot-to-UI work, use the integrated Game UI Design System branch in `references/game-ui-design-system.md` before MCP WidgetBlueprint operations.
 
 For AI UI generation, automatic native Cowart handoff, editable layer extraction, component confirmation, or RedCliff delivery planning, use the separate Cowart UI Production branch in `references/cowart-ui-workflow.md`. For staged Agent questions, approvals, review gates, backtracking, and result reporting around that existing workflow, also read `references/oasis-ui-agent-interaction.md`.
+
+Natural-language requests such as `做一下 UI 生成`, `我有一个 UI 需要生图`, `帮我做个 UI`, or `启动 UI 生图工具` immediately enter Cowart UI Production. Run `scripts/cowart-ui/component-extractor/open_ui_workflow.py` to open or focus Companion's native UI generation workflow, then continue the SOURCE stage in the same conversation.
 
 Use this skill for Oasis/绿洲启元 and 和平精英 UGC development questions. The bundled wiki is the source of truth for Lua APIs, editor workflows, gameplay systems, UI, templates, troubleshooting, and examples. The project-pattern references summarize generic UGC Lua architecture habits without private project names, local paths, or planning details.
 
@@ -24,6 +26,7 @@ Treat these as strong signals:
 - MCP/editor automation wording: `UGCAskQ`, `MCP`, `MCP Server`, `Model Context Protocol`, `.mcp.json`, `mcpServers`, `SSE`, `Port 33444`, `Start Server`, `Enable MCP Call Logging`, editor AI automation, AI reads selected actors, AI operates the editor, `长连接 MCP`, `MCP 代理`, `绕过直连 MCP`, `让 Codex 用 MCP`, `直接修改编辑器`, `正在重新连接`, `reconnecting`, `stream disconnected before completion`, `response.completed`, `原生 MCP`, or `native MCP`.
 - Logs and debugging wording: `日志`, `调试日志`, `PIE日志面板`, `战斗日志`, `日志提取`, `DS日志`, `客户端日志`, `服务端日志`, `DSlog`, `Clientlog`, `FullLog`, `UGCClientLog`, `UGCServerLog`, `game_id`.
 - Planning and project-level wording: `策划案`, `玩法案`, `需求文档`, `项目方案`, `系统设计`, `全局规划`, `版本规划`, `数值表`, `UI流程`, `关卡流程`, `经济系统`, `养成系统`, `项目细节`, `项目记忆`.
+- UI generation wording: `做一下 UI 生成`, `我有一个 UI 需要生图`, `帮我做个 UI`, `启动 UI 生图工具`, `生成一张游戏 UI`, `做个界面效果图`.
 - Gameplay tasks: UI buttons, RPC, replication, countdowns, loadouts, skills, teams, respawn, reconnect, damage, items, widgets, game phases, debugging, logs, performance.
 
 Default to normal mode. Use teaching mode only when the user explicitly asks for `教学模式`, says `详细讲` / `教我` / `一步一步` / `拆一下`, or asks for beginner-friendly walkthrough output. Feature planning should still use `references/feature-development-flow.md`, and normal mode should still briefly summarize the existing project foundation before giving the smallest practical plan. For UGC project files, read freely and analyze freely. Teaching mode is always read-only for UGC project files and must provide exact file paths, line numbers, and function/table anchors for code guidance.

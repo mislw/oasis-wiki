@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import socket
@@ -13,8 +14,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from PIL import Image
+from PIL import Image, ImageOps
 
+from companion_handoff import dispatch_companion_handoff
 from component_semantics import normalize_node_semantics
 
 
@@ -22,11 +24,71 @@ WIKI_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT_ROOT = Path(__file__).resolve().parent
 TEMPLATE = WIKI_ROOT / "assets" / "cowart-ui" / "workbench-template" / "index.html"
 SERVER_SCRIPT = SCRIPT_ROOT / "serve_workbench.py"
+DEFAULT_COMPANION_EXECUTABLE = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Oasis Companion" / "oasis-companion.exe"
+CLOSE_BUTTON_TEXT_STYLE = {
+    "font_size": 30,
+    "color": "#fff3cf",
+    "outline_color": "#6b3515",
+    "outline_size": 2,
+    "horizontal_alignment": "center",
+    "vertical_alignment": "middle",
+}
 
 
 def slug(value: str) -> str:
     text = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return text or "ui-workbench"
+
+
+def is_native_close_button(item: dict[str, Any], component_id: str, node_kind: str) -> bool:
+    if node_kind != "native" or str(item.get("category") or item.get("type") or "").lower() != "button":
+        return False
+    extraction = item.get("extraction") if isinstance(item.get("extraction"), dict) else {}
+    identifiers = (component_id, extraction.get("target_component_id"))
+    return any(
+        isinstance(value, str) and "close" in re.split(r"[^a-z0-9]+", value.lower())
+        for value in identifiers
+    )
+
+
+def resolve_page_id(explicit: str | None, title: str) -> str:
+    value = explicit.strip() if explicit else ""
+    if value:
+        resolved = slug(value)
+        if resolved == "ui-workbench" and value.lower() != "ui-workbench":
+            raise ValueError("--page-id must contain at least one ASCII letter or digit")
+        return resolved
+    resolved = slug(title)
+    if resolved != "ui-workbench" or title.lower() == "ui-workbench":
+        return resolved
+    digest = hashlib.sha256(title.strip().encode("utf-8")).hexdigest()[:12]
+    return f"ui-{digest}"
+
+
+def capture_agent_context(
+    environ: dict[str, str],
+    _which: Any,
+    workspace: Path,
+) -> dict[str, str] | None:
+    thread_id = environ.get("CODEX_THREAD_ID", "").strip()
+    if not thread_id:
+        return None
+    session_id = environ.get("CODEX_SESSION_ID", "").strip() or thread_id
+    return {
+        "provider": "codex",
+        "thread_id": thread_id,
+        "session_id": session_id,
+        "workspace": str(workspace.resolve()),
+    }
+
+
+def create_thumbnail(image_path: Path, target: Path) -> None:
+    with Image.open(image_path) as source:
+        contained = ImageOps.contain(source.convert("RGB"), (320, 180), Image.Resampling.LANCZOS)
+        thumbnail = Image.new("RGB", (320, 180), (24, 27, 30))
+        offset = ((320 - contained.width) // 2, (180 - contained.height) // 2)
+        thumbnail.paste(contained, offset)
+        thumbnail.save(target, "WEBP", quality=82, method=6)
 
 
 def sha256_file(path: Path) -> str:
@@ -296,6 +358,26 @@ def normalize_controls(
             "extraction": item.get("extraction") if isinstance(item.get("extraction"), dict) else None,
             **semantics,
         }
+        display_text = item.get("display_text")
+        if not isinstance(display_text, str) or not display_text.strip():
+            display_text = item.get("content_hint")
+        defaulted_close_button = False
+        if (
+            (not isinstance(display_text, str) or not display_text.strip())
+            and is_native_close_button(item, component_id, semantics["node_kind"])
+        ):
+            display_text = "×"
+            defaulted_close_button = True
+        if isinstance(display_text, str) and display_text.strip():
+            control["display_text"] = display_text.strip()
+        text_style = item.get("text_style")
+        if defaulted_close_button:
+            merged_style = dict(CLOSE_BUTTON_TEXT_STYLE)
+            if isinstance(text_style, dict):
+                merged_style.update(text_style)
+            control["text_style"] = merged_style
+        elif isinstance(text_style, dict):
+            control["text_style"] = dict(text_style)
         if copied_file:
             control["file"] = copied_file
         controls.append(control)
@@ -408,6 +490,54 @@ def start_server(directory: Path, host: str, port: int) -> int:
     raise RuntimeError("Workbench server did not start within 5 seconds.")
 
 
+def find_companion_executable(explicit: Path | None) -> Path | None:
+    if explicit is not None:
+        candidate = explicit.expanduser().resolve()
+        return candidate if candidate.is_file() else None
+    environment_value = os.environ.get("OASIS_COMPANION_EXE")
+    if environment_value:
+        candidate = Path(environment_value).expanduser().resolve()
+        if candidate.is_file():
+            return candidate
+    candidate = DEFAULT_COMPANION_EXECUTABLE.expanduser().resolve()
+    return candidate if candidate.is_file() else None
+
+
+def start_companion_handoff(
+    executable: Path,
+    url: str,
+    session_dir: Path | None = None,
+) -> dict[str, Any]:
+    return dispatch_companion_handoff(
+        executable,
+        {
+            "schema_version": 1,
+            "kind": "ui_workbench",
+            "url": url,
+            "session_dir": str(session_dir.resolve()) if session_dir is not None else None,
+        },
+    )
+
+
+def create_companion_handoff(
+    explicit: Path | None,
+    url: str,
+    session_dir: Path | None = None,
+) -> dict[str, Any]:
+    executable = find_companion_executable(explicit)
+    if executable is None:
+        return {"status": "fallback", "reason": "companion_not_found"}
+    try:
+        handoff = start_companion_handoff(executable, url, session_dir)
+    except OSError as error:
+        return {
+            "status": "fallback",
+            "reason": "companion_launch_failed",
+            "error_type": type(error).__name__,
+        }
+    return {**handoff, "url": url}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create and launch a local UI control workbench.")
     parser.add_argument("--image", required=True, type=Path)
@@ -416,9 +546,11 @@ def main() -> int:
     parser.add_argument("--execution-report", type=Path, help="Completed layer-reconstruction-execution.json evidence.")
     parser.add_argument("--allow-unreviewed", action="store_true", help="Diagnostic only: bypass the required visual approval gate.")
     parser.add_argument("--name", default="Generated UI")
+    parser.add_argument("--page-id")
     parser.add_argument("--output-root", type=Path, default=Path.home() / ".codex" / "ui-workbenches")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=0)
+    parser.add_argument("--companion-executable", type=Path)
     parser.add_argument("--no-start", action="store_true")
     args = parser.parse_args()
 
@@ -439,11 +571,17 @@ def main() -> int:
     shutil.copy2(TEMPLATE, session_dir / "index.html")
     source_name = f"source{image_path.suffix.lower()}"
     shutil.copy2(image_path, session_dir / source_name)
+    thumbnail_name = "thumbnail.webp"
+    create_thumbnail(image_path, session_dir / thumbnail_name)
     controls = normalize_controls(args.controls.resolve() if args.controls else None, session_dir, width, height)
+    page_id = resolve_page_id(args.page_id, args.name)
+    agent_context = capture_agent_context(os.environ, shutil.which, Path.cwd())
     session = {
         "schema_version": 3,
+        "page_id": page_id,
         "title": args.name,
         "source_image": source_name,
+        "thumbnail_image": thumbnail_name,
         "source_name": image_path.name,
         "source_size": {"width": width, "height": height},
         "controls": controls,
@@ -453,6 +591,8 @@ def main() -> int:
             "path": str(args.visual_review.resolve()) if args.visual_review else None,
             "image_sha256": sha256_file(image_path),
         },
+        "workflow_task": {"schema_version": 1, "task_id": page_id},
+        "agent_context": agent_context,
     }
     (session_dir / "session.json").write_text(json.dumps(session, ensure_ascii=False, indent=2), encoding="utf-8")
     port = args.port or free_port(args.host)
@@ -460,11 +600,17 @@ def main() -> int:
     shortcut = session_dir / "Open UI Workbench.url"
     shortcut.write_text(f"[InternetShortcut]\nURL={url}\n", encoding="utf-8")
     pid = None if args.no_start else start_server(session_dir, args.host, port)
+    companion_handoff = (
+        {"status": "disabled", "reason": "no_start"}
+        if args.no_start
+        else create_companion_handoff(args.companion_executable, url, session_dir)
+    )
     result = {
         "url": url,
         "session_dir": str(session_dir),
         "shortcut": str(shortcut),
         "server_pid": pid,
+        "companion_handoff": companion_handoff,
         "control_count": len(controls),
     }
     (session_dir / "workbench.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
