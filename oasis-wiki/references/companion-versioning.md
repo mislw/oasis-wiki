@@ -24,7 +24,7 @@ Windows MSI builds use a separate valid SemVer mapping in `tauri.build.conf.json
 M.YY.MMDD+N
 ```
 
-For example, canonical version `1.260816.1` maps to MSI build version `1.26.816+1`. Tauri and WiX expose that build as Windows file version `1.26.816.1`. Always build the MSI with `--config tauri.build.conf.json`; the canonical product and Skill version remain unchanged.
+For example, canonical version `1.260816.2` maps to MSI build version `1.26.816+2`. Tauri and WiX expose that build as Windows file version `1.26.816.2`. Always build the MSI with `--config tauri.build.conf.json`; the canonical product and Skill version remain unchanged.
 
 ## Release Contract
 
