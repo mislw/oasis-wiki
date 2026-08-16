@@ -240,11 +240,16 @@ def build_contact_sheet(
     if not entries:
         raise ProjectLibraryError("contact sheet has no cached previews")
 
+    actual_columns = min(columns, len(entries))
     cell_width = 220
     cell_height = 190
     preview_box = (180, 128)
-    rows = (len(entries) + columns - 1) // columns
-    sheet = Image.new("RGBA", (columns * cell_width, rows * cell_height), (32, 35, 40, 255))
+    rows = (len(entries) + actual_columns - 1) // actual_columns
+    sheet = Image.new(
+        "RGBA",
+        (actual_columns * cell_width, rows * cell_height),
+        (32, 35, 40, 255),
+    )
     draw = ImageDraw.Draw(sheet)
 
     for index, entry in enumerate(entries):
@@ -260,8 +265,8 @@ def build_contact_sheet(
                 f"cannot read cached preview for {entry.get('asset_id')}: {exc}"
             ) from exc
         thumbnail.thumbnail(preview_box, Image.Resampling.LANCZOS)
-        column = index % columns
-        row = index // columns
+        column = index % actual_columns
+        row = index // actual_columns
         cell_x = column * cell_width
         cell_y = row * cell_height
         image_x = cell_x + (cell_width - thumbnail.width) // 2
@@ -271,7 +276,8 @@ def build_contact_sheet(
             (cell_x, cell_y, cell_x + cell_width - 1, cell_y + cell_height - 1),
             outline=(82, 88, 98, 255),
         )
-        label = str(entry.get("asset_id", "unknown"))
+        source_file = str(entry.get("source_file", "unknown"))
+        label = Path(source_file).stem
         if len(label) > 34:
             label = label[:31] + "..."
         draw.text((cell_x + 8, cell_y + 144), label, fill=(240, 242, 245, 255))
