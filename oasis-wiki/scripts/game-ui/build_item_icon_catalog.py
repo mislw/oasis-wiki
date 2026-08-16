@@ -21,7 +21,7 @@ FIELD_ALIASES = {
     "item_id": ("ItemID", "项目ItemID"),
     "name": ("ItemName", "物品名称"),
     "description": ("ItemDesc", "物品描述"),
-    "icon": ("ItemIcon", "小icon", "SmallIcon"),
+    "icon": ("ItemIcon", "ItemSmallIcon_n", "小icon", "SmallIcon"),
 }
 
 SEMANTIC_KEY = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")

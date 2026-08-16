@@ -665,6 +665,20 @@ class GameUiProjectLibraryTests(unittest.TestCase):
         self.assertEqual(item["asset_id"], ASSET_ID)
         self.assertEqual(item["resolution_status"], "resolved")
 
+    def test_item_catalog_accepts_redcliff_small_icon_field(self) -> None:
+        export = ugcobject_export({
+            "ItemID": 1001,
+            "ItemName": "龙玉",
+            "ItemDesc": "高级货币，用于兑换珍稀资源",
+            "ItemSmallIcon_n": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+        })
+
+        catalog = build_item_icon_catalog(export, minimal_asset_catalog(), None, {}, {})
+
+        item = catalog["items"][0]
+        self.assertEqual(item["asset_id"], ASSET_ID)
+        self.assertEqual(item["resolution_status"], "resolved")
+
     def test_item_catalog_rejects_duplicate_item_ids(self) -> None:
         export = ugcobject_export({
             "ItemID": 1001,
