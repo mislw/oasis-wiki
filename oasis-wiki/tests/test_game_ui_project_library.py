@@ -19,6 +19,8 @@ from project_library import (  # type: ignore  # noqa: E402
     validate_item_icon_catalog,
     validate_project_library,
 )
+from index_project_assets import build_asset_catalog  # type: ignore  # noqa: E402
+from initialize_project_library import initialize_library  # type: ignore  # noqa: E402
 
 
 PREVIEW_KEY = "sha256:" + "0" * 64
@@ -243,6 +245,90 @@ class GameUiProjectLibraryTests(unittest.TestCase):
         lines = [line for line in result.stdout.splitlines() if line]
         self.assertTrue(lines)
         self.assertTrue(all(line.startswith("ERROR: ") for line in lines))
+
+    def test_initialize_library_creates_valid_empty_manifests(self) -> None:
+        source_profile = self.root / "source-profile.json"
+        write_json(source_profile, minimal_profile())
+        library = initialize_library(self.project_root, source_profile)
+        self.assertEqual(library, self.library_root)
+        self.assertEqual(
+            json.loads((library / "catalogs/assets.json").read_text(encoding="utf-8"))["assets"],
+            [],
+        )
+        self.assertEqual(
+            json.loads((library / "catalogs/item-icons.json").read_text(encoding="utf-8"))["items"],
+            [],
+        )
+        self.assertEqual(
+            json.loads((library / "catalogs/component-assets.json").read_text(encoding="utf-8"))["components"],
+            [],
+        )
+        self.assertTrue((library / "history/catalog-history.jsonl").is_file())
+
+    def test_initialize_library_rejects_invalid_source_profile(self) -> None:
+        source_profile = self.root / "source-profile.json"
+        profile = minimal_profile("active")
+        profile["components"][0]["confirmed_by"] = None
+        write_json(source_profile, profile)
+        with self.assertRaisesRegex(ValueError, "source profile is invalid"):
+            initialize_library(self.project_root, source_profile)
+
+    def test_scanner_indexes_uasset_without_absolute_paths(self) -> None:
+        asset = self.project_root / "Asset/UIresources/Common/Btn_Confirm_Normal.uasset"
+        asset.parent.mkdir(parents=True, exist_ok=True)
+        asset.write_bytes(b"synthetic-button")
+        catalog, history = build_asset_catalog(self.project_root, "redcliff", None)
+        entry = next(item for item in catalog["assets"] if item["source_file"].endswith("Btn_Confirm_Normal.uasset"))
+        self.assertEqual(entry["source_file"], "Asset/UIresources/Common/Btn_Confirm_Normal.uasset")
+        self.assertEqual(entry["catalog_status"], "indexed")
+        self.assertEqual(entry["classification_suggestion"]["state"], "default")
+        self.assertNotIn(str(self.project_root), json.dumps(catalog))
+        self.assertTrue(any(item["action"] == "asset_added" and item["asset_id"] == entry["asset_id"] for item in history))
+
+    def test_scanner_builds_stable_asset_and_unreal_paths(self) -> None:
+        catalog, _ = build_asset_catalog(self.project_root, "redcliff", None)
+        entry = catalog["assets"][0]
+        self.assertEqual(entry["asset_id"], ASSET_ID)
+        self.assertEqual(
+            entry["source_asset"],
+            "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+        )
+        self.assertRegex(entry["source_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_scanner_assigns_root_category_to_top_level_asset(self) -> None:
+        asset = self.project_root / "Asset/UIresources/CdMask.uasset"
+        asset.write_bytes(b"synthetic-root-asset")
+        catalog, _ = build_asset_catalog(self.project_root, "redcliff", None)
+        entry = next(item for item in catalog["assets"] if item["source_file"].endswith("CdMask.uasset"))
+        self.assertEqual(entry["category"], "root")
+        self.assertEqual(validate_asset_catalog(catalog, self.project_root), [])
+
+    def test_rescan_records_changed_and_removed_assets(self) -> None:
+        first, _ = build_asset_catalog(self.project_root, "redcliff", None)
+        self.assertEqual(len(first["assets"]), 1)
+        source = self.project_root / first["assets"][0]["source_file"]
+        source.write_bytes(b"changed")
+        second, changed_history = build_asset_catalog(self.project_root, "redcliff", first)
+        self.assertEqual([item["action"] for item in changed_history], ["asset_changed"])
+        source.unlink()
+        _, removed_history = build_asset_catalog(self.project_root, "redcliff", second)
+        self.assertEqual([item["action"] for item in removed_history], ["asset_removed"])
+
+    def test_rescan_preserves_reviewed_classification_for_unchanged_asset(self) -> None:
+        first, _ = build_asset_catalog(self.project_root, "redcliff", None)
+        first["assets"][0].update({
+            "catalog_status": "classified",
+            "visual_role": "item_icon",
+            "tags": ["currency"],
+            "preview_key": PREVIEW_KEY,
+        })
+        second, history = build_asset_catalog(self.project_root, "redcliff", first)
+        entry = second["assets"][0]
+        self.assertEqual(entry["catalog_status"], "classified")
+        self.assertEqual(entry["visual_role"], "item_icon")
+        self.assertEqual(entry["tags"], ["currency"])
+        self.assertEqual(entry["preview_key"], PREVIEW_KEY)
+        self.assertEqual(history, [])
 
 
 if __name__ == "__main__":
