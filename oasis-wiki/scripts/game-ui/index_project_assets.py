@@ -56,7 +56,8 @@ def normalize_asset_segment(value: str) -> str:
     """Normalize one path segment for a stable catalog identifier."""
 
     normalized = re.sub(r"[^a-z0-9_]+", "_", value.lower()).strip("_")
-    return normalized or "asset"
+    normalized = normalized or "asset"
+    return f"n_{normalized}" if normalized[0].isdigit() else normalized
 
 
 def asset_id_for(relative_without_suffix: PurePosixPath, project_slug: str) -> str:

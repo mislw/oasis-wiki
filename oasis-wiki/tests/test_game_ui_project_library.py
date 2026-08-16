@@ -6,7 +6,7 @@ import sys
 import tempfile
 import unittest
 from copy import deepcopy
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from PIL import Image
 
@@ -23,7 +23,7 @@ from project_library import (  # type: ignore  # noqa: E402
     validate_item_icon_catalog,
     validate_project_library,
 )
-from index_project_assets import build_asset_catalog  # type: ignore  # noqa: E402
+from index_project_assets import asset_id_for, build_asset_catalog  # type: ignore  # noqa: E402
 from import_project_previews import (  # type: ignore  # noqa: E402
     build_contact_sheet,
     group_assets_by_categories,
@@ -318,6 +318,12 @@ class GameUiProjectLibraryTests(unittest.TestCase):
             "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
         )
         self.assertRegex(entry["source_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_scanner_prefixes_numeric_asset_path_segments(self) -> None:
+        self.assertEqual(
+            asset_id_for(PurePosixPath("Tutorial/2"), "redcliff"),
+            "redcliff.uiresources.tutorial.n_2",
+        )
 
     def test_scanner_assigns_root_category_to_top_level_asset(self) -> None:
         asset = self.project_root / "Asset/UIresources/CdMask.uasset"
