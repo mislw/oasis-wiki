@@ -189,6 +189,7 @@ def import_previews(
         entry["preview_width"] = width
         entry["preview_height"] = height
         entry["preview_mode"] = mode
+        entry["preview_source"] = "asset_export"
         if entry.get("catalog_status") == "indexed":
             entry["catalog_status"] = "previewed"
     return updated

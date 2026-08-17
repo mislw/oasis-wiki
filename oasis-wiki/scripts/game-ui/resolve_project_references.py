@@ -19,6 +19,7 @@ from project_library import (
 
 
 ACTIVE_STATUS = "active"
+APPROVED_COMPONENT_PREVIEW_SOURCES = {"asset_export", "approved_transparent_cutout", "editor_reconstruction"}
 
 
 def _asset_map(assets: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -129,6 +130,7 @@ def _reference_record(
             "semantic_keys": [],
             "states": [],
             "source_asset": source_asset,
+            "preview_source": asset.get("preview_source"),
         },
     }
     records[asset_id] = record
@@ -172,6 +174,13 @@ def resolve_project_references(
             raise ProjectLibraryError(f"{component_id} has no component asset mapping")
         for state, asset_ids in states.items():
             for asset_id in asset_ids:
+                asset = assets_by_id.get(asset_id)
+                preview_source = asset.get("preview_source") if isinstance(asset, dict) else None
+                if preview_source not in APPROVED_COMPONENT_PREVIEW_SOURCES:
+                    raise ProjectLibraryError(
+                        f"component preview is not reusable-quality: {asset_id}; "
+                        "use an asset export, approved transparent cutout, or editor reconstruction"
+                    )
                 record = _reference_record(records, assets_by_id, cache_root, asset_id)
                 library = record["library"]
                 _append_unique(library["component_ids"], component_id)

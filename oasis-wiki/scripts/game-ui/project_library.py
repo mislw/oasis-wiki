@@ -16,6 +16,7 @@ class ProjectLibraryError(ValueError):
 
 
 CATALOG_STATUSES = {"indexed", "previewed", "classified", "ignored"}
+PREVIEW_SOURCES = {"asset_export", "approved_transparent_cutout", "editor_reconstruction", "user_reference"}
 COMPONENT_STATUSES = {"active", "candidate", "pending_review", "deprecated", "rejected"}
 ITEM_RESOLUTION_STATUSES = {"resolved", "candidate"}
 PREVIEW_KEY = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -150,6 +151,9 @@ def validate_asset_catalog(catalog: dict[str, Any], project_root: Path) -> list[
             errors.append(f"{prefix}.preview_key is invalid")
         if status in {"previewed", "classified"} and preview_key is None:
             errors.append(f"{prefix}.preview_key is required for {status} status")
+        preview_source = entry.get("preview_source")
+        if preview_source is not None and preview_source not in PREVIEW_SOURCES:
+            errors.append(f"{prefix}.preview_source is invalid: {preview_source}")
     return sorted(set(errors))
 
 

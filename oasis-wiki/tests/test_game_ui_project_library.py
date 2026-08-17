@@ -78,6 +78,7 @@ def minimal_asset_catalog() -> dict[str, object]:
             "category": "Common/Icon_Item",
             "catalog_status": "previewed",
             "preview_key": PREVIEW_KEY,
+            "preview_source": "asset_export",
         }],
     }
 
@@ -376,6 +377,7 @@ class GameUiProjectLibraryTests(unittest.TestCase):
         self.assertEqual(imported["preview_width"], 48)
         self.assertEqual(imported["preview_height"], 48)
         self.assertEqual(imported["preview_mode"], "RGBA")
+        self.assertEqual(imported["preview_source"], "asset_export")
         cached = preview_path_for_key(self.cache_root, imported["preview_key"])
         self.assertTrue(cached.is_file())
         with Image.open(cached) as image:
@@ -809,6 +811,24 @@ class GameUiProjectLibraryTests(unittest.TestCase):
                         ["button.primary.gold"],
                         [],
                     )
+
+    def test_resolver_rejects_content_browser_screenshot_as_component_preview(self) -> None:
+        assets = minimal_asset_catalog()
+        assets["assets"][0]["preview_source"] = "user_reference"
+        preview = preview_path_for_key(self.cache_root, PREVIEW_KEY)
+        preview.parent.mkdir(parents=True)
+        Image.new("RGBA", (20, 20), "gold").save(preview)
+
+        with self.assertRaisesRegex(ProjectLibraryError, "component preview is not reusable-quality"):
+            resolve_project_references(
+                minimal_profile("active"),
+                assets,
+                minimal_item_icon_catalog(),
+                minimal_component_asset_catalog(),
+                self.cache_root,
+                ["button.primary.gold"],
+                [],
+            )
 
     def test_resolver_returns_component_and_dragon_jade_previews(self) -> None:
         assets = minimal_asset_catalog()
