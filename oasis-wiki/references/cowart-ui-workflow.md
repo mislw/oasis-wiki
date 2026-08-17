@@ -73,6 +73,8 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 - 不得手写或伪造 `generation-result.json`；只能通过 `record_generation_result.py` 对真实存在且可读取的输出图片记录结果。
 - Cowart 视觉评审通过，不等于组件已确认；组件已确认，也不等于编辑器或 PIE 已验收。
 - 文本、数值、倒计时、进度、交互热区和状态必须保留为原生控件，不烘焙进 PNG。
+- 组件化前必须先解析 `reuse_of`、`texture_asset`、语义键和 Item ID：只有 `active` 且预览可读的组件库项可以直接复用；`candidate`、`pending_review` 或无法解析的条目不得冒充成品，也不得跳过必要重建。
+- 原生项目图标必须保留 Unreal 资源引用，并用 `visual_assets.native_preview` 在 Workbench 中显示；该字段只用于编辑器预览，不能把 Native 节点改成 reusable bitmap。关闭控件即使分类为 `hit_target` 也必须显示明确的关闭图形或原生 `×` 字符，禁止空白热区。
 - 任意矩形 `source_crop` 都不能自动作为 reusable component；Skin 和父层必须生成 `clean_layer` 并通过审核。
 - 从工作台交付到 UMG 时，不能把视觉图层全部平铺成同级 Widget。先参照项目中已工作的真实 WidgetTree，再按可独立移动的业务组件建立语义父容器；坐标保持、按钮身份、Z-order、事务回滚和验证规则见 `references/mcp-ui-widget.md` 的 `Refine An Existing Widget Hierarchy Without Moving The UI`。
 - 不覆盖或删除 Cowart 中既有图形；修订图保留版本关系。

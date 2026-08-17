@@ -186,6 +186,57 @@ def assert_tree_reference_alignment(ui_tree: dict[str, Any], references: list[di
         raise GenerationPipelineError("reference metadata must match ui-tree visual.reference_images")
 
 
+def tree_reuse_component_ids(ui_tree: dict[str, Any]) -> list[str]:
+    values: list[str] = []
+    nodes = ui_tree.get("components")
+    if not isinstance(nodes, list):
+        nodes = ui_tree.get("nodes")
+    if not isinstance(nodes, list):
+        return values
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        reuse_of = node.get("reuse_of")
+        if isinstance(reuse_of, str) and reuse_of and reuse_of not in values:
+            values.append(reuse_of)
+    return values
+
+
+def validate_tree_component_reuse(
+    style_profile: dict[str, Any],
+    component_ids: Iterable[str],
+    library_references: list[dict[str, Any]],
+) -> None:
+    component_map = {
+        item.get("component_id"): item
+        for item in style_profile.get("components", [])
+        if isinstance(item, dict) and isinstance(item.get("component_id"), str)
+    }
+    resolved = {
+        component_id
+        for reference in library_references
+        for component_id in (
+            reference.get("library", {}).get("component_ids", [])
+            if isinstance(reference.get("library"), dict)
+            else []
+        )
+        if isinstance(component_id, str)
+    }
+    for component_id in component_ids:
+        component = component_map.get(component_id)
+        if component is None:
+            continue
+        if component.get("status") != "active":
+            raise GenerationPipelineError(
+                f"reused component is not active: {component_id}; confirm it before generation"
+            )
+        if component_id not in resolved:
+            raise GenerationPipelineError(
+                f"active reused component has no project library reference: {component_id}; "
+                "resolve the component asset instead of redesigning it"
+            )
+
+
 def compile_generation_prompt(
     style_profile: dict[str, Any],
     ui_tree: dict[str, Any],
@@ -320,6 +371,9 @@ def build_generation_package(
         else []
     )
     references = [*explicit_references, *library_references]
+    tree_reuse_components = tree_reuse_component_ids(ui_tree)
+    validate_tree_component_reuse(style_profile, tree_reuse_components, library_references)
+    requested_reuse_components = list(dict.fromkeys([*reuse_components, *tree_reuse_components]))
     if not any(reference["role"] == "style" for reference in references):
         raise GenerationPipelineError(
             "at least one style reference image is required; a style profile or prompt cannot replace it"
@@ -357,7 +411,7 @@ def build_generation_package(
     shutil.copy2(ui_tree_path.resolve(), output / "ui-tree.json")
     shutil.copy2(style_profile_path.resolve(), output / "style-profile.json")
     write_json(output / "reference-manifest.json", manifest)
-    prompt = compile_generation_prompt(style_profile, ui_tree, manifest, page_purpose, reuse_components)
+    prompt = compile_generation_prompt(style_profile, ui_tree, manifest, page_purpose, requested_reuse_components)
     prompt_path = output / "generation-prompt.txt"
     prompt_path.write_text(prompt, encoding="utf-8")
     project = style_profile.get("project", {})

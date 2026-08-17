@@ -352,6 +352,71 @@ class GameUiGenerationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("source is not a file", result.stderr + result.stdout)
 
+    def test_tree_reuse_requires_resolved_active_component_reference(self) -> None:
+        tree = self.write_tree(
+            [{"source": str(self.style), "role": "style", "priority": 1, "source_kind": "input_image_attachment"}]
+        )
+        tree_data = json.loads(tree.read_text(encoding="utf-8"))
+        tree_data["components"][0]["reuse_of"] = "button.primary.gold"
+        write_json(tree, tree_data)
+        references = self.write_reference_metadata(
+            [{"source": str(self.style), "role": "style", "priority": 1, "source_kind": "input_image_attachment"}]
+        )
+
+        result = self.run_script(
+            "scripts/game-ui/build_generation_package.py",
+            "--ui-tree", tree,
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", self.root / "missing-component-package",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("resolve the component asset instead of redesigning it", result.stderr + result.stdout)
+
+    def test_tree_reuse_is_auto_included_when_library_reference_is_resolved(self) -> None:
+        tree = self.write_tree(
+            [{"source": str(self.style), "role": "style", "priority": 1, "source_kind": "input_image_attachment"}]
+        )
+        tree_data = json.loads(tree.read_text(encoding="utf-8"))
+        tree_data["components"][0]["reuse_of"] = "button.primary.gold"
+        write_json(tree, tree_data)
+        references = self.write_reference_metadata(
+            [{"source": str(self.style), "role": "style", "priority": 1, "source_kind": "input_image_attachment"}]
+        )
+        library_references = self.write_reference_metadata(
+            [{
+                "source": str(self.style),
+                "role": "style",
+                "priority": 1,
+                "copy_visual_style": True,
+                "source_kind": "project_library_asset",
+                "library": {
+                    "asset_id": "redcliff.uiresources.common.btn.primary",
+                    "preview_key": "sha256:" + sha256_file(self.style),
+                    "component_ids": ["button.primary.gold"],
+                    "semantic_keys": [],
+                    "states": ["default"],
+                    "source_asset": "/RedCliff/Asset/UIresources/Common/Btn/Btn1_Large.Btn1_Large",
+                },
+            }],
+            "library-references.json",
+        )
+        package = self.root / "resolved-component-package"
+
+        result = self.run_script(
+            "scripts/game-ui/build_generation_package.py",
+            "--ui-tree", tree,
+            "--style-profile", self.profile,
+            "--references", references,
+            "--library-references", library_references,
+            "--output", package,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        prompt = (package / "generation-prompt.txt").read_text(encoding="utf-8")
+        self.assertIn('"component_id": "button.primary.gold"', prompt)
+
     def test_valid_style_and_layout_package_records_images_hashes_and_dimensions(self) -> None:
         package = self.build_valid_package()
         manifest = json.loads((package / "reference-manifest.json").read_text(encoding="utf-8"))

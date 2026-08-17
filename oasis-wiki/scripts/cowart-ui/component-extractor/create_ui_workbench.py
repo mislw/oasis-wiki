@@ -25,6 +25,11 @@ SCRIPT_ROOT = Path(__file__).resolve().parent
 TEMPLATE = WIKI_ROOT / "assets" / "cowart-ui" / "workbench-template" / "index.html"
 SERVER_SCRIPT = SCRIPT_ROOT / "serve_workbench.py"
 DEFAULT_COMPANION_EXECUTABLE = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Oasis Companion" / "oasis-companion.exe"
+HIDDEN_BRIDGE_HTML = """<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>Oasis UI 工作台后台会话</title>
+<style>html,body{display:none!important}</style></head><body aria-hidden="true"></body></html>
+"""
+
 CLOSE_BUTTON_TEXT_STYLE = {
     "font_size": 30,
     "color": "#fff3cf",
@@ -41,7 +46,8 @@ def slug(value: str) -> str:
 
 
 def is_native_close_button(item: dict[str, Any], component_id: str, node_kind: str) -> bool:
-    if node_kind != "native" or str(item.get("category") or item.get("type") or "").lower() != "button":
+    category = str(item.get("category") or item.get("type") or "").lower()
+    if node_kind != "native" or category not in {"button", "hit_target"}:
         return False
     extraction = item.get("extraction") if isinstance(item.get("extraction"), dict) else {}
     identifiers = (component_id, extraction.get("target_component_id"))
@@ -49,6 +55,63 @@ def is_native_close_button(item: dict[str, Any], component_id: str, node_kind: s
         isinstance(value, str) and "close" in re.split(r"[^a-z0-9]+", value.lower())
         for value in identifiers
     )
+
+
+def load_library_preview_records(path: Path | None) -> list[dict[str, Any]]:
+    if path is None:
+        return []
+    data = json.loads(path.read_text(encoding="utf-8-sig"))
+    references = data.get("references") if isinstance(data, dict) else None
+    if not isinstance(references, list):
+        raise ValueError("Library references JSON has no references array.")
+    records: list[dict[str, Any]] = []
+    for reference in references:
+        if not isinstance(reference, dict):
+            continue
+        library = reference.get("library") if isinstance(reference.get("library"), dict) else {}
+        status = library.get("status", reference.get("status"))
+        if status not in (None, "active", "resolved", "approved"):
+            continue
+        source = reference.get("source")
+        if not isinstance(source, str) or not Path(source).is_file():
+            continue
+        records.append({"source": Path(source).resolve(), "library": library})
+    return records
+
+
+def resolve_library_preview(item: dict[str, Any], records: list[dict[str, Any]]) -> dict[str, Any] | None:
+    texture_asset = item.get("texture_asset") or item.get("currency_texture_asset")
+    reuse_of = item.get("reuse_of")
+    semantic_key = item.get("semantic_key")
+    for record in records:
+        library = record["library"]
+        if isinstance(texture_asset, str) and library.get("source_asset") == texture_asset:
+            return record
+        if isinstance(reuse_of, str) and reuse_of in library.get("component_ids", []):
+            return record
+        if isinstance(semantic_key, str) and semantic_key in library.get("semantic_keys", []):
+            return record
+    return None
+
+
+def library_component_reuse(item: dict[str, Any], record: dict[str, Any] | None) -> dict[str, Any] | None:
+    if record is None:
+        return None
+    reuse_of = item.get("reuse_of")
+    library = record["library"]
+    component_ids = library.get("component_ids", [])
+    if not isinstance(reuse_of, str) or reuse_of not in component_ids:
+        return None
+    source_asset = library.get("source_asset")
+    if not isinstance(source_asset, str) or not source_asset.startswith("/"):
+        return None
+    return {
+        "component_id": reuse_of,
+        "source_asset": source_asset,
+        "asset_id": library.get("asset_id"),
+        "state": str(item.get("state") or "default"),
+        "status": "ready",
+    }
 
 
 def resolve_page_id(explicit: str | None, title: str) -> str:
@@ -186,11 +249,104 @@ def raw_controls(data: Any) -> list[dict[str, Any]]:
     return []
 
 
+def reconstruction_bindings(
+    plan_path: Path | None,
+    execution_report_path: Path | None,
+    controls_directory: Path,
+) -> dict[str, dict[str, Any]]:
+    if plan_path is None or execution_report_path is None or not plan_path.is_file() or not execution_report_path.is_file():
+        return {}
+    plan = json.loads(plan_path.read_text(encoding="utf-8-sig"))
+    execution = json.loads(execution_report_path.read_text(encoding="utf-8-sig"))
+    if execution.get("status") != "completed":
+        return {}
+    completed = {
+        item.get("target_component_id")
+        for item in execution.get("results", [])
+        if item.get("status") == "reconstructed"
+    }
+    bindings: dict[str, dict[str, Any]] = {}
+    for component in plan.get("components", []):
+        target_id = component.get("target_component_id")
+        clean_layer = component.get("visual_assets", {}).get("clean_layer")
+        if target_id not in completed or not isinstance(clean_layer, str):
+            continue
+        source_asset = (plan_path.parent / clean_layer).resolve()
+        if not source_asset.is_file():
+            continue
+        relative_asset = Path(os.path.relpath(source_asset, controls_directory)).as_posix()
+        mode = component.get("mode")
+        node_kind = "skin" if mode == "reconstruct_skin" else "artwork" if mode == "extract_artwork" else component.get("node_kind")
+        payload = {
+            "target_component_id": target_id,
+            "category": component.get("category", "unknown"),
+            "node_kind": node_kind,
+            "render_mode": component.get("render_mode", "bitmap"),
+            "visual_assets": {"source_crop": "__source__", "clean_layer": relative_asset, "assembly_preview": None},
+            "layer_reconstruction": {**component.get("layer_reconstruction", {}), "status": "ready", "error": None},
+            "review": {"status": "pending_review", "cleanup_status": "ready"},
+            "reusable_bitmap": node_kind in {"skin", "artwork"},
+            "bounds": component.get("instances", [{}])[0].get("bounds"),
+            "parent_id": component.get("parent_id", "root"),
+            "z_index": component.get("z_index", 0),
+        }
+        node_ids = set(component.get("source_nodes", []))
+        node_ids.update(item.get("node_id") for item in component.get("instances", []) if isinstance(item.get("node_id"), str))
+        for node_id in node_ids:
+            if isinstance(node_id, str):
+                bindings[node_id] = payload
+    return bindings
+
+
+def hydrate_reconstructed_controls(items: list[dict[str, Any]], bindings: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    hydrated: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for source in items:
+        item = dict(source)
+        node_id = str(first(item, ("element_id", "elementId", "id", "uuid", "component_id", "componentId"), ""))
+        seen.add(node_id)
+        binding = bindings.get(node_id)
+        if binding:
+            item["visual_assets"] = dict(binding["visual_assets"])
+            item["layer_reconstruction"] = dict(binding["layer_reconstruction"])
+            item["review"] = dict(binding["review"])
+            item["node_kind"] = binding["node_kind"]
+            item["render_mode"] = binding["render_mode"]
+            item["reusable_bitmap"] = binding["reusable_bitmap"]
+            item["asset_policy"] = "layer"
+            item["status"] = "pending_review"
+        hydrated.append(item)
+    root = bindings.get("background.root")
+    if root and "background.root" not in seen:
+        hydrated.append({
+            "id": "background.root",
+            "component_id": "background.root",
+            "parent_id": "root",
+            "category": "background",
+            "bounds": root["bounds"],
+            "layer": 0,
+            "z_index": root["z_index"],
+            "status": "pending_review",
+            "asset_policy": "layer",
+            "visual_assets": root["visual_assets"],
+            "layer_reconstruction": root["layer_reconstruction"],
+            "review": root["review"],
+            "node_kind": root["node_kind"],
+            "render_mode": root["render_mode"],
+            "reusable_bitmap": root["reusable_bitmap"],
+            "extraction": {"mode": "reconstruct_skin", "target_component_id": "background.root"},
+        })
+    return hydrated
+
+
 def normalize_controls(
     controls_path: Path | None,
     session_dir: Path,
     width: int,
     height: int,
+    extraction_plan_path: Path | None = None,
+    execution_report_path: Path | None = None,
+    library_references_path: Path | None = None,
 ) -> list[dict[str, Any]]:
     if controls_path is None:
         return [{
@@ -226,6 +382,9 @@ def normalize_controls(
 
     data = json.loads(controls_path.read_text(encoding="utf-8-sig"))
     items = raw_controls(data)
+    bindings = reconstruction_bindings(extraction_plan_path, execution_report_path, controls_path.parent)
+    items = hydrate_reconstructed_controls(items, bindings)
+    library_preview_records = load_library_preview_records(library_references_path)
     if not items:
         raise ValueError("Controls JSON has no controls/components/elements/layers/items/nodes array.")
     id_map: dict[str, str] = {}
@@ -307,11 +466,26 @@ def normalize_controls(
                 copied_file = target.relative_to(session_dir).as_posix()
 
         copied_visual_assets: dict[str, Any] = {}
-        raw_visual_assets = item.get("visual_assets") if isinstance(item.get("visual_assets"), dict) else {}
+        raw_visual_assets = dict(item.get("visual_assets")) if isinstance(item.get("visual_assets"), dict) else {}
+        extraction = item.get("extraction") if isinstance(item.get("extraction"), dict) else {}
+        declared_native = (
+            item.get("node_kind") == "native"
+            or item.get("asset_policy") == "native"
+            or extraction.get("mode") == "native"
+        )
+        explicit_native_preview = item.get("native_preview")
+        if isinstance(explicit_native_preview, str) and not raw_visual_assets.get("native_preview"):
+            raw_visual_assets["native_preview"] = explicit_native_preview
+        library_preview = resolve_library_preview(item, library_preview_records)
+        component_reuse = library_component_reuse(item, library_preview)
+        library_preview_slot = "native_preview" if declared_native else "clean_layer"
+        if library_preview and not raw_visual_assets.get(library_preview_slot):
+            raw_visual_assets[library_preview_slot] = str(library_preview["source"])
         asset_directories = {
             "source_crop": session_dir / "source",
             "clean_layer": session_dir / "layers",
             "assembly_preview": session_dir / "preview",
+            "native_preview": session_dir / "native",
         }
         for asset_name, asset_directory in asset_directories.items():
             asset_value = raw_visual_assets.get(asset_name)
@@ -358,6 +532,22 @@ def normalize_controls(
             "extraction": item.get("extraction") if isinstance(item.get("extraction"), dict) else None,
             **semantics,
         }
+        for field in (
+            "reuse_of",
+            "texture_asset",
+            "currency_texture_asset",
+            "item_id",
+            "currency_item_id",
+            "semantic_key",
+            "operation_id",
+        ):
+            if field in item:
+                control[field] = item[field]
+        if library_preview:
+            control["library_reference"] = dict(library_preview["library"])
+        if component_reuse:
+            control["component_reuse"] = component_reuse
+            control.setdefault("texture_asset", component_reuse["source_asset"])
         display_text = item.get("display_text")
         if not isinstance(display_text, str) or not display_text.strip():
             display_text = item.get("content_hint")
@@ -365,6 +555,7 @@ def normalize_controls(
         if (
             (not isinstance(display_text, str) or not display_text.strip())
             and is_native_close_button(item, component_id, semantics["node_kind"])
+            and component_reuse is None
         ):
             display_text = "×"
             defaulted_close_button = True
@@ -544,6 +735,8 @@ def main() -> int:
     parser.add_argument("--controls", type=Path)
     parser.add_argument("--visual-review", type=Path, help="Approved visual-review.json from the Cowart review stage.")
     parser.add_argument("--execution-report", type=Path, help="Completed layer-reconstruction-execution.json evidence.")
+    parser.add_argument("--extraction-plan", type=Path, help="Validated extraction-plan.json used to bind reconstructed Clean assets.")
+    parser.add_argument("--library-references", type=Path, help="Resolved active project-library references used for reusable assets and native previews.")
     parser.add_argument("--allow-unreviewed", action="store_true", help="Diagnostic only: bypass the required visual approval gate.")
     parser.add_argument("--name", default="Generated UI")
     parser.add_argument("--page-id")
@@ -568,12 +761,27 @@ def main() -> int:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     session_dir = args.output_root.resolve() / f"{stamp}-{slug(args.name)}"
     session_dir.mkdir(parents=True, exist_ok=False)
-    shutil.copy2(TEMPLATE, session_dir / "index.html")
+    (session_dir / "index.html").write_text(HIDDEN_BRIDGE_HTML, encoding="utf-8")
     source_name = f"source{image_path.suffix.lower()}"
     shutil.copy2(image_path, session_dir / source_name)
     thumbnail_name = "thumbnail.webp"
     create_thumbnail(image_path, session_dir / thumbnail_name)
-    controls = normalize_controls(args.controls.resolve() if args.controls else None, session_dir, width, height)
+    controls_path = args.controls.resolve() if args.controls else None
+    execution_report_path = args.execution_report.resolve() if args.execution_report else None
+    extraction_plan_path = args.extraction_plan.resolve() if args.extraction_plan else None
+    library_references_path = args.library_references.resolve() if args.library_references else None
+    if extraction_plan_path is None and controls_path is not None:
+        candidate = controls_path.parent / "extraction-plan.json"
+        extraction_plan_path = candidate if candidate.is_file() else None
+    controls = normalize_controls(
+        controls_path,
+        session_dir,
+        width,
+        height,
+        extraction_plan_path=extraction_plan_path,
+        execution_report_path=execution_report_path,
+        library_references_path=library_references_path,
+    )
     page_id = resolve_page_id(args.page_id, args.name)
     agent_context = capture_agent_context(os.environ, shutil.which, Path.cwd())
     session = {
@@ -612,6 +820,9 @@ def main() -> int:
         "server_pid": pid,
         "companion_handoff": companion_handoff,
         "control_count": len(controls),
+        "legacy_extractor_ui_hidden": True,
+        "extraction_plan": str(extraction_plan_path) if extraction_plan_path else None,
+        "library_references": str(library_references_path) if library_references_path else None,
     }
     (session_dir / "workbench.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False))

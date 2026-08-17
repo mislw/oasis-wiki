@@ -121,7 +121,7 @@ class UIWorkbenchCompanionHandoffTests(unittest.TestCase):
                             },
                             {
                                 "component_id": "button.currency.close",
-                                "category": "button",
+                                "category": "hit_target",
                                 "parent_id": "root",
                                 "bounds": {"x": 350, "y": 10, "width": 40, "height": 40},
                                 "asset_policy": "native",
@@ -164,6 +164,134 @@ class UIWorkbenchCompanionHandoffTests(unittest.TestCase):
             },
         )
 
+    def test_normalized_controls_resolve_only_approved_library_previews(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            preview = root / "approved.png"
+            pending_preview = root / "pending.png"
+            Image.new("RGBA", (24, 24), (255, 210, 40, 255)).save(preview)
+            Image.new("RGBA", (24, 24), (255, 0, 0, 255)).save(pending_preview)
+            library_references = root / "library-references.json"
+            library_references.write_text(
+                json.dumps(
+                    {
+                        "references": [
+                            {
+                                "source": str(preview),
+                                "library": {
+                                    "status": "active",
+                                    "source_asset": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+                                    "component_ids": ["button.primary.gold"],
+                                    "semantic_keys": ["currency.dragon_jade"],
+                                },
+                            },
+                            {
+                                "source": str(preview),
+                                "library": {
+                                    "status": "active",
+                                    "asset_id": "redcliff.uiresources.common.btn.btn_close_01",
+                                    "source_asset": "/RedCliff/Asset/UIresources/Common/Btn/Btn_Close_01.Btn_Close_01",
+                                    "component_ids": ["button.close.default"],
+                                    "semantic_keys": [],
+                                    "states": ["default"],
+                                },
+                            },
+                            {
+                                "source": str(pending_preview),
+                                "library": {
+                                    "status": "pending_review",
+                                    "source_asset": "/RedCliff/Pending.Pending",
+                                    "component_ids": ["button.pending"],
+                                },
+                            },
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            controls_path = root / "controls.json"
+            controls_path.write_text(
+                json.dumps(
+                    {
+                        "components": [
+                            {
+                                "component_id": "icon.currency.dragon_jade",
+                                "category": "icon",
+                                "parent_id": "root",
+                                "bounds": {"x": 10, "y": 10, "width": 40, "height": 40},
+                                "asset_policy": "native",
+                                "extraction": {"mode": "native", "target_component_id": "UGCObject.ItemSmallIcon"},
+                                "reuse_of": "UGCObject.ItemSmallIcon",
+                                "texture_asset": "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10",
+                                "item_id": 1001,
+                            },
+                            {
+                                "component_id": "button.purchase",
+                                "category": "button",
+                                "parent_id": "root",
+                                "bounds": {"x": 60, "y": 10, "width": 120, "height": 40},
+                                "asset_policy": "layer",
+                                "extraction": {"mode": "reconstruct_skin", "target_component_id": "button.primary.gold"},
+                                "reuse_of": "button.primary.gold",
+                            },
+                            {
+                                "component_id": "button.close.instance",
+                                "category": "hit_target",
+                                "parent_id": "root",
+                                "bounds": {"x": 190, "y": 10, "width": 40, "height": 40},
+                                "asset_policy": "native",
+                                "extraction": {"mode": "native", "target_component_id": "button.close.default"},
+                                "reuse_of": "button.close.default",
+                            },
+                            {
+                                "component_id": "button.pending",
+                                "category": "button",
+                                "parent_id": "root",
+                                "bounds": {"x": 190, "y": 10, "width": 120, "height": 40},
+                                "asset_policy": "native",
+                                "extraction": {"mode": "native", "target_component_id": "button.pending"},
+                                "texture_asset": "/RedCliff/Pending.Pending",
+                            },
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            session_dir = root / "session"
+            session_dir.mkdir()
+
+            controls = create_workbench.normalize_controls(
+                controls_path,
+                session_dir,
+                400,
+                200,
+                library_references_path=library_references,
+            )
+
+        by_id = {control["component_id"]: control for control in controls}
+        native = by_id["icon.currency.dragon_jade"]
+        self.assertEqual(native["texture_asset"], "/RedCliff/Asset/UIresources/Common/Icon_Item/Icon_Item_10.Icon_Item_10")
+        self.assertEqual(native["reuse_of"], "UGCObject.ItemSmallIcon")
+        self.assertEqual(native["item_id"], 1001)
+        self.assertTrue(native["visual_assets"]["native_preview"].startswith("native/"))
+        self.assertFalse(native["reusable_bitmap"])
+        self.assertEqual(native["library_reference"]["status"], "active")
+
+        reusable = by_id["button.purchase"]
+        self.assertTrue(reusable["visual_assets"]["clean_layer"].startswith("layers/"))
+        self.assertTrue(reusable["reusable_bitmap"])
+        self.assertEqual(reusable["layer_reconstruction"]["status"], "ready")
+
+        close = by_id["button.close.instance"]
+        self.assertEqual(close["component_reuse"]["status"], "ready")
+        self.assertEqual(close["component_reuse"]["component_id"], "button.close.default")
+        self.assertEqual(close["texture_asset"], "/RedCliff/Asset/UIresources/Common/Btn/Btn_Close_01.Btn_Close_01")
+        self.assertTrue(close["visual_assets"]["native_preview"].startswith("native/"))
+        self.assertNotIn("display_text", close)
+
+        pending = by_id["button.pending"]
+        self.assertIsNone(pending["visual_assets"]["native_preview"])
+        self.assertNotIn("library_reference", pending)
     def test_resolves_explicit_environment_and_default_executables_in_priority_order(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

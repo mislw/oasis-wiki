@@ -79,6 +79,7 @@ def visual_assets_for(item: dict[str, Any], node_kind: str, file_value: str | No
     source_crop = raw.get("source_crop", item.get("source_crop"))
     clean_layer = raw.get("clean_layer", item.get("clean_layer"))
     assembly_preview = raw.get("assembly_preview", item.get("assembly_preview"))
+    native_preview = raw.get("native_preview", item.get("native_preview"))
 
     legacy_file = file_value or (item.get("file") if isinstance(item.get("file"), str) else None)
     if legacy_file and not source_crop and not clean_layer:
@@ -93,6 +94,7 @@ def visual_assets_for(item: dict[str, Any], node_kind: str, file_value: str | No
         "source_crop": source_crop,
         "clean_layer": clean_layer,
         "assembly_preview": assembly_preview,
+        "native_preview": native_preview,
     }
 
 
