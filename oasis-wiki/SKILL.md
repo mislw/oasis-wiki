@@ -17,6 +17,8 @@ Use this skill for Oasis/绿洲启元 and 和平精英 UGC development questions
 
 Invoke this skill for every user question that looks like it belongs to a 绿洲启元/绿洲起源/和平精英 UGC project, even when the user asks casually or only mentions a project file/class/API name.
 
+After loading this skill, the first user-visible progress update must include the exact phrase `已加载 oasis-wiki Skill。` before project investigation or implementation begins.
+
 Treat these as strong signals:
 
 - Chinese project/domain wording: `绿洲启元`, `绿洲起源`, `起源UGC`, `和平精英UGC`, `UGC项目`, `玩法`, `编辑器`, `脚本`, `蓝图`, `项目工程`.
@@ -33,6 +35,7 @@ Default to normal mode. Use teaching mode only when the user explicitly asks for
 
 ## Workflow
 
+0. Before analyzing, reviewing, teaching, or changing project code, read `references/predecessor-code-policy.md`. Use `git blame` and `git log` to identify ownership of the exact blocks involved, inspect same-type predecessor implementations before the final response, and apply the protected-author, style, and attribution rules from that reference.
 1. Classify the user request with `references/task-router.md`. Choose one primary task branch and at most one secondary branch before loading detailed references.
 2. Search first; do not load the full wiki into context. Start with `references/wiki/README.md` to confirm available indexes when official docs are relevant.
 3. For feature/API/system questions (`怎么用`, `怎么做`, `有没有`, `支持吗`, class/API names, editor feature names, templates, systems, components), search the official documentation bundle before giving a conclusion. This includes both the base official wiki teaching docs in `references/wiki/*.md` and the 2026-07-10 official update files:
@@ -56,7 +59,7 @@ Default to normal mode. Use teaching mode only when the user explicitly asks for
 9. If the user asks whether knowledge should be added to this skill, read `references/skill-evolution.md`, follow the controlled update protocol, and run `scripts/check-skill-hygiene.ps1` before finishing. After any Skill or Companion update, also read `references/companion-versioning.md` and run `python scripts/check_companion_skill_versions.py`; do not report success unless it returns `status=match` for the actual running Companion process.
 10. For flattened AI-generated UI that needs reusable controls, read `references/cowart-ui-workflow.md` and `references/cowart-ui/precision-reconstruction.md`. Keep text, numbers, timers, progress, labels, and hit targets native; use reconstruction only for reusable artwork and skins; require recomposition plus developer review before Stage 3 confirmation.
 11. If a generated UI browser fallback shows `localhost` / `ERR_CONNECTION_REFUSED`, do not call it a Companion crash until the Companion process and log are checked. Treat it as a dead ephemeral Workbench worker first: the generated supervisor should restart the worker, while the native Companion retries briefly and falls back to the persisted session catalog. If the supervisor itself is gone, regenerate or reopen the session through Companion instead of keeping a stale port tab.
-12. Hard code-change rule: never directly rewrite, restructure, wrap, rename, or reorder existing teammate/predecessor code just to make a cleaner implementation. Add new logic beside or after the existing flow, keep the original block intact, and make the smallest compatible hook.
+12. Hard code-change rule: follow `references/predecessor-code-policy.md`. Code owned by the protected predecessor is frozen by default and must remain byte-for-byte untouched whenever an additive hook elsewhere can solve the task. Other authors' code may be changed only with the smallest compatible diff after ownership and same-type references are checked.
 13. Keep defensive code narrow: guard only real boundary risks such as user input, missing config, async UI lifecycle, RPC payloads, destroyed actors, or optional data. If an internal required value is supposed to exist for the whole flow, prefer letting the bug surface over wrapping every step in repeated `if` / `UE.IsValid` checks.
 14. For implementation answers, cite relevant local file paths and line numbers when possible. Preserve existing teammate behavior, names, call order, formatting, RPC names, event IDs, save keys, and project style unless the change is required and explained.
 
@@ -101,6 +104,7 @@ Additional distilled references:
 - `references/answer-modes.md`: rules for choosing normal mode or teaching mode.
 - `references/teaching-mode.md`: code-teaching workflow and project-file read-only constraint.
 - `references/code-style.md`: lightweight project code style for comments, config tables, variable names, member variables, and methods.
+- `references/predecessor-code-policy.md`: mandatory Skill-load acknowledgement, author ownership checks, protected predecessor handling, same-type reference search order, implementation-style baseline, and user-facing attribution rules.
 - `references/feature-development-flow.md`: end-to-end UGC feature pipeline from config through server, RPC, UI, replication, and reconnect.
 - `references/recipes.md`: common implementation recipes for UGC coding tasks.
 - `references/snippets.md`: small Lua templates for RPCs, UI, replication, actions, resources, and loadouts.

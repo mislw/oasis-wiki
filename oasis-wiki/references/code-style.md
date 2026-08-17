@@ -4,7 +4,7 @@ Use this reference whenever writing or reviewing Oasis/绿洲启元/和平精英
 
 ## Core Rules
 
-0. Existing teammate/predecessor code is protected. Do not directly rewrite, restructure, wrap, rename, reorder, or refactor existing blocks for cleanliness. Keep the original structure intact and add the narrowest compatible new logic beside or after it. If an existing block truly must change, explain why it is unavoidable before editing and limit the edit to the exact affected lines.
+0. Apply `predecessor-code-policy.md` before editing. Existing teammate/predecessor code is protected. In RedCliff, blocks identified by `git blame` as belonging to the protected predecessor are frozen by default: do not change even one line when an additive hook elsewhere can solve the task. Do not directly rewrite, restructure, wrap, rename, reorder, or refactor existing blocks for cleanliness. If a protected block truly must change, first prove no compatible external hook exists, explain the necessity, and limit the edit to the exact affected lines.
 1. New config tables must include Chinese comments for every column.
 2. English words in config table column names and variable names should be spelled out completely. Only use very common abbreviations such as `ID` and `UI`.
 3. Simple typed variables should use lightweight type prefixes:
@@ -14,7 +14,7 @@ Use this reference whenever writing or reviewing Oasis/绿洲启元/和平精英
 4. Every member variable and every `GlobalConfig` config variable must have a Chinese comment.
 5. Every method must have a Chinese comment explaining its purpose.
 6. Keep defensive code narrow. Only guard real boundary risks such as user input, missing config, RPC/network payloads, async UI lifecycle, destroyed actors, or optional data. For internal code with trusted required values, keep the flow direct; if an impossible invalid value appears and there is no clear recovery path, let it error so the real bug is exposed instead of hiding it behind noisy `if` branches. In particular, do not repeatedly wrap each block with checks like `if CauserActor and UE.IsValid(CauserActor) then` when the same actor/context is required by the whole calculation flow.
-7. Match HeQirui-style change size for RedCliff-like code: bug fixes should usually be a few changed lines, ordinary feature hooks should stay close to the existing entry point, and larger diffs need a real feature reason rather than extra protection layers. Prefer direct project-style code over generic guard/wrapper scaffolding.
+7. Use the protected predecessor's confirmed same-type implementation as the RedCliff style baseline: match data structures, naming, function placement, call order, comments, guard density, and minimal diff size. Bug fixes should usually be a few changed lines, ordinary feature hooks should stay close to the existing entry point, and larger diffs need a real feature reason rather than extra protection layers. Prefer direct project-style code over generic guard/wrapper scaffolding.
 
 ## How To Apply
 
