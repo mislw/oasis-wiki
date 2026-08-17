@@ -45,7 +45,60 @@ class FakeProcess:
     pid = 4321
 
 
+class ExitingProcess:
+    def __init__(self, exit_code: int) -> None:
+        self.exit_code = exit_code
+
+    def wait(self) -> int:
+        return self.exit_code
+
+
 class UIWorkbenchCompanionHandoffTests(unittest.TestCase):
+    def test_skill_documents_native_visual_reuse_and_superseded_page_cleanup(self) -> None:
+        game_ui_guide = (REFERENCE_DIR / "game-ui-design-system.md").read_text(encoding="utf-8")
+        cowart_guide = (REFERENCE_DIR / "cowart-ui-workflow.md").read_text(encoding="utf-8")
+
+        for marker in (
+            "sole Workbench visual",
+            "fallback glyph only when no reusable visual is available",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, game_ui_guide)
+
+        for marker in (
+            "Superseded Workbench cleanup",
+            "keep only the latest same-interface page",
+            "Recycle Bin",
+            "expected Workbench root",
+            "restart or refresh Companion",
+            "do not delete source visual",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, cowart_guide)
+
+    def test_workbench_server_supervisor_restarts_a_crashed_worker(self) -> None:
+        commands: list[list[str]] = []
+        exit_codes = iter((1, 0))
+        delays: list[float] = []
+
+        def launch(command: list[str], **_: object) -> ExitingProcess:
+            commands.append(command)
+            return ExitingProcess(next(exit_codes))
+
+        command = serve_workbench.build_worker_command(Path("session"), "127.0.0.1", 50691)
+        result = serve_workbench.supervise_worker(
+            command,
+            restart_delay=0.1,
+            popen_factory=launch,
+            sleep=delays.append,
+            max_runs=2,
+        )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(commands, [command, command])
+        self.assertEqual(delays, [0.1])
+        self.assertIn("--worker", command)
+
     def test_delivery_references_require_exact_read_only_widget_blueprint_preflight(self) -> None:
         documentation = "\n".join(
             (

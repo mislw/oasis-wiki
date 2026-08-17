@@ -10,6 +10,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -673,11 +674,15 @@ def start_server(directory: Path, host: str, port: int) -> int:
     )
     deadline = time.time() + 5
     while time.time() < deadline:
+        if process.poll() is not None:
+            raise RuntimeError("Workbench server supervisor exited before startup completed.")
         try:
-            with socket.create_connection((host, port), timeout=0.2):
-                return process.pid
-        except OSError:
+            with urllib.request.urlopen(f"http://{host}:{port}/session.json", timeout=0.2) as response:
+                if response.status == 200:
+                    return process.pid
+        except (OSError, TimeoutError):
             time.sleep(0.1)
+    process.terminate()
     raise RuntimeError("Workbench server did not start within 5 seconds.")
 
 

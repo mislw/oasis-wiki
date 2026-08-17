@@ -74,12 +74,19 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 - Cowart 视觉评审通过，不等于组件已确认；组件已确认，也不等于编辑器或 PIE 已验收。
 - 文本、数值、倒计时、进度、交互热区和状态必须保留为原生控件，不烘焙进 PNG。
 - 组件化前必须先解析 `reuse_of`、`texture_asset`、语义键和 Item ID：只有 `active` 且预览可读的组件库项可以直接复用；`candidate`、`pending_review` 或无法解析的条目不得冒充成品，也不得跳过必要重建。
-- 原生项目图标必须保留 Unreal 资源引用，并用 `visual_assets.native_preview` 在 Workbench 中显示；该字段只用于编辑器预览，不能把 Native 节点改成 reusable bitmap。关闭控件即使分类为 `hit_target` 也必须显示明确的关闭图形或原生 `×` 字符，禁止空白热区。
+- 原生项目图标必须保留 Unreal 资源引用，并用 `visual_assets.native_preview` 在 Workbench 中显示；该字段只用于编辑器预览，不能把 Native 节点改成 reusable bitmap。关闭控件即使分类为 `hit_target` 也必须显示明确的关闭图形，禁止空白热区；已有 `native_preview` 时它是唯一视觉，不得再叠加 `×`，只有未解析到任何可复用视觉时才允许 fallback glyph。
 - 任意矩形 `source_crop` 都不能自动作为 reusable component；Skin 和父层必须生成 `clean_layer` 并通过审核。
 - 从工作台交付到 UMG 时，不能把视觉图层全部平铺成同级 Widget。先参照项目中已工作的真实 WidgetTree，再按可独立移动的业务组件建立语义父容器；坐标保持、按钮身份、Z-order、事务回滚和验证规则见 `references/mcp-ui-widget.md` 的 `Refine An Existing Widget Hierarchy Without Moving The UI`。
 - 不覆盖或删除 Cowart 中既有图形；修订图保留版本关系。
 - 未经用户明确授权，不写入 UGC Lua、WidgetBlueprint、`.uasset`、`.umap` 或项目内风格档案。
 - 不打包 `.venv`、`__pycache__`、`.pyc`、临时 session、用户 profile 或 RedCliff 运行产物。
+
+### Superseded Workbench cleanup
+
+- After a replacement for the same interface is verified and selected, keep only the latest same-interface page in the Companion catalog.
+- Move obsolete session directories to the Recycle Bin only after resolving and confirming every target is under the expected Workbench root.
+- During cleanup, do not delete source visual, visual review, extraction-plan, reconstruction, or component-library assets.
+- After catalog cleanup, restart or refresh Companion because an already-running process may rewrite stale in-memory pages.
 
 ## Oasis UI Agent 交互层
 

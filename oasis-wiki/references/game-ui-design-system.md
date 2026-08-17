@@ -40,6 +40,8 @@ Before creating reconstruction jobs, resolve every `reuse_of`, `texture_asset`, 
 
 Runtime-native icons keep their Unreal asset metadata (`texture_asset`, `item_id`, `reuse_of`) and may copy the resolved preview into `visual_assets.native_preview` for Workbench display. `native_preview` is editor-only evidence: the node remains Native, `reusable_bitmap` stays false, and delivery still binds the runtime texture/control instead of exporting the preview as a new bitmap component.
 
+When a resolved `visual_assets.native_preview` or another approved project-library visual exists, it is the sole Workbench visual for that native control. Suppress fallback `×`, emoji/text glyphs, generated artwork, and duplicate screenshot crops; use a fallback glyph only when no reusable visual is available.
+
 ## Oasis integration
 
 - Use this branch for visual structure and reusable style decisions.
