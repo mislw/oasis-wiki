@@ -54,6 +54,19 @@ class ExitingProcess:
 
 
 class UIWorkbenchCompanionHandoffTests(unittest.TestCase):
+    def test_skill_documents_window_mode_root_layout(self) -> None:
+        reference = (REFERENCE_DIR / "mcp-ui-widget.md").read_text(encoding="utf-8")
+
+        for marker in (
+            "Window-mode root layout",
+            "root viewport must remain full-screen",
+            "fixed-size centered child window",
+            "selected root boundary must cover the entire preview",
+            "outside-click policy",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, reference)
+
     def test_skill_documents_native_visual_reuse_and_superseded_page_cleanup(self) -> None:
         game_ui_guide = (REFERENCE_DIR / "game-ui-design-system.md").read_text(encoding="utf-8")
         cowart_guide = (REFERENCE_DIR / "cowart-ui-workflow.md").read_text(encoding="utf-8")

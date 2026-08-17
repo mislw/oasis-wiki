@@ -108,6 +108,25 @@ btn.Slot.SetSize(FVector2D(290.0, 58.0))
 btn.Slot.ZOrder = 4
 ```
 
+## Window-mode root layout
+
+Most project pages are centered window-mode UIs, but the root viewport must remain full-screen. Use a full-screen `CanvasPanel` or anchored `ScaleBox` for resolution adaptation, then place the visible panel in a fixed-size centered child window. Do not use the Workbench image bounds or visible window bounds as the root canvas size.
+
+Recommended ownership:
+
+```text
+CanvasPanel_0                 # full viewport, for example 1920x1080
+  MaskOrOutsideClickLayer    # optional full-screen modal layer
+  ScaleBox_Window
+    CanvasPanel_Window       # fixed-size centered child window
+      panel/header/content/buttons
+```
+
+- In the UMG designer, the selected root boundary must cover the entire preview; a half-size `640x360` root with `1920x1080` children is a layout failure even when overflow remains visible.
+- Keep window children in window-local coordinates. Center or scale the window as one unit instead of scaling every child independently.
+- Define an explicit outside-click policy: use `SelfHitTestInvisible` on a non-modal full-screen root, or a full-screen mask/`Button` when clicks outside the window must be blocked or close the page.
+- Before Lua binding, verify root size/anchors, centered window bounds, child containment, DPI scaling, and button hit regions in the editor.
+
 ## Refine An Existing Widget Hierarchy Without Moving The UI
 
 Use this branch when a Cowart/workbench page looks correct but its WidgetTree is visually grouped and structurally flat. Report:
