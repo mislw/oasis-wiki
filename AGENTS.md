@@ -55,6 +55,7 @@ Teaching mode is always read-only for UGC project files:
 - Preserve teammate behavior, names, call order, RPC names, event IDs, save keys, and formatting unless a change is required and explained.
 - Do not mutate DataTable/UAEDataTable row objects directly in runtime code; copy rows into normal Lua tables before changing derived values.
 - For MCP/editor asset writes, use PRV/safety rules and place `.uasset` backups outside the UGC project tree.
+- After updating either the Skill or Oasis Companion, run `python oasis-wiki/scripts/check_companion_skill_versions.py`. Do not report completion unless the actual running Companion process matches `oasis-wiki/VERSION`.
 
 ## Useful Searches
 

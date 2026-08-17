@@ -40,3 +40,15 @@ Before calling a Companion version complete, keep these values synchronized:
 - the generated executable version and any published Git tag or release name.
 
 Do not reuse an already published `M.YYMMDD.N`. Do not infer `N` from Git commit count; choose the next unused distributable iteration for that date.
+
+## Post-Update Verification Gate
+
+After updating either the Skill or Companion, run:
+
+```powershell
+python .\scripts\check_companion_skill_versions.py
+```
+
+The check compares the installed Skill `VERSION` with the actual running `oasis-companion.exe`. It normalizes MSI/Tauri versions such as `1.26.816+2` or `1.26.816.2` to canonical `1.260816.2` before comparing.
+
+Treat only `status=match` and exit code `0` as complete. If the result is `mismatch` or `blocked`, do not report the update as successful. Install or restart the matching Companion, verify the running executable path, and rerun the check. A Skill update status, Git revision, settings page, or matching installer on disk is not proof that the running desktop process has the correct version.
