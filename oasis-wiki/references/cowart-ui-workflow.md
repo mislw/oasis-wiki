@@ -16,7 +16,7 @@
 3. **解析原始参考图**：把用户给出的独立原图分类为 `style` 或 `layout`。聊天截图、浏览器截图、Cowart 截图和多图 collage 默认拒绝，除非用户明确授权。
 4. **构建 Generation Package**：运行 `scripts/game-ui/build_generation_package.py`，把原图复制进包内，并记录尺寸、SHA-256、角色和优先级。
 5. **编译 Prompt**：同时编译项目 Style Profile、已有组件、UI Tree、原生/位图边界和负面约束；Style Profile 只作补充，不能替代 Style Image。
-6. **真实图片生成**：优先把 Style Images、Layout Images 和 Compiled Prompt 一起传给 Codex 内置 `image_gen`。不要求用户配置外部 Key，也不使用通用 CLI fallback。内置工具不可用时输出 `IMAGE_GENERATION_UNAVAILABLE`；只有用户明确授权后，才允许 `codex_provider_direct` 从当前 Codex Provider 解析带渠道前缀的 `gpt-image-2` 模型并使用 Codex 托管认证。
+6. **真实图片生成**：优先把 Style Images、Layout Images 和 Compiled Prompt 一起传给 Codex 内置 `image_gen`。不要求用户配置外部 Key，也不使用通用 CLI fallback。内置工具、official environment Key 或默认图片模型不可用，或者当前凭据来自自定义 Provider 时，不得直接停止：先运行 `generate_with_codex_provider.py --discover-image-models`，只读查询当前 Provider 的 `/models`，按 `confirmed`、`likely`、`uncertain` 列出候选和证据。发现结果固定为 `generation_attempted: false`，禁止 automatic paid probe；即使只有一个候选也保持 `selection_required: true`，由开发者选择模型后，再请求明确授权并执行 `codex_provider_direct`。
 7. **Style Validation**：运行 `scripts/game-ui/create_style_review.py`，建立定性对比记录，状态保持 `pending_developer_review`，不得伪造相似度百分比。
 8. **自动交给 Cowart**：`ai_generated` 来源必须通过 Generation Result、输出 SHA 和候选图一致性检查；`external_source` 仍允许用户直接导入已有 UI 图。
 9. **组件化**：优先使用真实图层导出；扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
@@ -37,11 +37,12 @@ python scripts/game-ui/validate_generation_package.py <generation-package>
 python scripts/game-ui/prepare_image_generation.py --package <generation-package> --available-tool image_gen
 
 # Only after explicit user authorization when image_gen is unavailable:
+python scripts/game-ui/generate_with_codex_provider.py --discover-image-models
 python scripts/game-ui/prepare_image_generation.py --package <generation-package> --allow-provider-direct
 python scripts/game-ui/generate_with_codex_provider.py --package <generation-package> --user-authorized-provider-direct
 ```
 
-`prepare_image_generation.py` 默认只接受 Codex 当前工具清单中的内置 `image_gen`，并输出真实调用所需的 prompt/reference 路径。工具缺失时以退出码 `3` 输出 `IMAGE_GENERATION_UNAVAILABLE`。用户显式授权 `--allow-provider-direct` 后，`generate_with_codex_provider.py` 才会读取 Codex 当前 Provider 配置和托管认证，解析实际模型名并生成图片；脚本不要求、打印或写入用户 Key。
+`prepare_image_generation.py` 默认只接受 Codex 当前工具清单中的内置 `image_gen`，并输出真实调用所需的 prompt/reference 路径。工具缺失时以退出码 `3` 输出 `IMAGE_GENERATION_UNAVAILABLE`，但编排层必须先完成只读上游发现，不能只因 official environment Key 缺失就结束。`--discover-image-models` 只读取当前 Provider 配置和托管认证并调用 `GET /models`，输出 Provider 主机名、候选模型、置信度和证据，不打印或写入凭据，也不调用图片生成接口。开发者选择候选且显式授权 `--allow-provider-direct` 后，`generate_with_codex_provider.py` 才解析实际模型名并生成图片。
 
 ## 快速入口
 
@@ -68,7 +69,7 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 ## 强制边界
 
 - 正式 AI Game UI 视觉稿禁止使用 HTML/CSS/Chromium screenshot fallback。HTML 仅可用于 debug、layout prototype、workbench 或失败诊断。
-- 正式后端优先为 Codex 内置 `image_gen`，凭据模式固定为 `codex_managed`；不得要求用户提供 Key。只有用户明确授权且内置工具缺失时，才允许 `codex_provider_direct`，并继续禁止通用 CLI 与 HTML/CSS/Chromium screenshot fallback。
+- 正式后端优先为 Codex 内置 `image_gen`，凭据模式固定为 `codex_managed`；不得要求用户提供 Key。缺少内置工具、official environment Key 或默认图片模型时，先执行无生成、无 automatic paid probe 的 `--discover-image-models`，列出候选并保持 `selection_required: true`。只有开发者选定模型并明确授权后，才允许 `codex_provider_direct`，并继续禁止通用 CLI 与 HTML/CSS/Chromium screenshot fallback。
 - 用户给出视觉参考图时，最终图片生成调用必须实际接收这些原始文件。只传 Style Profile、art direction 或 prompt 属于门禁失败。
 - 不得手写或伪造 `generation-result.json`；只能通过 `record_generation_result.py` 对真实存在且可读取的输出图片记录结果。
 - Cowart 视觉评审通过，不等于组件已确认；组件已确认，也不等于编辑器或 PIE 已验收。

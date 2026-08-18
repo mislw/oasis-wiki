@@ -11,6 +11,8 @@ For AI UI generation, automatic native Cowart handoff, editable layer extraction
 
 Natural-language requests such as `做一下 UI 生成`, `我有一个 UI 需要生图`, `帮我做个 UI`, or `启动 UI 生图工具` immediately enter Cowart UI Production. Run `scripts/cowart-ui/component-extractor/open_ui_workflow.py` to open or focus Companion's native UI generation workflow, then continue the SOURCE stage in the same conversation.
 
+When built-in `image_gen` is unavailable, an official environment Key is absent, the active credential belongs to a custom provider, or the default image model is unavailable, do not stop before querying the active provider. Run `scripts/game-ui/generate_with_codex_provider.py --discover-image-models`; this metadata-only `/models` discovery reports `generation_attempted: false`, never performs an automatic paid probe, and never prints credentials. List the `confirmed`, `likely`, and `uncertain` candidates with their evidence for the developer. Keep `selection_required: true` even when only one candidate exists, and generate only after the developer selects a model and explicitly authorizes provider-direct generation.
+
 Use this skill for Oasis/绿洲启元 and 和平精英 UGC development questions. The bundled wiki is the source of truth for Lua APIs, editor workflows, gameplay systems, UI, templates, troubleshooting, and examples. The project-pattern references summarize generic UGC Lua architecture habits without private project names, local paths, or planning details.
 
 ## Always Invoke

@@ -82,6 +82,21 @@ test("Cowart UI category describes upstream design and automatic Cowart handoff"
   assert.match(content, /scripts\/cowart-ui\/delivery/);
 });
 
+test("image generation discovers upstream candidates before failing closed", () => {
+  for (const file of [
+    "SKILL.md",
+    "references/cowart-ui-workflow.md",
+    "references/game-ui-design-system.md",
+  ]) {
+    const content = readFileSync(join(wikiRoot, file), "utf8");
+    assert.match(content, /--discover-image-models/, `${file} must route upstream discovery`);
+    assert.match(content, /selection_required:\s*true/, `${file} must require developer selection`);
+    assert.match(content, /generation_attempted:\s*false/, `${file} must keep discovery read-only`);
+    assert.match(content, /paid probe/i, `${file} must forbid automatic paid probing`);
+    assert.match(content, /official environment Key/i, `${file} must not stop at missing official credentials`);
+  }
+});
+
 test("Cowart UI bundle excludes environments, bytecode, and runtime outputs", () => {
   const roots = ["references/cowart-ui", "scripts/cowart-ui", "assets/cowart-ui"]
     .map((path) => join(wikiRoot, path))

@@ -15,6 +15,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import urlsplit
 
 from generation_pipeline import (
     GenerationPipelineError,
@@ -30,6 +31,25 @@ class ProviderConnection:
     api_key: str
     configured_models: tuple[str, ...]
     source: str
+
+
+@dataclass(frozen=True)
+class ImageModelCandidate:
+    model_id: str
+    confidence: str
+    evidence: tuple[str, ...]
+
+
+IMAGE_MODEL_ID_TOKENS = (
+    "gpt-image",
+    "dall-e",
+    "flux",
+    "imagen",
+    "seedream",
+    "recraft",
+    "ideogram",
+    "stable-diffusion",
+)
 
 
 def resolve_provider_model(model_ids: Iterable[str], requested_suffix: str) -> str:
@@ -222,12 +242,120 @@ def provider_json_request(
     return parsed
 
 
-def list_provider_models(connection: ProviderConnection) -> list[str]:
+def list_provider_model_records(connection: ProviderConnection) -> list[dict[str, object]]:
     response = provider_json_request(connection, "/models")
     data = response.get("data")
     if not isinstance(data, list):
         raise GenerationPipelineError("provider model discovery returned no data list")
-    return [item["id"] for item in data if isinstance(item, dict) and isinstance(item.get("id"), str)]
+    records: list[dict[str, object]] = []
+    for item in data:
+        if not isinstance(item, Mapping):
+            continue
+        model_id = item.get("id")
+        if not isinstance(model_id, str) or not model_id.strip():
+            continue
+        records.append(dict(item))
+    return records
+
+
+def list_provider_models(connection: ProviderConnection) -> list[str]:
+    return [record["id"] for record in list_provider_model_records(connection)]
+
+
+def metadata_entries(value: object, path: tuple[str, ...] = ()) -> Iterable[tuple[tuple[str, ...], object]]:
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if isinstance(key, str):
+                yield from metadata_entries(item, (*path, key.lower().replace("-", "_")))
+        return
+    if isinstance(value, (list, tuple, set)):
+        for item in value:
+            yield from metadata_entries(item, path)
+        return
+    yield path, value
+
+
+def image_model_evidence(record: Mapping[str, object]) -> tuple[str | None, set[str]]:
+    model_id = record.get("id")
+    if not isinstance(model_id, str) or not model_id.strip():
+        return None, set()
+    normalized_id = model_id.lower()
+    evidence: set[str] = set()
+    confidence: str | None = None
+
+    for path, value in metadata_entries(record):
+        key = path[-1] if path else ""
+        normalized_value = value.lower().replace("-", "_") if isinstance(value, str) else value
+        explicitly_enabled = value is True or normalized_value in {"true", "enabled", "supported"}
+        if key in {
+            "image_generation",
+            "image_edit",
+            "image_output",
+            "images_generation",
+            "images_edit",
+            "text_to_image",
+        }:
+            if explicitly_enabled:
+                evidence.add(f"capability:{key}")
+                confidence = "confirmed"
+        if key in {"endpoint", "endpoints", "path", "paths", "route", "routes"} and isinstance(value, str):
+            endpoint = value.lower()
+            if "/images/generations" in endpoint or "/images/edits" in endpoint:
+                evidence.add(f"endpoint:{endpoint}")
+                confidence = "confirmed"
+        if key in {"modality", "modalities", "input_modalities", "output_modalities"}:
+            if normalized_value == "image":
+                evidence.add("modality:image")
+                if key == "output_modalities":
+                    evidence.add("output_modality:image")
+                    confidence = "confirmed"
+
+    for token in IMAGE_MODEL_ID_TOKENS:
+        if token in normalized_id:
+            evidence.add(f"model_id:{token}")
+            if confidence is None:
+                confidence = "likely"
+            break
+    if confidence is None and "modality:image" in evidence:
+        confidence = "uncertain"
+    return confidence, evidence
+
+
+def discover_image_model_candidates(
+    records: Iterable[Mapping[str, object]],
+    configured_models: Iterable[str] = (),
+) -> list[ImageModelCandidate]:
+    candidates: dict[str, tuple[str, set[str]]] = {}
+    confidence_rank = {"confirmed": 0, "likely": 1, "uncertain": 2}
+
+    def merge(model_id: str, confidence: str, evidence: set[str]) -> None:
+        existing = candidates.get(model_id)
+        if existing is None:
+            candidates[model_id] = (confidence, set(evidence))
+            return
+        existing_confidence, existing_evidence = existing
+        merged_confidence = min((existing_confidence, confidence), key=confidence_rank.__getitem__)
+        candidates[model_id] = (merged_confidence, existing_evidence | evidence)
+
+    for record in records:
+        confidence, evidence = image_model_evidence(record)
+        model_id = record.get("id")
+        if confidence is not None and isinstance(model_id, str):
+            merge(model_id, confidence, evidence)
+    for model_id in configured_models:
+        if not isinstance(model_id, str) or not model_id.strip():
+            continue
+        confidence, evidence = image_model_evidence({"id": model_id})
+        if confidence is not None:
+            merge(model_id, confidence, evidence | {"configured_model"})
+
+    return [
+        ImageModelCandidate(model_id, confidence, tuple(sorted(evidence)))
+        for model_id, (confidence, evidence) in sorted(
+            candidates.items(),
+            key=lambda item: (confidence_rank[item[1][0]], item[0].lower(), item[0]),
+        )
+    ]
 
 
 def multipart_image_edit_body(
@@ -309,7 +437,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Generate a game UI through the current Codex configured provider without requesting a user Key."
     )
-    parser.add_argument("--package", required=True, type=Path)
+    parser.add_argument("--package", type=Path)
+    parser.add_argument("--discover-image-models", action="store_true")
     parser.add_argument("--user-authorized-provider-direct", action="store_true")
     parser.add_argument("--codex-home", type=Path)
     parser.add_argument("--dsh-home", type=Path)
@@ -317,15 +446,46 @@ def main() -> int:
     parser.add_argument("--size", default="auto")
     parser.add_argument("--quality", choices=("low", "medium", "high", "auto"), default="high")
     args = parser.parse_args()
+    codex_home = (args.codex_home or Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))).resolve()
+    dsh_home = (args.dsh_home or Path(os.environ.get("DSH_HOME", Path.home() / ".dsh"))).resolve()
+    if args.discover_image_models:
+        try:
+            connection = load_configured_provider(codex_home, dsh_home)
+            records = list_provider_model_records(connection)
+            candidates = discover_image_model_candidates(records, connection.configured_models)
+        except (GenerationPipelineError, OSError, ValueError) as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+        print(
+            json.dumps(
+                {
+                    "provider_source": connection.source,
+                    "provider_host": urlsplit(connection.base_url).hostname or "",
+                    "candidates": [
+                        {
+                            "model_id": candidate.model_id,
+                            "confidence": candidate.confidence,
+                            "evidence": list(candidate.evidence),
+                        }
+                        for candidate in candidates
+                    ],
+                    "generation_attempted": False,
+                    "selection_required": True,
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 0
     if not args.user_authorized_provider_direct:
         print("ERROR: provider-direct generation requires explicit user authorization", file=sys.stderr)
+        return 2
+    if args.package is None:
+        print("ERROR: provider-direct generation requires --package", file=sys.stderr)
         return 2
     try:
         context = validate_generation_package(args.package)
         package = context["package"]
         request = context["request"]
-        codex_home = (args.codex_home or Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))).resolve()
-        dsh_home = (args.dsh_home or Path(os.environ.get("DSH_HOME", Path.home() / ".dsh"))).resolve()
         connection = load_configured_provider(codex_home, dsh_home)
         model_ids = list_provider_models(connection)
         model = resolve_provider_model(model_ids, args.model_suffix)

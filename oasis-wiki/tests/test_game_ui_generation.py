@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import io
 import json
 import subprocess
 import sys
 import tempfile
 import threading
 import unittest
+from contextlib import redirect_stdout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from unittest import mock
 
 from PIL import Image
 
@@ -526,6 +529,103 @@ class GameUiGenerationTests(unittest.TestCase):
                 ["[a]gpt-image-2", "[b]gpt-image-2"],
                 "gpt-image-2",
             )
+
+    def test_provider_direct_discovers_image_model_candidates(self) -> None:
+        module = self.load_provider_module()
+        candidates = module.discover_image_model_candidates(
+            [
+                {
+                    "id": "vendor-image-edit",
+                    "capabilities": {"image_generation": True, "image_edit": True},
+                },
+                {"id": "[l]gpt-image-2"},
+                {"id": "vision-model", "modalities": ["text", "image"]},
+                {"id": "gpt-5.6-sol", "capabilities": {"text": True}},
+            ]
+        )
+
+        self.assertEqual(
+            [(candidate.model_id, candidate.confidence) for candidate in candidates],
+            [
+                ("vendor-image-edit", "confirmed"),
+                ("[l]gpt-image-2", "likely"),
+                ("vision-model", "uncertain"),
+            ],
+        )
+        self.assertIn("capability:image_generation", candidates[0].evidence)
+        self.assertIn("model_id:gpt-image", candidates[1].evidence)
+        self.assertIn("modality:image", candidates[2].evidence)
+
+    def test_provider_direct_confirms_explicit_image_output_metadata(self) -> None:
+        module = self.load_provider_module()
+        candidates = module.discover_image_model_candidates(
+            [
+                {"id": "endpoint-model", "endpoints": ["/v1/images/generations"]},
+                {"id": "output-model", "output_modalities": ["image"]},
+                {"id": "text-image-model", "capabilities": {"text_to_image": True}},
+            ]
+        )
+
+        self.assertEqual(
+            [(candidate.model_id, candidate.confidence) for candidate in candidates],
+            [
+                ("endpoint-model", "confirmed"),
+                ("output-model", "confirmed"),
+                ("text-image-model", "confirmed"),
+            ],
+        )
+        self.assertIn("endpoint:/v1/images/generations", candidates[0].evidence)
+        self.assertIn("output_modality:image", candidates[1].evidence)
+        self.assertIn("capability:text_to_image", candidates[2].evidence)
+
+    def test_provider_direct_discovery_merges_configured_models(self) -> None:
+        module = self.load_provider_module()
+        candidates = module.discover_image_model_candidates(
+            [{"id": "text-only"}],
+            configured_models=("flux-pro", "flux-pro"),
+        )
+
+        self.assertEqual(
+            [(candidate.model_id, candidate.confidence) for candidate in candidates],
+            [("flux-pro", "likely")],
+        )
+        self.assertIn("configured_model", candidates[0].evidence)
+
+    def test_provider_direct_discovery_cli_is_read_only(self) -> None:
+        module = self.load_provider_module()
+        connection = module.ProviderConnection(
+            base_url="https://provider.example/v1",
+            api_key="managed-secret",
+            configured_models=("[l]gpt-image-2",),
+            source="codex",
+        )
+        stdout = io.StringIO()
+
+        with (
+            mock.patch.object(sys, "argv", ["generate_with_codex_provider.py", "--discover-image-models"]),
+            mock.patch.object(module, "load_configured_provider", return_value=connection),
+            mock.patch.object(
+                module,
+                "list_provider_model_records",
+                return_value=[{"id": "[l]gpt-image-2"}],
+            ),
+            mock.patch.object(
+                module,
+                "create_image_edit",
+                side_effect=AssertionError("discovery must not generate"),
+            ),
+            redirect_stdout(stdout),
+        ):
+            exit_code = module.main()
+
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertFalse(payload["generation_attempted"])
+        self.assertTrue(payload["selection_required"])
+        self.assertEqual(payload["provider_source"], "codex")
+        self.assertEqual(payload["provider_host"], "provider.example")
+        self.assertEqual(payload["candidates"][0]["model_id"], "[l]gpt-image-2")
+        self.assertNotIn("managed-secret", stdout.getvalue())
 
     def test_provider_direct_falls_back_to_dsh_profile(self) -> None:
         module = self.load_provider_module()
