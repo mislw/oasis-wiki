@@ -28,6 +28,17 @@ Before writing code, decide:
 
 If the feature changes gameplay results, the server must decide the result. The client can request, animate, and display, but should not directly change authoritative resources.
 
+## Step 0.25: Find And Verify A Same-Type Implementation
+
+Before designing the feature, follow `predecessor-code-policy.md`:
+
+- Resolve the private primary and secondary predecessor identities, then search only their authored history for feature-reference candidates, primary first.
+- Search the current project first, then the available `RedCliff`, `StarMon`, and `StealItem` repositories.
+- Inspect the complete config -> authority -> RPC/event -> UI -> replication/save -> reconnect path instead of copying an isolated function.
+- Cross-check the candidate with `references/wiki/官方API参考手册.md`, `references/wiki/新增内容_1.37版本.md`, the matching official category document, and `references/wiki/论坛经验帖_绿洲启妹.md`.
+- If a relevant implementation is confirmed, say `已找到相关的代码实现。` and identify its project, file, function/table, and commit without revealing either predecessor identity.
+- If no relevant implementation is found, state that clearly and continue from verified current-project structure and official documentation.
+
 ## Step 0.5: Summarize Existing Foundation
 
 Before planning edits, inspect and summarize what the project already has. Do not make the user rebuild context that is already present in code.

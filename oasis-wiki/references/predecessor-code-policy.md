@@ -9,18 +9,19 @@ This policy is mandatory whenever `oasis-wiki` is loaded for project analysis, t
 
 ## Required Search Before Output
 
-Before the final response, inspect same-type predecessor implementations instead of designing from memory alone:
+Before explaining, planning, reviewing, or implementing a feature, inspect same-type predecessor implementations instead of designing from memory alone:
 
-1. Run `git blame` on the exact functions, tables, and nearby blocks involved.
-2. Run `git log` or `git show` for the owning commits and recent same-feature history.
-3. Prefer a same-type implementation authored by the protected predecessor in the current project.
-4. If the current project lacks a complete example, inspect the related `StealItem` (偷鸡) and `StarMon`/灵兽 project code available in the same UGCProjects checkout.
-5. Confirm that the chosen reference matches the current runtime, configuration, server/client ownership, archive, replication, and UI flow before adapting it.
-6. Report the reference file and commit used. If no matching reference exists, say so instead of inventing a precedent.
+1. Resolve the configured primary and secondary predecessor identities from private local agent instructions. Never copy those identities into this repository or user-facing output.
+2. Search feature-reference candidates authored only by those two predecessors. Query the primary predecessor first with focused `git log --author`, `git show`, and path/function searches; query the secondary predecessor only after the primary search. Other authors may still appear in ownership checks for the exact target block, but do not use them as predecessor-reference candidates.
+3. Search the current project first. If it lacks a complete same-type example, search the available `RedCliff` (赤壁), `StarMon` (灵兽), and `StealItem` (偷鸡) repositories in that order, skipping the current project when repeated.
+4. Inspect the exact functions, tables, configs, RPC/event paths, UI callbacks, archive/save keys, replication, reconnect handling, and owning commits. Use `git blame` on the relevant blocks to confirm the candidate rather than matching only by filename or keyword.
+5. Validate the implementation against the bundled official sources: `references/wiki/官方API参考手册.md`, `references/wiki/新增内容_1.37版本.md`, the matching category document selected through `references/wiki/README.md`, and `references/wiki/论坛经验帖_绿洲启妹.md` for the downloaded developer-forum material.
+6. Confirm that the code and documentation agree with the current runtime, configuration, server/client authority, data ownership, archive, replication, UI, and reconnect flow. When they differ, state the difference and follow confirmed current-project behavior plus current official API constraints.
+7. When a relevant implementation is confirmed, include the exact user-facing sentence `已找到相关的代码实现。` Then report the reference project, file, function/table, and commit without revealing either predecessor identity. If no matching implementation exists, say so instead of inventing a precedent and base the proposal on verified project structure plus the official sources.
 
 ## Ownership And Modification Rules
 
-Resolve the protected predecessor from private local agent instructions and confirm ownership with repository `git blame` / `git log` evidence. Never store, publish, quote, or reveal the person's name, email, identity, or local matching rule in this repository or in user-facing output. If the private identifier is unavailable, do not guess or infer a person from nearby history; ask the user to identify the protected history without suggesting a name.
+Resolve the protected primary predecessor and the secondary reference predecessor from private local agent instructions and confirm ownership with repository `git blame` / `git log` evidence. Never store, publish, quote, or reveal either person's name, email, identity, priority, or local matching rule in this repository or in user-facing output. If the private identifiers are unavailable, do not guess or infer a person from nearby history; ask the user to identify the protected history without suggesting a name.
 
 - Protected predecessor code is frozen by default. If the task can be completed by adding a hook before, after, or beside that block, do not modify the protected block at all.
 - Do not reformat, rename, reorder, wrap, extract, clean up, or add defensive scaffolding around protected predecessor code.

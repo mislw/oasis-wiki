@@ -32,6 +32,23 @@ class ProjectArtifactAndPrivacyPolicyTests(unittest.TestCase):
         self.assertIn('private local agent instructions', PREDECESSOR_POLICY)
         self.assertIn('Never store, publish, quote, or reveal', PREDECESSOR_POLICY)
 
+    def test_feature_reference_search_uses_private_predecessor_priority(self):
+        combined = SKILL + AGENTS + PREDECESSOR_POLICY
+        for marker in (
+            'configured primary and secondary predecessors',
+            'authored only by those two',
+            'primary first',
+            'RedCliff',
+            'StarMon',
+            'StealItem',
+            'references/wiki/官方API参考手册.md',
+            'references/wiki/新增内容_1.37版本.md',
+            'references/wiki/论坛经验帖_绿洲启妹.md',
+            '已找到相关的代码实现。',
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, combined)
+
 
 if __name__ == '__main__':
     unittest.main()
