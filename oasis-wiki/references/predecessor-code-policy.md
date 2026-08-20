@@ -20,7 +20,7 @@ Before the final response, inspect same-type predecessor implementations instead
 
 ## Ownership And Modification Rules
 
-Identify the protected predecessor internally by Git author name `HeQirui` and confirm ownership with repository `git blame` / `git log` evidence.
+Resolve the protected predecessor from private local agent instructions and confirm ownership with repository `git blame` / `git log` evidence. Never store, publish, quote, or reveal the person's name, email, identity, or local matching rule in this repository or in user-facing output. If the private identifier is unavailable, do not guess or infer a person from nearby history; ask the user to identify the protected history without suggesting a name.
 
 - Protected predecessor code is frozen by default. If the task can be completed by adding a hook before, after, or beside that block, do not modify the protected block at all.
 - Do not reformat, rename, reorder, wrap, extract, clean up, or add defensive scaffolding around protected predecessor code.

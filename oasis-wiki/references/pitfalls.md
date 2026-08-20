@@ -194,6 +194,36 @@ Check:
 - `Update` only runs when `bEnableActionTick` is true.
 - Reset timer counters when re-entering the same Action.
 
+## Unexpected Editor-Incompatible Or Generated Files
+
+Trigger this check whenever `git status`, a pre-commit/pre-push review, release validation, project scan, or editor import check finds files that the UGC editor does not consume or that appear to be accidental tooling output. Examples include:
+
+- `__pycache__/` and `*.pyc`: Python bytecode caches generated when Python modules run. They are not source files and the UGC editor does not use them.
+- Temporary Python, shell, log, prompt, manifest, contact-sheet, render, or extraction files created by automation.
+- Unexpected `.md` files inside the UGC project. Markdown is a text documentation format and may be legitimate; do not classify `README.md`, approved design documents, or maintained project documentation as garbage without inspecting their path and content.
+
+Before proposing any action:
+
+1. Report the exact path, extension, size, and whether it is a file or directory.
+2. Inspect enough content or metadata to explain what it is and what this exact artifact appears to do. Do not execute an unknown file merely to identify it.
+3. Run `git status --short` and focused `git log --diff-filter=A -- <path>` / `git show` checks to classify it as untracked, staged, committed but not pushed, or already present on a remote branch.
+4. Check whether the file was intentionally referenced by project scripts, docs, tests, build steps, or editor assets before calling it removable.
+5. Explain the finding in plain language and ask the user what to do. Do not delete, unstage, amend, revert, push, or add ignore rules before approval.
+
+Offer actions according to state:
+
+- Untracked: offer to delete it and, when appropriate, add a narrow `.gitignore` rule such as `__pycache__/` and `*.pyc`.
+- Staged: offer to unstage and delete it, but require explicit approval for both actions.
+- Committed but not pushed: report the commit and offer either a new cleanup commit or an explicitly authorized amend. Do not reset automatically.
+- Already pushed: report the branch and commit, then ask whether to create and push a normal cleanup commit that deletes the artifact. This is the safe default.
+- Published-history withdrawal: distinguish deleting the file in a new commit from removing the original commit from remote history. Never force-push or rewrite published history without a second, explicit authorization that names the exact branch and commits and acknowledges the collaboration risk.
+
+Suggested prompt:
+
+```text
+I found <path>. It is <file type and purpose>. Git currently shows it as <untracked/staged/committed/pushed in commit>. The UGC editor does not use this file / its project purpose is not confirmed. Do you want me to (A) leave it, (B) delete it and add a narrow ignore rule, or (C) if already pushed, create a cleanup commit and push the deletion? Rewriting the remote history is a separate high-risk action and will not be performed without another explicit confirmation.
+```
+
 ## Teaching Answer Checklist
 
 Before answering with code, make sure the answer says:
