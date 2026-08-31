@@ -29,6 +29,7 @@ Primary branches:
 - Feature development: `feature-development-flow.md`, `code-style.md` when writing/reviewing Lua.
 - Debugging/errors: logs first, then `pitfalls.md` and the symptom branch.
 - MCP operation: `mcp-integration.md`, then either `mcp-ui-widget.md` or `mcp-datatable.md`.
+- MCP PIE verification: every `ue_pie action=start` includes `simulation_platform="mobile"`; a non-mobile or unconfirmed session must be stopped and restarted in mobile mode before `reloadlua` or `doluastring`.
 - Config/balancing: table schema, code consumers, `mcp-datatable.md` when editor tables are involved.
 - UI/interaction: UIManager, `Script/UI`, existing bindings, `mcp-ui-widget.md` only for WidgetBlueprint work.
 - Cowart UI production: `cowart-ui-workflow.md`, with Game UI Design System as the upstream style/UI Tree gate; no UGC project mutation before explicit authorization.

@@ -41,6 +41,7 @@ Code style:
 
 MCP:
 - For UGCAskQ MCP/editor automation, read mcp-integration.md first.
+- Every `ue_pie action=start` must include `simulation_platform="mobile"`. Only reuse `reloadlua` or `doluastring` after confirming the current PIE session is mobile; otherwise stop and restart it in mobile mode.
 - UI/Widget/UMG/Blueprint work uses mcp-ui-widget.md.
 - Config table/DataTable/UAEDataTable work uses mcp-datatable.md.
 - Use both MCP branches only for genuinely mixed UI+table tasks.

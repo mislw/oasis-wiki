@@ -188,6 +188,20 @@ Proxy safety rules:
 - Prefer `/plan` for asset, WidgetBlueprint, DataTable, map, or CDO mutations.
 - If a mutation fails or the editor reports a cancelled transaction, stop and inspect state before retrying.
 
+## PIE Runtime Verification
+
+All MCP-driven UGC runtime verification must use mobile simulation.
+
+1. Every `ue_pie` call with `action=start` must include `simulation_platform="mobile"`. Never omit the field and never use `pchd` for MCP runtime verification.
+2. Before reusing PIE with `action=reloadlua` or `action=doluastring`, confirm that the current session was started with mobile simulation.
+3. If the existing PIE session is not mobile, or its simulation platform cannot be confirmed, call `action=stop` and start a clean mobile session before continuing.
+
+Required start shape:
+
+```json
+{"action":"start","submode_id":0,"team_count":1,"players_per_team":1,"spectators_per_team":0,"simulation_platform":"mobile"}
+```
+
 ## MCP Tool Roles
 
 Use these UGCAskQ tools in this order:
