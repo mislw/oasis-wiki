@@ -293,6 +293,16 @@ class WorkbenchParentComponentDisplayTests(unittest.TestCase):
             self.assertIn(marker, template)
         self.assertNotIn("function inpaintRect", template)
 
+    def test_workbench_template_renders_native_preview_assets(self):
+        template = (WIKI_ROOT / "assets" / "cowart-ui" / "workbench-template" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("const nativeName = visualAssets.native_preview;", template)
+        self.assertIn("nativeFile && imported[index].nodeKind === 'native'", template)
+        self.assertIn(
+            "item.nodeKind === 'native' && typeof visualAssets.native_preview === 'string'",
+            template,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

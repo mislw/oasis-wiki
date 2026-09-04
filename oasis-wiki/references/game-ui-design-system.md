@@ -42,6 +42,8 @@ Runtime-native icons keep their Unreal asset metadata (`texture_asset`, `item_id
 
 When a resolved `visual_assets.native_preview` or another approved project-library visual exists, it is the sole Workbench visual for that native control. Suppress fallback `×`, emoji/text glyphs, generated artwork, and duplicate screenshot crops; use a fallback glyph only when no reusable visual is available.
 
+For flattened-page component extraction, read `references/cowart-ui/transparent-asset-extraction.md`. Use one complete mother background, separate child icons from parent skins, use real alpha for irregular foreground controls, and repair parent residue exposed after child removal. Runtime-dynamic text remains Native by default; developer-confirmed fixed visual lettering may be stored as a glyph-only transparent candidate without changing runtime bindings.
+
 ## Oasis integration
 
 - Use this branch for visual structure and reusable style decisions.

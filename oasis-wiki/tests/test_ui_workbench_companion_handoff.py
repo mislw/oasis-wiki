@@ -165,6 +165,7 @@ class UIWorkbenchCompanionHandoffTests(unittest.TestCase):
                         "components": [
                             {
                                 "component_id": "text.currency.title",
+                                "name": "货币兑换标题",
                                 "category": "text",
                                 "parent_id": "root",
                                 "bounds": {"x": 10, "y": 10, "width": 180, "height": 40},
@@ -179,6 +180,7 @@ class UIWorkbenchCompanionHandoffTests(unittest.TestCase):
                                 "asset_policy": "native",
                                 "content_hint": "旧提示",
                                 "display_text": "元素兑换",
+                                "suppress_native_text": True,
                                 "text_style": {
                                     "font_size": 32,
                                     "color": "#f8e8c0",
@@ -207,8 +209,10 @@ class UIWorkbenchCompanionHandoffTests(unittest.TestCase):
             )
 
         by_id = {control["component_id"]: control for control in controls}
+        self.assertEqual(by_id["text.currency.title"]["name"], "货币兑换标题")
         self.assertEqual(by_id["text.currency.title"]["display_text"], "货币兑换")
         self.assertEqual(by_id["text.currency.element_title"]["display_text"], "元素兑换")
+        self.assertTrue(by_id["text.currency.element_title"]["suppress_native_text"])
         self.assertEqual(
             by_id["text.currency.element_title"]["text_style"],
             {

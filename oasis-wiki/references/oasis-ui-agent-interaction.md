@@ -58,13 +58,21 @@ COMPLETE
 
 ### 自然语言启动
 
-用户表达“做一下 UI 生成”“我有一个 UI 需要生图”“帮我做个 UI”“启动 UI 生图工具”或同义意图时，直接启动或聚焦 Companion 的 `UI 生图工具链`：
+用户表达“做一下 UI 生成”“我有一个 UI 需要生图”“帮我做个 UI”“启动 UI 生图工具”或同义意图时，直接进入当前对话的 SOURCE 文字引导，读取已有任务或询问一个真正缺失的来源信息。不要等待用户再次说“开始”，不要只回复工具位置，也不要新开一个脱离当前 Agent 上下文的对话。
 
-```powershell
-python scripts/cowart-ui/component-extractor/open_ui_workflow.py
+### 主动识别与接入提示
+
+当对话中检测到用户正在进行 `UI 生图`、制作 `界面效果图`，或执行 `切控件`、`拆控件`、`组件提取`、`图层拆分` 等工作，且当前任务尚未进入 Cowart UI Production 时，主动询问：
+
+```text
+检测到你正在进行 UI 生图或控件拆分，是否需要我接入 UI 工具链，帮你同步当前进度并继续协助？
 ```
 
-启动后立即进入 SOURCE，在当前对话中读取已有任务或询问一个真正缺失的来源信息。不要等待用户再次说“开始”，不要只回复工具位置，也不要新开一个脱离当前 Agent 上下文的对话。启动失败时报告脚本返回的 `companion_not_found`，同时继续保留文字流程和 localhost 静态回退。
+每个任务最多询问一次，不要在同一任务的后续消息里重复弹出这段引导。用户同意后，先总结并同步当前上下文，包括已有输入、图片或产物、当前阶段、已确认决策和下一项真正缺失的信息，再继续适用的 SOURCE、VISUAL 或 LAYERING 流程。用户拒绝后，继续当前任务且不重复询问，不降低原任务的完成度，也不把拒绝解释为停止 UI 工作。
+
+已经处于 Cowart UI Production、用户已经主动要求使用工具链，或本任务已经回答过该询问时，不再提示。这个提示只用于接入流程，不单独授权写入编辑器。用户明确要求启动、打开、继续或验收原生工具链时，可运行 `open_ui_workflow.py` 或打开已注册的精确 Workbench 会话。
+
+原生 Companion `UI 生图工具链` 已启用。仅在用户明确要求打开/继续，或当前任务需要展示刚生成的审核会话时打开或聚焦 Companion；打开前核对项目、页面 ID 和 session 路径，打开后确认正确页面可见。localhost workflow console 只作为浏览器回退。任何工作台操作都不自动授权 WidgetBlueprint、Lua、DataTable 或其他编辑器写入。
 
 开始新 UI 时自然询问来源，不要求用户填写固定表格：
 
@@ -188,6 +196,19 @@ USER_APPROVAL_REQUIRED
 ```
 
 工作台修改 `bounds`、`parent`、`ZOrder`、节点分类、clean layer、拆分或合并以后，旧的 layer approval 立即失效。重新验证并再次等待用户确认。不要声称工作台会自动回传这些变化；没有运行时桥接时，应重新读取实际 manifest、文件时间和工作台产物。
+
+### 保存布局后的原对话确认
+
+Workbench 点击 `保存布局` 后，在已注册页面的会话目录生成 `layout-review.json`。快照必须是 `artifact_type: ui_layout_review`、`schema_version: 1`、`status: pending_chat_confirmation`，并记录 `source.session_sha256`、page ID、revision、保存时间、完整节点和变更摘要。保存完成后不会自动回传到对话，也不会打开或创建新的 Codex task。
+
+用户回到原对话说 `确认导入`、`按刚保存的位置导入` 或同义明确说法时：
+
+1. 优先使用当前对话已经识别的 page ID，读取该页面实际 `layout-review.json`。
+2. 当前对话没有 page ID 时，只能在当前项目恰好一份 `pending_chat_confirmation` 快照时使用它；存在多份时必须询问页面，不能只按保存时间选择。
+3. 重新读取 `session.json` 并计算 SHA-256；与 `source.session_sha256` 不一致时，报告快照已过期并要求回到 Workbench 重新保存。
+4. 在执行任何编辑器操作前，先报告 page ID、revision、保存时间和 change summary，并把快照中的完整 bounds、尺寸、parent 和 Z-order 作为后续 UMG 计划输入。
+
+保存布局不等于编辑器写入授权。`确认导入` 只确认该 revision 可以进入下一步交付计划；写入前仍必须具备精确 WidgetBlueprint `load_path`、编辑器项目匹配、已冻结且引用该 revision 的 UMG 计划、只读 MCP 预检、项目外备份，以及用户明确授权本次写入。任何一项缺失都停在计划或预检，不得修改 `.uasset`、WidgetBlueprint、Lua 或 DataTable。
 
 ## UMG_REQUIREMENTS
 

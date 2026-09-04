@@ -520,6 +520,7 @@ def normalize_controls(
         control = {
             "component_id": component_id,
             "element_id": element_id,
+            "name": str(item.get("name") or component_id),
             "category": str(item.get("category") or item.get("type") or "unknown").lower(),
             "parent_id": parent_id,
             "layer": int(float(first(item, ("layer", "semantic_layer", "semanticLayer"), 30))),
@@ -541,6 +542,7 @@ def normalize_controls(
             "currency_item_id",
             "semantic_key",
             "operation_id",
+            "suppress_native_text",
         ):
             if field in item:
                 control[field] = item[field]

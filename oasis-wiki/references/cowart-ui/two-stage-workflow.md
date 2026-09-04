@@ -13,7 +13,7 @@ The approved bitmap is reference evidence, not a layer source. Build the complet
 - A real layered export: independent transparent PNGs plus metadata, preferred for Canva Magic Layers.
 - A reconstruction plan: each node is marked `reconstruction_candidate` until a replacement layer or native control is supplied.
 
-Native UI should own text, values, progress, interaction hit areas, and state. Bitmap layers should own static skins, illustration, icons, and decoration.
+Native UI should own runtime-dynamic text, values, progress, interaction hit areas, and state. Bitmap layers should own static skins, illustration, icons, decoration, and developer-confirmed fixed visual lettering extracted as glyph-only transparency. Follow `transparent-asset-extraction.md`; extracting a dynamic value for visual reference does not replace its Native runtime contract.
 
 ## Acceptance checks
 
@@ -22,3 +22,4 @@ Native UI should own text, values, progress, interaction hit areas, and state. B
 3. Every movable component has a transparent asset or is still marked `candidate`.
 4. Moving a child reveals its real parent/background layer, never the original flattened bitmap.
 5. The reconstructed preview matches the approved visual before controls are promoted for reuse.
+6. Transparent text and child icons contain no parent/card/background pixels, and hiding them reveals a clean parent layer.

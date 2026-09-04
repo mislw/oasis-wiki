@@ -21,6 +21,7 @@ Use this reference first for UGCAskQ MCP, MCP Server, editor automation, `.mcp.j
 5. Branch:
    - UI/Widget/UMG/Blueprint: read `references/mcp-ui-widget.md`.
    - Config/DataTable/UAEDataTable: read `references/mcp-datatable.md`.
+   - PIE runtime debugging: use the `ue_pie` flow in this reference.
    - Map/actor/other asset work: continue with shared MCP docs and focused wiki search.
 6. Make a small plan before MCP writes; use PRV planning when the editor requires it.
 7. Back up assets before data table, blueprint, map, or bulk asset mutation. Put `.uasset` backups outside the UGC project tree.
@@ -87,7 +88,7 @@ Bootstrap rules:
 - Do not overwrite an existing `.mcp.json`; read and reuse it.
 - Create the file only in the current UGC project root, not in parent engine folders.
 - After creating the file, connect to the SSE URL and call `initialize`, `notifications/initialized`, and `tools/list`.
-- Treat the connection as usable only after `tools/list` returns `ue_read`, `ue_py`, and `ue_plan_submit`.
+- Treat the connection as usable for editor reads/writes only after `tools/list` returns `ue_read`, `ue_py`, and `ue_plan_submit`. For PIE runtime debugging, also require `ue_pie`; never replace a missing `ue_pie` with computer control.
 - If connection fails, tell the user the exact URL tried and ask them to start the editor MCP Server or provide the panel port. Do not guess multiple ports in a long loop.
 - Once connected through a manual SSE bridge, keep using the same read-plan-write-verify workflow as a direct MCP namespace.
 
@@ -151,6 +152,7 @@ Expected core tools from `/tools`:
 ue_plan_submit
 ue_read
 ue_py
+ue_pie
 ```
 
 Common calls:
@@ -180,6 +182,52 @@ $body = @{ name = "ue_read"; arguments = @{ queries = @("ctx:") } } | ConvertTo-
 Invoke-RestMethod -Uri "http://127.0.0.1:18763/call" -Method POST -ContentType "application/json" -Body $body
 ```
 
+## PIE Debugging With `ue_pie`
+
+PIE debugging must use `ue_pie`; it must not use computer control, mouse automation, or keyboard automation to click the editor Play, Stop, or debug controls. If `tools/list` does not expose `ue_pie`, verify the editor MCP version, server state, SSE port, and connection, then report the blocker. Do not fall back to computer control.
+
+The live schema verified on 2026-08-29 reported Tool version `2.4.0` on FastMCP `3.1.1`. Always read the current `tools/list` schema before relying on version-specific fields.
+
+Supported actions:
+
+- `start`: start PIE for the UGC project already open in the editor. Normal single-player settings are `submode_id=0`, `team_count=1`, `players_per_team=1`, and `spectators_per_team=0`.
+- `stop`: stop the current PIE session. Use it only when the session must end or restart.
+- `reloadlua`: after you save the modified Lua files first, hot-reload saved changes into the running PIE DS and clients. `reloadlua` automatically discovers all saved modified project Lua files; do not pass a file path, module name, or source string.
+- `doluastring`: run a Lua snippet in the first registered PIE `client` by default, or set `target` to `ds`/`server` to forward it to the PIE DS. A DS call still requires a connected PIE client.
+
+Fast Lua iteration is the default:
+
+1. Keep the current PIE session running.
+2. Save the modified Lua files first.
+3. Call `ue_pie` with `action=reloadlua`.
+4. Use `doluastring` for focused client or DS checks when useful.
+5. Inspect the current session and fresh logs.
+6. Repeat without restarting PIE.
+
+When only project Lua changed or a small runtime check is needed, do not stop and restart PIE. Restart only for non-Lua assets such as Blueprint changes, a required re-run BeginPlay/full initialization, different start settings, or an unrecoverable session.
+
+Raw proxy examples:
+
+```powershell
+# Start normal single-player PIE
+$body = @{ name = "ue_pie"; arguments = @{ action = "start"; submode_id = 0; team_count = 1; players_per_team = 1; spectators_per_team = 0 } } | ConvertTo-Json -Depth 10
+Invoke-RestMethod -Uri "http://127.0.0.1:18763/call" -Method POST -ContentType "application/json" -Body $body
+
+# Reload all saved modified project Lua files
+$body = @{ name = "ue_pie"; arguments = @{ action = "reloadlua" } } | ConvertTo-Json -Depth 10
+Invoke-RestMethod -Uri "http://127.0.0.1:18763/call" -Method POST -ContentType "application/json" -Body $body
+
+# Execute Lua in the PIE DS
+$body = @{ name = "ue_pie"; arguments = @{ action = "doluastring"; target = "ds"; code = "print('mcp pie ds check')" } } | ConvertTo-Json -Depth 10
+Invoke-RestMethod -Uri "http://127.0.0.1:18763/call" -Method POST -ContentType "application/json" -Body $body
+
+# Stop PIE
+$body = @{ name = "ue_pie"; arguments = @{ action = "stop" } } | ConvertTo-Json -Depth 10
+Invoke-RestMethod -Uri "http://127.0.0.1:18763/call" -Method POST -ContentType "application/json" -Body $body
+```
+
+All `ue_pie` actions are one-way triggers. A successful tool call normally returns an empty JSON object; that proves dispatch only, not PIE readiness or Lua execution. Read the MCP resource `ugc://pie/session/current` through `resources/read` for the current phase, DebugID, and editor, client, and DS log paths. The proxy's `GET /read` endpoint calls `ue_read`, so do not pass the PIE resource URI to that endpoint. For `doluastring`, inspect the applicable client or DS log for `DoString Success/Error` and the snippet's own unique marker. Startup can take 1-2 minutes after `start` returns, so wait on session state and logs rather than clicking the editor.
+
 Proxy safety rules:
 
 - Check `/health` before doing editor work.
@@ -188,20 +236,6 @@ Proxy safety rules:
 - Prefer `/plan` for asset, WidgetBlueprint, DataTable, map, or CDO mutations.
 - If a mutation fails or the editor reports a cancelled transaction, stop and inspect state before retrying.
 
-## PIE Runtime Verification
-
-All MCP-driven UGC runtime verification must use mobile simulation.
-
-1. Every `ue_pie` call with `action=start` must include `simulation_platform="mobile"`. Never omit the field and never use `pchd` for MCP runtime verification.
-2. Before reusing PIE with `action=reloadlua` or `action=doluastring`, confirm that the current session was started with mobile simulation.
-3. If the existing PIE session is not mobile, or its simulation platform cannot be confirmed, call `action=stop` and start a clean mobile session before continuing.
-
-Required start shape:
-
-```json
-{"action":"start","submode_id":0,"team_count":1,"players_per_team":1,"spectators_per_team":0,"simulation_platform":"mobile"}
-```
-
 ## MCP Tool Roles
 
 Use these UGCAskQ tools in this order:
@@ -209,13 +243,15 @@ Use these UGCAskQ tools in this order:
 - `ue_read`: read editor context, API docs, schemas, asset registry, widget tree, DataTable structure, selected actors.
 - `ue_plan_submit`: submit a PRV mutation plan when doing CDO, WidgetTree, DataTable, map, or asset writes.
 - `ue_py`: execute editor Python. For reads, no plan is needed. For writes, include `transaction_name` and a YAML `plan`.
+- `ue_pie`: control PIE lifecycle and perform fast Lua runtime iteration. Use it instead of computer control for PIE debugging.
 
 If no direct `mcp__ugcaskq__...` namespace is exposed, connect to the SSE URL from `.mcp.json` and call JSON-RPC methods:
 
 1. `initialize`
 2. `notifications/initialized`
 3. `tools/list`
-4. `tools/call` with `name: ue_read | ue_py | ue_plan_submit`
+4. `tools/call` with `name: ue_read | ue_py | ue_plan_submit | ue_pie`
+5. `resources/read` with `uri: ugc://pie/session/current` when verifying PIE state and log paths
 
 ## Required First Reads
 

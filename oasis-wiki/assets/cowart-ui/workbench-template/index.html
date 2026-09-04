@@ -529,11 +529,14 @@
         const parentRaw = firstValue(element, ['parent_id','parentId','group_id','groupId','parent'], 'root');
         const visualAssets = element.visual_assets || element.visualAssets || {};
         const cleanName = visualAssets.clean_layer || firstValue(element, ['file','fileName','filename','asset','image']);
+        const nativeName = visualAssets.native_preview;
         const cleanFile = typeof cleanName === 'string' ? findImportedFile(files, cleanName) : null;
+        const nativeFile = typeof nativeName === 'string' ? findImportedFile(files, nativeName) : null;
+        const displayFile = element.node_kind === 'native' ? nativeFile : cleanFile;
         return makeControl(`import-${index + 1}`, id, String(element.category || element.type || 'unknown').toLowerCase(), rect, idMap.get(String(parentRaw)) || 'root', Number(firstValue(element, ['layer','semantic_layer','semanticLayer'], 30)), {
-          status:element.status === 'candidate' || (['skin','artwork'].includes(element.node_kind) && !cleanFile) ? 'candidate' : 'pending_review',
-          confidence:cleanFile || ['composite','native'].includes(element.node_kind) ? .98 : .5,
-          reason:cleanFile || element.node_kind === 'native' ? element.reason || null : 'clean layer PNG missing from selected directory',
+          status:element.status === 'candidate' || (['skin','artwork'].includes(element.node_kind) && !displayFile) ? 'candidate' : 'pending_review',
+          confidence:displayFile || ['composite','native'].includes(element.node_kind) ? .98 : .5,
+          reason:displayFile || element.node_kind === 'native' ? element.reason || null : 'clean layer PNG missing from selected directory',
           nodeKind:element.node_kind || element.nodeKind,
           renderMode:element.render_mode || element.renderMode,
           visualAssets,
@@ -547,10 +550,13 @@
         const visualAssets = element.visual_assets || element.visualAssets || {};
         const sourceFile = typeof visualAssets.source_crop === 'string' ? findImportedFile(files, visualAssets.source_crop) : null;
         const cleanName = visualAssets.clean_layer || firstValue(element, ['file','fileName','filename','asset','image']);
+        const nativeName = visualAssets.native_preview;
         const cleanFile = typeof cleanName === 'string' ? findImportedFile(files, cleanName) : null;
+        const nativeFile = typeof nativeName === 'string' ? findImportedFile(files, nativeName) : null;
         const assemblyFile = typeof visualAssets.assembly_preview === 'string' ? findImportedFile(files, visualAssets.assembly_preview) : null;
         if (sourceFile) imported[index].sourceCropUrl = URL.createObjectURL(sourceFile);
-        if (cleanFile) imported[index].cleanLayerUrl = URL.createObjectURL(cleanFile);
+        if (nativeFile && imported[index].nodeKind === 'native') imported[index].cleanLayerUrl = URL.createObjectURL(nativeFile);
+        else if (cleanFile) imported[index].cleanLayerUrl = URL.createObjectURL(cleanFile);
         if (assemblyFile) imported[index].assemblyAssetUrl = URL.createObjectURL(assemblyFile);
       });
 
@@ -612,7 +618,8 @@
         });
         const visualAssets = element.visual_assets || element.visualAssets || {};
         if (typeof visualAssets.source_crop === 'string' && visualAssets.source_crop !== '__source__') item.sourceCropUrl = visualAssets.source_crop;
-        if (typeof visualAssets.clean_layer === 'string') item.cleanLayerUrl = visualAssets.clean_layer;
+        if (item.nodeKind === 'native' && typeof visualAssets.native_preview === 'string') item.cleanLayerUrl = visualAssets.native_preview;
+        else if (typeof visualAssets.clean_layer === 'string') item.cleanLayerUrl = visualAssets.clean_layer;
         if (typeof visualAssets.assembly_preview === 'string') item.assemblyAssetUrl = visualAssets.assembly_preview;
         if (!item.cleanLayerUrl && typeof element.file === 'string' && item.nodeKind !== 'native') item.cleanLayerUrl = element.file;
         return item;

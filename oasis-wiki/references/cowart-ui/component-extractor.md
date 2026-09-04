@@ -60,7 +60,7 @@ Workbench sessions and normalized manifests use schema 3 node semantics:
 - `composite`: logical parent that may own a reconstructed `clean_layer` while retaining independently movable children. It is not automatically reusable in the component library.
 - `skin`: reusable UI background/frame/button skin; uses `clean_layer` only.
 - `artwork`: standalone art/icon/portrait; uses `clean_layer` only.
-- `native`: text, numbers, prices, progress, timers, labels, and hit targets; appears in Structure and never enters a bitmap atlas.
+- `native`: runtime-dynamic text, numbers, prices, progress, timers, labels, and hit targets. It remains Native unless the developer separately confirms a fixed visual-text asset under `transparent-asset-extraction.md`; that extraction does not silently replace the runtime node.
 
 Every node has `visual_assets.source_crop`, `visual_assets.clean_layer`, and `visual_assets.assembly_preview`. Source crops can contain children and native content, so they are trace/debug inputs only. Assembly previews compare recomposition with the approved source and are never component-library assets.
 
@@ -70,13 +70,13 @@ When a reconstructable node owns child controls, preserve it as a Composite and 
 
 Resolve a Python runtime before running scripts. When `python` is not on PATH, use the Python path returned by `codex_app__load_workspace_dependencies`.
 
-For the native Companion control surface, open or focus the UI generation workflow:
+The native Companion control surface is enabled:
 
 ```powershell
 python scripts/cowart-ui/component-extractor/open_ui_workflow.py
 ```
 
-The launcher writes a validated command to `%USERPROFILE%\.oasis-companion\handoffs`. A running Companion consumes that inbox directly and must not start a duplicate `oasis-companion.exe`; this prevents the short-lived Tauri event window from flashing during Skill handoffs. If Companion is not running, the launcher starts it once with `--background --no-autostart-sync`, and the new instance consumes the queued command after startup.
+Run `open_ui_workflow.py` when the user explicitly asks to start or open the native UI workflow. For an approved image with an existing UI Tree, prefer `create_ui_workbench.py` so the exact generated session is registered and opened. The launcher writes a validated command to `%USERPROFILE%\.oasis-companion\handoffs`; verify the returned session directory, page ID, URL, and Companion page after handoff. Do not open or focus Companion merely because a UI-related request was detected.
 
 Keep the localhost workflow console as the browser fallback. It orchestrates only local scripts and local session files; all AI image generation or edits remain Codex actions in the active conversation:
 
@@ -94,7 +94,7 @@ python scripts/cowart-ui/component-extractor/validate_ui_spec.py <ui-spec.json>
 python scripts/cowart-ui/component-extractor/build_ui_tree.py --spec <ui-spec.json> --output <ui-tree.json>
 ```
 
-3. Keep text, values, counters, progress, and interactive hit targets as `asset_policy: native`. Static skins, art, icons, and decoration may use `layer`.
+3. Keep runtime-dynamic text, values, counters, progress, and interactive hit targets as `asset_policy: native`. Static skins, art, icons, and decoration may use `layer`. Developer-confirmed fixed visual lettering may also have a linked glyph-only transparent candidate; follow `transparent-asset-extraction.md` and preserve any runtime binding separately.
 
 ## Two-stage workflow
 
@@ -133,12 +133,12 @@ The approval command records a SHA-256 checksum. A later componentization run re
 
 1. Build the complete UI Tree from the approved image. It must include every movable or dynamic element, not only the outer containers.
 2. Prefer a real layered package, such as Canva Magic Layers, for `panel`, `card`, `button`, `icon`, `badge`, and decorative art.
-3. Keep text, values, counters, progress, and button labels as native controls in the UI Tree. Do not bake them into bitmap layers. Set `display_text` for the workbench preview; when only `content_hint` is present, `create_ui_workbench.py` copies it into `display_text`. Optional `text_style` fields preserve Workbench TextBlock preview settings such as `font_size`, `color`, outline, shadow, alignment, and wrapping.
+3. Keep runtime-dynamic text, values, counters, progress, and button labels as native controls in the UI Tree. Do not bake them into parent skins. A developer-confirmed fixed title or stylized label may be extracted as a separate glyph-only transparent visual asset; dynamic content remains Native or uses that asset only as visual-reference evidence until delivery is explicitly decided. Set `display_text` for the workbench preview; when only `content_hint` is present, `create_ui_workbench.py` copies it into `display_text`. Optional `text_style` fields preserve Workbench TextBlock preview settings such as `font_size`, `color`, outline, shadow, alignment, and wrapping.
 
 A native close button must retain visible content after background reconstruction. Preserve its clean artwork or give the native node an explicit close glyph such as `display_text: "×"`. An empty native close hit target is invalid. For IDs containing a `close` token, `create_ui_workbench.py` supplies the `×` glyph and readable centered text defaults when neither `display_text` nor `content_hint` is present, including nodes classified as `hit_target`.
 
 Before reconstruction, resolve `reuse_of`, `texture_asset`, item semantic keys, and item IDs against the project library. Pass the resolver output through `--library-references`. Only readable `active`/resolved references may supply an existing Skin/Artwork `clean_layer` or Native `visual_assets.native_preview`; pending/candidate entries remain unresolved. Preserve the original Unreal asset metadata in `session.json`. A Native preview is visible in Companion but never sets `reusable_bitmap: true` and is never exported as a replacement runtime icon.
-4. A bitmap-only UI produces `reconstruction_candidate` entries. A node with only `source_crop` remains `pending`, not Ready. Reconstruction must cover `background.root`, every independently movable parent layer, Skin/Artwork nodes, and Native removal masks.
+4. A bitmap-only UI produces `reconstruction_candidate` entries. A node with only `source_crop` remains `pending`, not Ready. Reconstruction must cover one complete `background.root`, every independently movable parent layer, Skin/Artwork nodes, approved visual-text candidates, and Native removal masks. After removing any child text or icon, re-check the parent for baked label strips, shadows, or copied background and repair the parent instead of hiding the residue with an opaque child crop.
 5. Only then create the workbench, passing the locked visual review:
 
 ```powershell

@@ -14,7 +14,7 @@ Flattened UI
 -> Component Library / Export
 ```
 
-Layer Reconstruction covers every independently movable visual level, including `background.root`, panels, cards, buttons, and artwork. Native text, values, timers, progress, labels, and hit targets remain native and never produce bitmap layers.
+Layer Reconstruction covers every independently movable visual level, including one complete `background.root`, panels, cards, buttons, artwork, child icons, and developer-confirmed fixed visual lettering. Runtime-dynamic text, values, timers, progress, labels, and hit targets remain Native by default. A transparent visual-text extraction does not change their runtime contract.
 
 ## Visual asset contract
 
@@ -32,7 +32,7 @@ A rectangular crop, transparent hole, flat fill, browser paint, HTML/CSS render,
 - `composite`: may own a `clean_layer` for its background while retaining children as independently movable nodes. It is not automatically reusable as a component-library bitmap.
 - `skin`: reconstruct the clean button, panel, frame, badge, header, card, or slot skin.
 - `artwork`: extract a complete transparent artwork layer and repair occluded edges.
-- `native`: keep `clean_layer: null` and `layer_reconstruction.status: not_applicable`.
+- `native`: keep `clean_layer: null` and `layer_reconstruction.status: not_applicable` for runtime behavior. A developer-confirmed fixed visual-text or Native-preview asset may exist separately under `transparent-asset-extraction.md`.
 
 Do not create a derived `panel.main.background` source crop to hide the problem. The owning parent node carries its own `clean_layer`.
 
@@ -41,7 +41,8 @@ Do not create a derived `panel.main.background` source crop to hide the problem.
 Reconstruction is post-order: leaves are confirmed first, then their parents, and `background.root` is last.
 
 ```text
-Text -> Native
+Dynamic text -> Native
+Confirmed fixed visual lettering -> transparent glyph-only asset
 Button -> clean button layer
 Artwork -> transparent artwork layer
 Panel -> remove Button + Artwork + visible descendants -> clean panel layer
@@ -113,5 +114,7 @@ Acceptance requires both movement checks:
 
 1. Move a child from A to B. A must show only the expected parent clean layer, with no button, text, icon, shadow, or badge residue.
 2. Move a parent panel. Its original location must show only `background.root.clean_layer`, and all descendants must move with the parent.
+
+Also follow `transparent-asset-extraction.md`: use checkerboard and alpha-edge inspection for transparent controls, keep child icons complete, remove text/card/divider backings, and repair any parent residue exposed after a child becomes transparent.
 
 The Python tests provide deterministic pixel fixtures for both checks. Real UI output still requires executor evidence and developer visual review before component confirmation.

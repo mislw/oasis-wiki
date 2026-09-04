@@ -56,6 +56,40 @@ Treat these as project-planning triggers:
 - `项目细节`, `项目记忆`, `同步项目资料`, `记住这个策划`, `记录这个方案`, `后面都按这个项目来`.
 - Any file path or uploaded filename containing a known project name, such as `<project-name>`.
 
+## Automatic Project Ingestion
+
+When the user explicitly identifies the project for a planning document or data table, or Project Identity Routing reliably resolves the project from the current workspace, path, filename, or existing cache, ingest it without requiring a separate remember-this request. If the project cannot be resolved reliably, ask which project owns the material before writing any cache.
+
+## Logical Source Identity
+
+Before ingesting, compare the new source with provenance already recorded for that project:
+
+1. Compute the source SHA-256 and record it with the filename and observed upload date.
+2. Normalize only copy suffixes such as `(1)`, `(2)`, `copy`, and `副本`, plus surrounding whitespace, when looking for a possible earlier version. Do not remove meaningful semantic versions, revision numbers, dates, system names, or table names.
+3. Treat similar normalized names as candidates for the same logical source, then confirm with content, workbook/sheet purpose, table schema, and existing provenance. Filename similarity alone does not prove identity.
+4. If SHA-256 digests match, the file is the same content under another name: do not ingest or index it again. Keep one active source record; update its observed filename/date only when that improves provenance.
+
+When candidate versions have different content, choose the authoritative newer source using this priority:
+
+1. The user explicitly identifies one file as the new/current version.
+2. An embedded document revision, semantic version, or unambiguous date identifies the newer version.
+3. The current conversation upload/arrival order identifies the replacement.
+4. Filesystem modification time is supporting evidence only.
+
+Do not infer recency from suffixes such as `(1)` or `copy`; those commonly reflect download collision naming rather than document age. If the evidence conflicts or does not identify one authoritative source, keep the current project memory unchanged and ask the user which file is authoritative.
+
+## Transactional Replacement
+
+Replace a logical source as one project-memory transaction:
+
+1. Parse and validate the new source, compute its digest, and prepare the revised planning content before removing anything.
+2. Only after the new source is parsed successfully, update the relevant `planning\*.md` files and `planning.tsv`.
+3. Keep one active provenance record for the logical source: remove the superseded filename, digest, and provenance from active source lists and replace them with the new source record.
+4. Reconcile rather than append blindly: rewrite or remove claims supported only by the old version, retain claims still supported by the new version or other active sources, and move unresolved contradictions to `planning\open-questions.md`.
+5. Verify the revised index points to existing planning files and that the new digest is recorded before reporting completion.
+
+Cleanup applies only to superseded project-memory summaries, source records, hashes, and indexes. Never delete or rename the user's original uploaded files, download-folder files, or chat attachments. Raw documents should not normally exist in the project cache; if an unexpected raw copy is found there, inspect and report it instead of deleting it automatically.
+
 ## Ingestion Workflow
 
 When the user uploads planning material or asks to remember project-level details:

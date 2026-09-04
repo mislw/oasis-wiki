@@ -19,10 +19,11 @@ python scripts/cowart-ui/delivery/validate_delivery_plan.py <delivery-plan.json>
 
 ## Native Mapping
 
-- `text`, `counter`, `input`: native `TextBlock` or input widgets.
+- Runtime-dynamic `text`, `counter`, `input`: native `TextBlock` or input widgets.
+- Developer-confirmed fixed visual lettering: reviewed transparent Image asset only when the delivery plan explicitly marks it fixed and non-localized; otherwise keep the Native mapping and use the bitmap as visual-reference evidence.
 - `button`: native `Button` plus a text/image child and operation binding.
 - `progress`: native `ProgressBar`.
 - `background`, `panel`, `card`, `icon`, `badge`: UMG containers/images using reviewed layer assets.
 - `grid`, `row`, `slot`: layout containers; dynamic content needs a refresh owner and data binding.
 
-Never bake text, values, timers, counters, hit areas, or selection states into exported PNGs.
+Never bake text, values, timers, counters, hit areas, or selection states into parent skins. A glyph-only transparent asset is allowed only under the explicit fixed-visual-text exception in `transparent-asset-extraction.md`; it does not authorize replacing dynamic bindings or localization.

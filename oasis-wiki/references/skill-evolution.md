@@ -86,6 +86,32 @@ After editing:
 - Teaching-only mode remains intact for UGC project files.
 - Redundant or project-only trigger names were not added as global triggers.
 
+## Official Wiki Snapshot Refresh
+
+Use the deterministic sync script when the user asks whether the official wiki changed or explicitly requests a refresh:
+
+```powershell
+python scripts/sync_official_wiki.py --dry-run
+python scripts/sync_official_wiki.py
+```
+
+The dry run validates the live catalog, downloads every published article, checks duplicate IDs and title consistency, and builds all artifacts in memory without changing files. Write mode regenerates the category Markdown, `README.md`, article ID index, API index, Lua example library, directory tree, and `新增内容_1.37版本.md`. It preserves the separately maintained official API manual, forum tutorial export, and glossary.
+
+After write mode, inspect the diff for unexpected removals, confirm the live catalog version/update time and article count in `references/wiki/README.md`, run the sync tests, and complete the normal Skill and Companion version checks.
+
+## Official Forum Snapshot Refresh
+
+Use the forum sync script when the user asks whether 绿洲启妹 published new developer documentation or explicitly requests those threads to be added:
+
+```powershell
+python scripts/sync_official_forum.py --dry-run
+python scripts/sync_official_forum.py
+```
+
+The script reads the public thread-detail API, requires the official author ID and approved state, converts the published rich text to Markdown, and replaces matching thread IDs before inserting the selected articles at the front of `references/wiki/论坛经验帖_绿洲启妹.md`. Keep event notices and other time-limited posts out of the default thread list unless the user explicitly requests them.
+
+After write mode, verify the requested thread IDs occur exactly once, inspect titles and issue/update times, run `tests.test_official_forum_sync`, and complete the normal Skill and Companion version checks.
+
 ## Suggested Answer When A New Conversation May Be Useful
 
 Use this decision pattern:

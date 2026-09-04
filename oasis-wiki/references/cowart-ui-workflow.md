@@ -44,19 +44,23 @@ python scripts/game-ui/generate_with_codex_provider.py --package <generation-pac
 
 `prepare_image_generation.py` 默认只接受 Codex 当前工具清单中的内置 `image_gen`，并输出真实调用所需的 prompt/reference 路径。工具缺失时以退出码 `3` 输出 `IMAGE_GENERATION_UNAVAILABLE`，但编排层必须先完成只读上游发现，不能只因 official environment Key 缺失就结束。`--discover-image-models` 只读取当前 Provider 配置和托管认证并调用 `GET /models`，输出 Provider 主机名、候选模型、置信度和证据，不打印或写入凭据，也不调用图片生成接口。开发者选择候选且显式授权 `--allow-provider-direct` 后，`generate_with_codex_provider.py` 才解析实际模型名并生成图片。
 
-## 快速入口
+## 原生入口
+
+用户询问怎么启动、继续或验收这套流程时，先读 `references/cowart-ui/usage-guide.md`。其中的常用说法只负责选择或继续阶段；除非满足精确资产、冻结计划、项目外备份和本次明确授权，不得把“同步编辑器”等模糊说法当成写入许可。
 
 ```powershell
 python scripts/cowart-ui/component-extractor/open_ui_workflow.py
 python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --name "<page name>"
 ```
 
-`open_ui_workflow.py` 打开或聚焦 Companion 原生 `UI 生图工具链`；`launch_ui_workflow_console.py` 保留为 localhost 浏览器回退。Codex 负责调用 Cowart 的画布读取、空快照保存、图片插入和原生画布打开能力。
+原生 Companion 工作流已启用。用户明确要求启动或打开 UI 工具链时，可运行 `open_ui_workflow.py`；已有审核图和 UI Tree 时，优先用 `create_ui_workbench.py` 注册并打开精确会话。只有用户明确要求或当前任务需要展示刚生成的审核会话时才打开/聚焦 Companion，不因检测到 UI 任务就自动抢焦点。打开 Workbench 不等于编辑器写入授权。
 
 ## 分类资源
 
 - `references/cowart-ui/component-extractor.md`：Stage 0-3、Cowart 自动交接、组件提取与工作台流程。
+- `references/cowart-ui/usage-guide.md`：用户如何启动、继续、审核和授权 UI 工具链，以及说明更新与编辑器写入的权限边界。
 - `references/cowart-ui/precision-reconstruction.md`：Stage 2A/2B 识别、clean layer 重建、Assembly Preview 与审核 Gate。
+- `references/cowart-ui/transparent-asset-extraction.md`：完整母底图、透明/半透明控件判定、固定美术字、子控件图标、父层残留和复拼验收规则。
 - `references/cowart-ui/two-stage-workflow.md`：视觉评审与组件化的阶段边界。
 - `references/cowart-ui/layer-manifest.md`：图层清单和导入契约。
 - `references/cowart-ui/delivery.md`：RedCliff UI 交付计划流程。
@@ -73,9 +77,10 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 - 用户给出视觉参考图时，最终图片生成调用必须实际接收这些原始文件。只传 Style Profile、art direction 或 prompt 属于门禁失败。
 - 不得手写或伪造 `generation-result.json`；只能通过 `record_generation_result.py` 对真实存在且可读取的输出图片记录结果。
 - Cowart 视觉评审通过，不等于组件已确认；组件已确认，也不等于编辑器或 PIE 已验收。
-- 文本、数值、倒计时、进度、交互热区和状态必须保留为原生控件，不烘焙进 PNG。
+- 运行时动态文本、数值、倒计时、进度、交互热区和状态默认保留为原生控件。开发者明确点名确认的固定美术字可按 `references/cowart-ui/transparent-asset-extraction.md` 提取为仅含字形的透明 PNG；该提取本身不授权替换动态绑定、运行时刷新或本地化契约。
 - 组件化前必须先解析 `reuse_of`、`texture_asset`、语义键和 Item ID：只有 `active` 且预览可读的组件库项可以直接复用；`candidate`、`pending_review` 或无法解析的条目不得冒充成品，也不得跳过必要重建。
-- 原生项目图标必须保留 Unreal 资源引用，并用 `visual_assets.native_preview` 在 Workbench 中显示；该字段只用于编辑器预览，不能把 Native 节点改成 reusable bitmap。关闭控件即使分类为 `hit_target` 也必须显示明确的关闭图形，禁止空白热区；已有 `native_preview` 时它是唯一视觉，不得再叠加 `×`，只有未解析到任何可复用视觉时才允许 fallback glyph。
+- 原生项目图标必须保留 Unreal 资源引用，并用 `visual_assets.native_preview` 在 Workbench 中显示；该字段只用于编辑器预览，不能把 Native 节点改成 reusable bitmap。任何 Native 节点已有 `native_preview` 时，该预览是唯一视觉，不得再叠加 `display_text`、`content_hint`、计数器 fallback 或其他 glyph。纯交互/热区节点可以保留语义文字数据，但不得在可视父控件上重复绘字。关闭控件即使分类为 `hit_target` 也必须显示明确的关闭图形，禁止空白热区；只有未解析到任何可复用视觉时才允许 fallback glyph。
+- Workbench 层级树面向开发者显示本地化 `name`，内部 `id` 必须保持稳定并继续用于布局保存、资源引用和编辑器映射。会话打包不得丢弃 `name`；自动派生的背景子层也必须使用本地化名称，搜索同时匹配显示名和内部 ID。
 - 任意矩形 `source_crop` 都不能自动作为 reusable component；Skin 和父层必须生成 `clean_layer` 并通过审核。
 - 从工作台交付到 UMG 时，不能把视觉图层全部平铺成同级 Widget。先参照项目中已工作的真实 WidgetTree，再按可独立移动的业务组件建立语义父容器；坐标保持、按钮身份、Z-order、事务回滚和验证规则见 `references/mcp-ui-widget.md` 的 `Refine An Existing Widget Hierarchy Without Moving The UI`。
 - 不覆盖或删除 Cowart 中既有图形；修订图保留版本关系。
@@ -111,6 +116,6 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 
 扁平 UI 图进入工作台后，必须依次执行 UI Tree 推断、人工校正、节点分类、从叶子到根的 Layer Reconstruction、Assembly Preview 验证和组件确认。正式资产字段统一为 `source_crop`、`clean_layer`、`assembly_preview`。
 
-`background.root`、Panel、Button、Artwork 等所有需要独立移动的视觉层都必须拥有自己的重建目标。Native 文本、数值和交互区不生成位图。父节点 Mask 按真实 Alpha/Mask、clean layer Alpha、语义分割、Bounds fallback 的优先级计算，并对所有可见后代做像素并集去重。
+`background.root`、Panel、Button、Artwork 等所有需要独立移动的视觉层都必须拥有自己的重建目标。页面使用一张完整母底图，前景使用透明或有意半透明的 clean layer。Native 动态文本、数值和交互区不生成运行时位图；开发者确认的固定美术字可生成透明视觉资产或 Native 预览，但不得因此改变运行时契约。父节点 Mask 按真实 Alpha/Mask、clean layer Alpha、语义分割、Bounds fallback 的优先级计算，并对所有可见后代做像素并集去重。
 
 没有实现 `image_edit_inpainting` 的 `ImageReconstructionExecutor` 时必须返回 `LAYER_RECONSTRUCTION_UNAVAILABLE`，保持 `clean_layer: null`，不得用裁切、透明挖洞、Canvas 填色、HTML/CSS 或浏览器截图代替。

@@ -161,7 +161,7 @@ Trigger examples:
 - `我有一个 UI 需要生图`
 - `帮我做个 UI`
 - `启动 UI 生图工具`
-- `按照游戏风格生成这个 UI，生成后自动打开 Cowart`
+- `按照游戏风格生成这个 UI`
 - `把这张 UI 拆成可移动组件`
 - `导入 Magic Layers 并恢复层级`
 - `生成 layer-manifest 和 Cowart shape plan`
@@ -176,7 +176,7 @@ Read:
 - Upstream branch: `UI Design System` for project style, reusable components, and the mandatory UI Tree
 - Secondary branch: `MCP Operation` only after explicit authorization to inspect or modify real WidgetBlueprint assets
 
-This category owns the production pipeline and automatic Cowart handoff. The UI Agent interaction reference only orchestrates the existing pipeline: ask only for missing information, keep one pending decision, stop at each approval gate, and report verified paths/results. It does not create persistent task state, Companion task UI, IPC, or automatic resume. The pipeline must not treat a visual-review bitmap as editable components, and it must not mutate UGC project files during visual review, component extraction, or delivery-plan generation.
+This category owns the Cowart UI production pipeline. The native Companion workflow is enabled: open or focus it only after an explicit user request or when presenting the exact generated review handoff is part of the requested task. Verify the project, page ID, and session path before opening. The UI Agent interaction reference orchestrates the existing pipeline: ask only for missing information, keep one pending decision, stop at each approval gate, and report verified paths/results. Opening Companion does not authorize editor writes. The pipeline must not treat a visual-review bitmap as editable components, and it must not mutate UGC project files during visual review, component extraction, or delivery-plan generation.
 
 ### UI And Interaction
 
@@ -233,4 +233,3 @@ Use these pairings for common mixed tasks:
 - `接手新项目并准备开发`: Project Analysis + Feature Development.
 
 If a secondary branch would only restate obvious engineering knowledge, skip it.
-
