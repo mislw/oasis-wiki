@@ -1,6 +1,6 @@
 # 进阶内容/GamePlay系统/物资系统/物资编辑器2.0
 
-> 官方知识库同步分类，共 11 篇文章
+> 官方知识库同步分类，共 14 篇文章
 
 ---
 
@@ -1207,6 +1207,1538 @@ end
 
 ---
 
+## 背包 / 物品 功能边界
+
+> 文档路径: 进阶内容 > GamePlay系统 > 物资系统 > 物资编辑器2.0 > 背包  >  物品 功能边界
+
+> 文档ID: 20470 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20470)
+
+> 新增: 2026-09-02 13:55:03
+
+**涉及API/标识符:** `BackpackSystemV2`, `BP_BackpackComponentV2`, `BP_BackpackUIComponentV2`, `Handle`, `InstanceID`, `int32`, `ItemDefineID`, `ItemID`, `OnAddItem`, `OnUse`, `UGCBackpackSystemV2`, `UGCBackpackSystemV2.CanDropItemV2`, `UGCBackpackSystemV2.DropItemByDefineIDV2`, `UGCBackpackSystemV2.DropItemV2`, `UGCBackpackSystemV2.GetItemCountV2`, `UGCBackpackSystemV2.GetItemDataV2`, `UGCBackpackSystemV2.UseItemV2`, `UGCItemSystemV2`, `Use`, `userdata`
+
+# 背包 / 物品 功能边界
+
+
+本文用于划分绿洲启元和平官方与玩法工程开发者在开发 V2 背包与物品相关功能时的责任边界。
+开发者在背包与物品相关功能接口、组件、配置项、编辑器之前，应先通读本文，以免因误用导致难以排查的功能、数据、稳定性或反外挂问题。
+
+<br>
+
+## 一、综述
+
+### 1.1 目的
+
+明确在 PCUGC 开发过程中，哪些内容由和平官方维护并保证功能正确性，哪些内容由玩法工程开发者负责维护并保证功能正确性。
+
+### 1.2 风险归属
+
+若开发者未按下述和平官方建议的方式使用（即"规范使用方法"），虽不必然立刻引发 bug，但由此带来的风险需由开发者自行承担。
+
+### 1.3 版本兼容风险
+
+和平官方仅保证"规范使用方法"下的功能、接口与表现设计长期可用并通过版本回归。非规范用法在某个和平版本下可正常运行，但在后续版本中产生兼容问题的可能性显著上升——此类风险由开发者自行知悉并承担。
+
+### 1.4 责任定义
+
+负责方需在功能开发、功能测试、功能上线、线上监控、功能维护与迭代的全过程中，持续关注并保证其负责范围的正确性。
+
+### 1.5 模糊地带
+
+对于本文未明确划分的内容，由开发者自行判断；必要时可与和平官方沟通确认。
+
+<br>
+
+## 二、背包内核
+
+### 2.1 配置项
+
+`V2 背包组件`（`BP_BackpackComponentV2`）上的配置项由和平官方对其配置效果负责。
+
+- 开发者在修改每一项配置时，应充分了解该配置对应的功能效果后再做调整。
+- 和平官方不限制配置项的取值范围；每一项配置都有其合理的值域，超出范围带来的性能或功能问题由开发者自行把控。
+
+### 2.2 内核接口
+
+`BackpackSystemV2` 中的内核接口，包括但不限于：添加、移除、使用、装备、整理物品，以及容量操作、仓库物品转移等。
+
+- 和平官方仅对**单个接口独立使用**时结果的正确性负责。
+
+- 调用接口时，调用方需保证参数正确无误；若接口注释或文档中有额外说明，开发者应一并遵循。
+
+### 2.3 自定义事件 / 委托
+
+开发者在 `V2 背包组件` 的事件与委托中新增的自定义功能，应尽量**避免直接或间接地再次调用背包内接口**，由此导致的问题由开发者自行承担。
+
+- **推荐做法**：在事件或委托触发后，**等待一帧或以上时间**再调用背包内接口。
+- **非操作类接口**（如 `UGCBackpackSystemV2.GetItemCountV2`）一般可直接使用而无需等待，但开发者应测试其返回值的正确性。
+
+<br>
+
+## 三、背包 UI
+
+### 3.1 配置项
+
+`V2 背包 UI 组件`（`BP_BackpackUIComponentV2`）上的配置项由和平官方对其配置效果负责，原则同 2.1 节。
+- 开发者在修改每一项配置时，应充分了解该配置对应的功能效果后再做调整。
+- 和平官方不限制配置项的取值范围；每一项配置都有其合理的值域，超出范围带来的性能或功能问题由开发者自行把控。
+
+### 3.2 直接使用和平官方 UI
+
+直接使用和平官方背包 UI 时，所有表现的正确性由和平官方负责；若开发者**修改、替换**了其中的 UI，或通过编码**新增、修改**了功能，则相应部分的正确性由开发者负责。
+
+### 3.3 UI 接口
+
+`UGCBackpackSystemV2` 中既包含内核数据接口，也包含受 UI 行为影响的接口；开发者可根据需求自行调用，但需自行保证功能正确性。
+
+> 一般情况下，直接使用和平官方提供的 UI 时，并无主动调用 UI 接口的需求。
+
+### 3.4 控件开放化
+
+背包 UI 上的控件将逐步开放化。开发者可将其作为模板创建使用、创建后自由修改，并可配置替换背包主 UI 上的控件。以此方式使用时，需由开发者自行保证功能正确性。
+
+<br>
+
+## 四、物品
+
+### 4.1 配置项
+
+`物品编辑器`（详见 [物品编辑器](https://developer.gp.qq.com/wikieditor/#/catalog/20101)）中物品的配置项由和平官方对其配置效果负责，原则同 2.1 节。
+- 开发者在修改每一项配置时，应充分了解该配置对应的功能效果后再做调整。
+- 和平官方不限制配置项的取值范围；每一项配置都有其合理的值域，超出范围带来的性能或功能问题由开发者自行把控。
+
+### 4.2 物品接口
+
+`UGCItemSystemV2` 中的接口用于读取与查询物品信息。开发者应在充分了解接口功能与返回值语义的前提下使用。
+
+### 4.3 `ItemDefineID` 唯一性
+
+`ItemDefineID` 用于唯一指代一个物品实例，使用时需保持其在背包/仓库/拾取物等多种上下文中的**全局唯一性**。
+
+**反例：**
+
+- 不能将已存在于背包（或仓库）中的物品再次添加到背包（或仓库）中。
+- 不能将存在于地面拾取物中的物品直接添加到背包（或仓库）中。
+
+上述两类操作都会破坏 `ItemDefineID` 唯一性，进而引发物品数据错乱、操作定位错误等不可预期问题。
+
+> 和平官方只能保证在官方代码逻辑内唯一性不被打破。出于创作自由度考虑，和平官方无法限制开发者代码逻辑，因此，对于**一切可能破坏唯一性**的操作（包括但不限于上述反例），开发者应格外注意并设计补偿或去重逻辑。
+
+<br>
+
+## 五、持久化数据兼容
+
+> 本节聚焦**与持久化相关的兼容问题**。若玩法中使用了背包/物品的持久化功能，需特别重视本节；非持久化场景可酌情忽略，但仍建议开发者了解风险。
+
+### 5.1 版本迭代兼容
+
+版本迭代过程中，开发者应保证旧版本的持久化数据在新版本工程下仍能正确读取与使用，否则可能导致玩家物品或数据丢失。
+
+### 5.2 物品配置
+
+持久化物品在物编中的配置只能**添加**，不能**删除**。
+
+- 删除物品后，该物品 ID 可能被新创建的物品占用，引发 ID 冲突与物品数据异常。
+
+**事例：** 某"枪械"物品 ID 为 `8310100`，玩家已获取并装备在身上，附带若干配件。新版本开发者删除了该物品，并创建了某"药品"占用 ID `8310100`。
+
+**后果：** 玩家重进游戏时，持久化数据会将此"药品"记录为装备在身上并附带配件，导致装备功能异常、配件丢失与其它位置异常。
+
+### 5.3 最大堆叠数
+
+持久化物品的最大堆叠数只能**增加**，不能**减少**。
+
+- 减少最大堆叠数后，旧的满堆叠记录将无法容纳物品，超出部分因无处存放而丢弃。
+
+**事例：** 某"子弹"物品初版最大堆叠数为 `999`，玩家仓库中已有 1 格堆满 `999` 发子弹；新版本开发者将该物品最大堆叠数下调为 `99`。
+
+**后果：** 玩家重进游戏时，原 1 格的 `999` 发子弹已无法容纳于该格，超出部分被丢弃，导致物品丢失。
+
+### 5.4 装备槽位列表
+
+背包装备槽位列表、装备类型附带的槽位（如枪械配件槽）在配置时只能在列表**末尾添加**。
+
+- 背包内核以索引存储持久化的槽位信息，删除已有槽位或在中间插入新槽位，都可能导致已持久化的槽位信息在玩家重进游戏后无法复原，严重时会丢失物品数据或造成其它不确定后果。
+- 槽位类型约束建议**只放宽、不收紧**，否则可能导致持久化数据中原本合法的物品装备状态变得不合法。
+
+**事例：** 某玩法初版枪械配件槽顺序为 `[瞄准镜, 枪口, 弹夹]`；新版本为调整界面展示顺序，在"瞄准镜"与"枪口"之间插入了新的"握把"槽位，变为 `[瞄准镜, 握把, 枪口, 弹夹]`。
+
+**后果：** 内核按索引复原槽位，老玩家原先装在"枪口"（索引 1）的配件在重进游戏后被错误地复原到"握把"（索引 1）槽位，导致配件错位、装备状态异常，严重时配件数据丢失。
+
+### 5.5 容量配置
+
+容量相关配置（背包容量、物品扩容容量）必须**只增不减**，否则可能在玩家重进游戏后因容量不足导致物品丢失。
+
+- 背包"解锁格子"功能会在持久化数据中记录已解锁容量，需保证：**默认格子容量 + 已解锁容量 ≤ 最大格子容量**（仓库同背包）。
+- **货币类型物品不占用格子**；已配置为货币类型的物品不能改为非货币，否则也可能因容量问题导致物品丢失。
+
+**事例：** 某玩法初版背包默认容量为 `30` 格，部分玩家通过解锁格子功能额外解锁了 `10` 格（持久化数据中记录已解锁 `10` 格）；新版本开发者将背包默认容量下调为 `20` 格。
+
+**后果：** 玩家重进游戏时总容量不足以容纳原有物品，超出容量的物品被移除、丢失。
+
+<br>
+
+## 六、示例工程
+
+### 6.1 和平官方示例工程
+
+和平官方示例工程的**表现正确性**由和平官方负责。
+
+### 6.2 基于示例工程的新工程
+
+以示例工程为模板创建的新工程，修改其内容后需由开发者负责维护新工程的正确性（前述明确由和平官方负责的范围除外）。
+
+### 6.3 摘录实现方案参考
+
+从示例工程中摘取实现方案并应用于其它工程时，方式正确一般不会有问题，但仍需由开发者负责维护功能正确性（同 6.2 例外条款）。
+
+<br>
+
+## 七、性能
+
+性能相关问题需由开发者主动关注并负责。可能导致性能问题的情形包括但不限于：
+
+- 背包或仓库内物品格子过多。
+- 背包或仓库内物品实例过多。
+- 物品实例化数据过于庞大。
+- 生成在地面的拾取物数量过于庞大。
+
+详见 [背包系统 - 自定义背包容量](https://developer.gp.qq.com/wikieditor/#/catalog/20104) 与 [背包系统 - 配置扩容代币](https://developer.gp.qq.com/wikieditor/#/catalog/20104) 关于容量规划的相关说明。
+
+<br>
+
+## 八、反外挂
+
+V2 背包内核在实现时已考虑反外挂问题，直接使用 V2 背包的原始功能，无需额外处理反外挂。
+
+但若在 V2 背包之上定制自定义功能，需由开发者自行关注反外挂问题，常见风险见下三类。
+
+### 8.1 非法操作型外挂
+
+这类外挂可实现开发者本想禁止的背包操作，一般由 RPC 校验缺失或不足导致。
+
+- **外挂原理：** UGC 内核或玩法工程中实现了某个 RPC 接口，但仅在该接口的客户端请求逻辑中做了限制或校验。外挂可模拟客户端向服务器请求该接口，并伪造接口参数，从而绕过限制。
+- **禁用基础合法操作的脆弱性：** 某些操作在 V2 背包中默认允许执行，若开发者仅通过自定义 UI 屏蔽该操作、期望其被禁止，则可能被外挂利用——`UGCBackpackSystemV2` 中生效范围包含客户端的接口，背包内核默认都会允许该操作（参数非法除外）。
+
+**事例：** 某玩法修改了 V2 背包 UI，屏蔽了某物品的"丢弃"按钮，但既未在物编中配置该物品不可丢弃，也未在 `BP_BackpackComponentV2` 中覆写 `UGCBackpackSystemV2.CanDropItemV2`。
+
+**后果：** 外挂可模拟客户端请求 `UGCBackpackSystemV2.DropItemV2`，将物品丢弃。
+
+**解决方案：**
+
+- 在物编中配置该物品不可丢弃。
+- 或在 `BP_BackpackComponentV2` 中覆写 `UGCBackpackSystemV2.CanDropItemV2`，使不可丢弃的物品始终返回 `0`（该接口为返回值即"可丢弃数量"）。
+
+```lua
+---背包内核：覆写 CanDropItemV2，强制不可丢弃
+---生效范围：服务器&客户端
+---@param Player PlayerPawn|PlayerController 玩家
+---@param ItemDefineID ItemDefineID 物品 DefineID
+---@param Count number 调用方请求丢弃的数量
+---@return number 实际允许丢弃的数量
+function BP_BackpackComponentV2_Custom:CanDropItemV2(Player, ItemDefineID, Count)
+    -- 任务道具 ID = 8310200 永远不可丢弃
+    if ItemDefineID.TypeSpecificID == 8310200 then
+        return 0
+    end
+    return Count
+end
+```
+
+### 8.2 新增自定义操作的反外挂
+
+若开发者新增自定义操作，需自行关注反外挂问题。尤其需要注意：**一个操作不应拆分成多个独立的 RPC 请求**，否则外挂可挑选部分请求单独触发。
+
+**事例：** 某玩法为物品实现了"升级"操作，通过上行 RPC 完成，且升级需要消耗货币；但"升级"与"消耗货币"被实现为两个独立 RPC。
+
+**后果：** 外挂可模拟客户端单独请求"升级"，从而在不消耗货币的情况下完成升级。
+
+**解决方案：** DS 收到"升级"请求时，**先在服务器侧校验货币并扣除**，货币不足则直接判定升级失败——"消耗"应作为升级的同一次服务器侧事务的一部分，而非独立 RPC。
+
+### 8.3 展示非法数据外挂
+
+这类外挂可帮助外挂使用者获取本不应展示出来的信息（如透视、显示物品隐藏信息等）。
+
+- **外挂原理：** 某些信息本应对玩家不可见，但被从 DS 同步到了客户端，外挂可从客户端内存/数据中读出并展示。
+
+**事例：** 某鉴宝玩法中，古董物品具有"真假"隐藏属性，鉴定前对玩家隐藏。开发者将这一属性直接以明文存储在物品实例化数据中。
+
+**后果：** 外挂可通过读取物品实例化数据，直接得知物品的"真假"属性。
+
+**解决方案：**
+
+- 隐藏属性应在 DS 中单独存储，不写入物品实例化数据；
+- 或在写入实例化数据前先加密，读取后再解密。
+
+<br>
+
+## 九、其它说明和建议
+
+### 9.1 堆叠上限
+
+货币或产出数量极大的物品，最大堆叠数也应尽量设置得大，否则易导致背包内物品实例数膨胀，进而引发性能问题（详见 [物品与背包槽位](https://developer.gp.qq.com/wikieditor/#/catalog/20210) 与第七章）。
+
+**事例：** 某玩法"金币"最大堆叠数为 `99`，玩家击杀怪物可一次性掉落成千上万金币。当玩家累计获得 `100` 万金币时，背包内会产生约 `1` 万个金币物品实例。
+
+**后果：** 物品实例数急剧膨胀，导致内存占用飙升、背包 UI 刷新卡顿、持久化存档体积变大且读写变慢；严重时可能引发客户端卡死或掉线。
+
+### 9.2 数值上限
+
+物品最大堆叠数量不应超过 `21` 亿，物品总数量也不应超过 `21` 亿，否则可能出现未知问题。
+
+**事例：** 开发者为某"资源点"物品配置最大堆叠数 `30` 亿（超过 `int32` 上限约 `21.47` 亿），或通过接口一次性给玩家添加 `25` 亿数量的物品。
+
+**后果：** 数值发生整型溢出后变为负数或异常小值，表现为数量显示错误、扣除或校验逻辑失效，甚至出现"越用越多"或物品凭空消失等不可预期的行为。
+
+### 9.3 "使用" ≠ "扣除"
+
+在 V2 背包与物品的基础设计中，`UGCBackpackSystemV2.UseItemV2` **仅触发一套 `Use` 流程**，并不必然导致物品被扣除。药品类物品在使用时被扣除，是**实现在药品自身中的功能**，而非背包内核的默认行为。
+
+**事例：** 开发者新增一个"钥匙"物品，期望玩家"使用"一次后钥匙被消耗，于是只调用了 `UGCBackpackSystemV2.UseItemV2` 而没有实现任何扣除逻辑，误以为"使用"会自动扣除。
+
+**后果：** 玩家可用同一把钥匙无限次开门，物品不会减少，导致道具被无限复用、玩法数值失衡。
+
+### 9.4 药品扣除时机
+
+药品使用时的扣除时机是**读条完成时**。若在药品的物品 `Handle`（即物品自身的 `OnUse` 回调）中实现加血/加 buff 等效果，开发者应注意：若玩家在读条一开始就触发效果，并把"扣除"留到读条完成，则玩家可通过打断读条反复触发效果、不扣除物品。
+
+**事例：** 开发者将加血逻辑直接放在药品的物品 `Handle` 回调里，玩家点击使用后立即打断读条（受击或主动取消）。
+
+**后果：** 加血效果在读条一开始就生效了，但读条未完成时物品不会被扣除，玩家可反复"点击使用—打断"实现无消耗回血，等同于无限血药。
+
+**正确做法：**
+
+- 将"已使用数量扣减"放到读条完成事件中；
+- 或在物品 `Handle` 中区分"开始生效"与"完成生效"两个时机，把"扣减与状态切换"绑到完成时机。
+
+### 9.5 "是否可丢弃"的含义
+
+物编中的"是否可丢弃"配置**仅控制丢弃操作**（对应 `UGCBackpackSystemV2.DropItemV2` / `UGCBackpackSystemV2.DropItemByDefineIDV2`），并不等于"物品不会被生成到地上"。在某些情况下（如背包超容量默认处理）仍会导致物品从背包中移除并生成到地上。
+
+**事例：** 开发者将"任务道具"配置为不可丢弃，认为它绝不会离开背包，因此未做任何找回机制。当玩家背包被塞满后再拾取物品、触发超容量默认处理时，该任务道具被移除并掉落到地面。
+
+**后果：** 玩家离开该区域后任务道具永久丢失且无法找回，导致任务卡死、无法继续推进。
+
+### 9.6 RPC 参数校验
+
+开发者实现的 RPC 建议对参数做严格校验，否则容易出现弱网问题或被外挂利用——尤其**不建议以 `ItemDefineID`（含 userdata）作为 RPC 参数直接传输或缓存**。
+
+**事例：** 开发者实现了一个"出售物品"的客户端到服务器的 RPC，直接以 `ItemDefineID` 和数量作为参数，服务器未做归属与数值校验就发放金币。
+
+**后果：** 外挂玩家可伪造任意 `ItemDefineID` 或负数量调用该 RPC，凭空刷出金币或出售不属于自己的物品，破坏经济系统并造成数据不一致。
+
+**正确做法：**
+
+- 参数端以稳定 ID（如物编 `ItemID`、`InstanceID`）替代 `ItemDefineID`；
+- 服务端校验参数合法性、归属、上下限，并对异常快速返回错误。
+
+### 9.7 超容量处理
+
+背包超容量的默认处理为：**将物品移除并生成到地上**。对于高价值或重要物品，此方式可能并不理想，可通过覆写 `BP_BackpackComponentV2` 上的超容量处理函数做自定义处理（例如转入仓库、邮件补发或弹窗提示）。
+
+**事例：** 玩家背包已满，此时结算发放了一件稀有装备，触发默认超容量处理，该装备被直接掉落到当前地面，而开发者并未覆写超容量处理逻辑。
+
+**后果：** 稀有装备掉在地上，若被其他玩家捡走或玩家离开后消失，将引发玩家投诉与资产纠纷。
+
+### 9.8 物编上限
+
+建议物编中创建的物品数量**不要超过 200 个**；物品编辑器中可创建的物品上限为 `1000` 个，应合理规划使用。物品数量过多可能导致加载时间延长或卡顿。
+
+**事例：** 开发者为追求丰富度，在物编中创建了 900 个物品，其中大量物品对其它资源有强引用。
+
+**后果：** 启动或进入玩法时需加载全部物品配置，导致加载时间显著变长、进场卡顿；低端机型上更可能出现明显掉帧甚至加载失败。
+
+### 9.9 RPC 频率控制
+
+短时间内过于频繁地触发 RPC 可能导致崩溃。在背包场景中，**初始化加载持久化物品**会触发每一个物品实例的添加事件；若每次添加都触发自定义 RPC，可能引发崩溃问题。
+
+**事例：** 开发者在"物品添加"事件里挂接了一个自定义 RPC 用于同步数据。玩家重进游戏时背包一次性加载 500 个持久化物品，瞬间连续触发 500 次 RPC。
+
+**后果：** 短时间内 RPC 洪泛导致网络层拥塞、消息队列溢出，客户端或服务器崩溃、掉线，玩家进游戏即闪退。
+
+**正确做法：**
+
+- 在添加事件中判断是否处于"初始化阶段"，初始化的物品不立即触发 RPC；
+- 或将多次 RPC 做合帧、批处理；
+- 或延迟一帧以上再发送。
+
+### 9.10 `ItemDefineID` 流转
+
+`ItemDefineID` 可能在物品流转过程中发生变化（物品被拆分或合并），不可依赖比较 `ItemDefineID` 来追踪物品流转。
+
+**事例：** 开发者先从地面拾取物中读出物品的 `ItemDefineID`，再操作角色拾取该物品，随后又用之前读出的 `ItemDefineID` 到背包中查找。
+
+**后果：** 由于 `ItemDefineID` 在拾取过程中可能已发生变化，导致该物品在背包中查找不到。
+
+### 9.11 实例化数据与合并
+
+具有实例化数据的物品会影响物品的合并——若两个物品的实例化数据不同，则它们无法合并。
+
+**事例：** 开发者在物品 `Handle` 的 `OnAddItem` 回调里为物品添加了实例化数据，且每次添加的实例化数据都不相同。
+
+**后果：** 添加后的物品即使是同种物品也无法合并，整理背包同样无效。
+
+### 9.12 `ItemDefineID` 的缓存
+
+> ⚠️ **`UGCBackpackSystemV2` 系列接口返回的 `ItemDefineID` 大多为 userdata，不可直接缓存**。`userdata` 的值可能在后续流程中被改变或回收，缓存下来会变为无效或指向错误的物品。
+
+**正确做法：** 缓存前先用 `totable()` 将 `userdata` 转换为 Lua table 再缓存。
+
+```lua
+-- 反例：直接缓存 userdata 类型的 ItemDefineID
+self._cachedItemDefineID = UGCBackpackSystemV2.GetItemDataV2(Player, ItemID)
+
+-- 正例：先 totable() 转表后再缓存
+local defineID = UGCBackpackSystemV2.GetItemDataV2(Player, ItemID)
+self._cachedItemDefineID = totable(defineID)
+```
+
+<br>
+
+---
+
+## 背包UI开放
+
+> 文档路径: 进阶内容 > GamePlay系统 > 物资系统 > 物资编辑器2.0 > 背包UI开放
+
+> 文档ID: 20475 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20475)
+
+> 新增: 2026-09-16 14:27:35
+
+**涉及API/标识符:** `BP_BackpackUIComponentV2_Custom`, `Image_QualityBar`, `UE.IsValid`, `UGCGameSystem.GetLocalPlayerController`, `UGCGameSystem.GetLocalPlayerPawn`, `UGCGameSystem.NewObject`, `UGCItemSystemV2.GetBigIconTextureWithPlayerSkinV2`, `UGCItemSystemV2.GetBigIconTextureWithPlayerSkinV2ByDefineID`, `UGCItemSystemV2.GetConfigItemHandle`, `UGCItemSystemV2.GetDisplayNameBySlotName`, `UGCItemSystemV2.GetEquipmentQualityTexturePath`, `UGCItemSystemV2.GetItemDetailV2`, `UGCItemSystemV2.GetItemDetailV2ByDefineID`, `UGCItemSystemV2.GetItemIconWithPlayerSkinV2`, `UGCItemSystemV2.GetItemIconWithPlayerSkinV2ByDefineID`, `UGCItemSystemV2.GetItemNameV2`, `UGCItemSystemV2.GetItemNameV2ByDefineID`, `UGCItemSystemV2.GetItemQualityV2`, `UGCItemSystemV2.GetItemQualityV2ByDefineID`, `UGCItemSystemV2.GetQualityBarTexturePath`, `UGCItemSystemV2.GetQualityTexturePath`, `UGCObjectUtility.AsyncLoadObject`, `UGCObjectUtility.AsyncLoadObjectBySoftPath`, `UGCWeaponManagerSystem.GetCurrentWeapon`
+
+# 背包UI开放
+
+背包UI的开放允许开发者自定义V2背包的每一个UI控件，做出不同风格的背包面板，在控件模板的lua中自定义显示逻辑。
+
+<br>
+
+## 配置方式
+
+在【UI编辑器】->【元件】中找到背包各部位对应的控件UI模板，选择需要创建的自定义背包UI控件。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/PZ3TAimage.png)
+
+在【玩法通用设置】->【GamePart】中添加【GP_Backpack_V2】，创建一个自定义的V2背包UI组件 ``BP_BackpackUIComponentV2_Custom``。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/DiHDCimage.png)
+
+在V2背包UI组件中替换背包对应部位的UI控件。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/skNbUimage.png)
+
+<br>
+
+## 各部位控件的lua和效果展示
+
+### 背包入口按钮
+
+**Lua**
+
+核心的Lua实现是背包的容量更新：
+
+```lua
+---更新容量显示
+function Bag_1_Enter:UpdateCapacity(CurrentCount, MaxCapacity)
+    self.CurrentCapacity = CurrentCount or 0
+    self.MaxCapacity = MaxCapacity or 1
+
+    -- 计算进度百分比
+    local Percent = 0
+    if self.MaxCapacity > 0 then
+        Percent = math.min(self.CurrentCapacity / self.MaxCapacity, 1.0)
+    end
+
+    -- 满容状态
+    local bFull = self.CurrentCapacity >= self.MaxCapacity
+    if bFull then
+        self.Image_FullStatus:SetVisibility(ESlateVisibility.Visible)
+    else
+        self.Image_FullStatus:SetVisibility(ESlateVisibility.Hidden)
+    end
+
+    -- 容量进度条
+    local DMI = self.Image_BackPackCDBar:GetDynamicMaterial()
+    if DMI then
+        DMI:SetScalarParameterValue("Mask_Percent", Percent)
+        if bFull then
+            self.Image_BackPackCDBar:SetVisibility(ESlateVisibility.Hidden)
+        else
+            self.Image_BackPackCDBar:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        end
+    end
+end
+
+```
+
+**效果**
+
+无背包：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/VMysmimage.png)
+
+一级包：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/TVSR0image.png)
+
+二级包：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/JDHvrimage.png)
+
+三级包
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/iBYlDimage.png)
+
+背包满：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/CACKnimage.png)
+
+---
+
+### 物品显示控件
+
+通用物品格子控件用于显示物品图标、品质背景、品质条、数量文本、耐久遮罩和配件品质点列表，以及物品拖拽起来显示的图标。
+
+配置位置在【玩法通用设置】->【物品】：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/JWJpcimage.png)
+
+其中，物品格子的品质底图（Image_QualityBarBg）、品质条（Image_QualityBar），会读取物品物品的品质配置：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/xz2meimage.png)
+
+**Lua**
+
+核心的Lua实现是物品的信息显示：
+
+```lua
+---设置物品信息
+---根据物品ID或DefineID设置物品的图标、品质、数量等显示信息。
+---传入nil时显示空状态（空图标），传入DefineID时会额外显示实例的配件信息和耐久信息。
+---Count大于1时显示数量文本。
+---@param ItemData {Item: number|ItemDefineID, Count: number} @物品信息表，Item为物品ID或DefineID（nil则显示空状态），Count为物品数量
+function Bag_2_Common:SetItemInfo(ItemData)
+    self:Clear();
+
+    if ItemData == nil then
+        return
+    end
+
+    local Item = ItemData.Item
+    if Item == nil then
+        Item = ItemData.ItemDefineID or ItemData.ItemID
+
+        if Item == nil then
+            return
+        end
+    end
+
+    local Count = ItemData.Count or 0
+
+    if type(Item) == "number" then
+        self.ItemID = Item
+    else
+        self.ItemDefineID = totable(Item)
+        self.ItemID = Item.TypeSpecificID
+    end
+
+    -- 防御：无效 ItemID 直接保持空状态，避免异步加载空路径
+    if not self.ItemID or self.ItemID <= 0 then
+        return
+    end
+
+    self.Image_Null:SetVisibility(ESlateVisibility.Collapsed)
+    self.CanvasPanel_Icon:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+    self.Image_Icon:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+
+    -- 异步加载物品图标（使用带皮肤的接口，优先显示玩家商业化皮肤图标）
+    local weakSelf = WeakObjectPtr(self)
+    local LocalPC = UGCGameSystem.GetLocalPlayerController()
+
+-- 根据传入参数类型选择不同的接口
+    local IconPath, Quality
+    if self.ItemDefineID then
+        IconPath = UGCItemSystemV2.GetItemIconWithPlayerSkinV2ByDefineID(self.ItemDefineID, LocalPC)
+        Quality = UGCItemSystemV2.GetItemQualityV2ByDefineID(self.ItemDefineID)
+    else
+        IconPath = UGCItemSystemV2.GetItemIconWithPlayerSkinV2(self.ItemID, LocalPC)
+        Quality = UGCItemSystemV2.GetItemQualityV2(self.ItemID)
+    end
+
+    UGCObjectUtility.AsyncLoadObjectBySoftPath(IconPath, function(LoadedTexture)
+        if weakSelf:IsValid() then
+            weakSelf:Get().Image_Icon:SetBrushFromTexture(LoadedTexture, false)
+        end
+    end)
+    self:SetQuality(Quality)
+
+    if Count and Count > 1 then
+        self.TextBlock_Num:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+    end
+    self.TextBlock_Num:SetText(tostring(Count))
+
+    -- 如果是实例物品
+    if self.ItemDefineID then
+        -- 耐久遮罩
+        self:UpdateDurabilityMask();
+
+        -- 右上角 配件信息
+        self:UpdateAttachInfo();
+    end
+end
+```
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/ImCz3image.png)
+
+---
+
+### 背包格子控件
+
+背包格子控件用于承接背包相关的数据，如显示物品“新”、物品格子锁定、解锁货币等信息。
+
+**Lua**
+
+核心的Lua实现是背包格子的新、解锁：
+
+```lua
+---更新格子解锁状态
+---@param State EBackpackItemState @格子状态, 默认为Unlock
+function Bag_3_Grid:UpdateItemState(State)
+    self.State = State
+    if State == nil then
+        State = EBackpackItemState.Unlock
+    end
+
+    if State == EBackpackItemState.Lock then -- 格子上锁
+        if self.UGC_Common_Item_UIBP then
+            self.UGC_Common_Item_UIBP:SetVisibility(ESlateVisibility.Collapsed)
+        end
+        self.CanvasPanel_Lock:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+    else
+        -- 解锁格子
+        if self.UGC_Common_Item_UIBP then
+            self.UGC_Common_Item_UIBP:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        end
+        self.CanvasPanel_Lock:SetVisibility(ESlateVisibility.Collapsed)
+    end
+end
+
+
+---显示 新 标记
+---@param bNew boolean @是否显示 新 标记
+function Bag_3_Grid:SetIsNewItem(bNew)
+    if bNew and self.ItemDefineID and self.ItemDefineID.TypeSpecificID > 0 then
+        self.CanvasPanel_New:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+    else
+        self.CanvasPanel_New:SetVisibility(ESlateVisibility.Collapsed)
+    end
+end
+```
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/FK7whimage.png)
+
+<br>
+
+### 装备面板
+
+#### 主武器UI模板
+
+装备品质背景 ``Image_QualityBar`` 会读取玩法偶那个用配置上的 ``装备品质条纹理``。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/67h8himage.png)
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/ToGK6image.png)
+
+**Lua**
+
+核心的实现是武器数据更新：
+
+```lua
+--更新武器展示信息
+--@param data table 武器数据
+function Bag_4_MainWeapon:UpdateCurrentDisplay(data)
+    self.UGCCommonDragDropItem:SetDragEnable(false)
+    if data == nil then
+        return
+    end
+
+    if self.TextBlock_TypeName then
+        self.TextBlock_TypeName:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        local SlotDisplayName = nil
+        if self.SlotName then
+            SlotDisplayName = UGCItemSystemV2.GetDisplayNameBySlotName(self.ItemID, self.SlotName)
+        end
+        self.TextBlock_TypeName:SetText(SlotDisplayName or self.SlotName or "")
+    end
+
+    if self.ItemID and self.ItemID > 0 then
+        if self.Image_QualityBar then
+            self.Image_QualityBar:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        end
+        if self.Image_Weaponcucoloris then
+            self.Image_Weaponcucoloris:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        end
+
+        local ItemName, Quality
+        if self.ItemDefineID then
+            ItemName = UGCItemSystemV2.GetItemNameV2ByDefineID(self.ItemDefineID)
+            Quality = UGCItemSystemV2.GetItemQualityV2ByDefineID(self.ItemDefineID)
+        else
+            ItemName = UGCItemSystemV2.GetItemNameV2(self.ItemID)
+            Quality = UGCItemSystemV2.GetItemQualityV2(self.ItemID)
+        end
+        local QualityBgPath = UGCItemSystemV2.GetEquipmentQualityTexturePath(Quality)
+
+        if self.TextBlock_TypeName then
+            self.TextBlock_TypeName:SetText(ItemName)
+        end
+
+        if self.Image_QualityBar then
+            self.Image_QualityBar:SetVisibility(ESlateVisibility.Collapsed)
+        end
+        if self.Image_QualityBg then
+            self.Image_QualityBg:SetVisibility(ESlateVisibility.Collapsed)
+        end
+        local QualityBgWidget = self.Image_QualityBar or self.Image_QualityBg
+        if QualityBgWidget and QualityBgPath then
+            QualityBgWidget:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+            local weakSelf = WeakObjectPtr(self)
+            UGCObjectUtility.AsyncLoadObject(QualityBgPath, function(LoadedTexture)
+                if weakSelf:IsValid() then
+                    local selfObj = weakSelf:Get()
+                    if selfObj then
+                        if selfObj.Image_QualityBar then
+                            selfObj.Image_QualityBar:SetBrushFromTexture(LoadedTexture, false)
+                        elseif selfObj.Image_QualityBg then
+                            selfObj.Image_QualityBg:SetBrushFromTexture(LoadedTexture, false)
+                        end
+                    end
+                end
+            end)
+        end
+
+        if self.Image_TitleQualityBg then
+            local TitleQualityBgPath = UGCItemSystemV2.GetQualityBarTexturePath(Quality)
+            if TitleQualityBgPath then
+                local weakSelf = WeakObjectPtr(self)
+                UGCObjectUtility.AsyncLoadObject(TitleQualityBgPath, function(LoadedTexture)
+                    if weakSelf:IsValid() then
+                        local selfObj = weakSelf:Get()
+                        if selfObj and selfObj.Image_TitleQualityBg then
+                            selfObj.Image_TitleQualityBg:SetBrushFromTexture(LoadedTexture, false)
+                            selfObj.Image_TitleQualityBg.Brush.TintColor = {SpecifiedColor = {R = 1, G = 1, B = 1, A = 0.45}, ColorUseRule = 0}
+                        end
+                    end
+                end)
+            end
+        end
+
+        if self.Image_Weaponcucoloris then
+            local LocalPC = UGCGameSystem.GetLocalPlayerController()
+            local weakSelf = WeakObjectPtr(self)
+            local BigIconPath
+            if self.ItemDefineID then
+                BigIconPath = UGCItemSystemV2.GetBigIconTextureWithPlayerSkinV2ByDefineID(self.ItemDefineID, LocalPC)
+            else
+                BigIconPath = UGCItemSystemV2.GetBigIconTextureWithPlayerSkinV2(self.ItemID, LocalPC)
+            end
+            if BigIconPath then
+                UGCObjectUtility.AsyncLoadObjectBySoftPath(BigIconPath, function(LoadedTexture)
+                    if weakSelf:IsValid() then
+                        local selfObj = weakSelf:Get()
+                        if selfObj and selfObj.Image_Weaponcucoloris then
+                            selfObj.Image_Weaponcucoloris:SetBrushFromTexture(LoadedTexture, false)
+                        end
+                    end
+                end)
+            end
+        end
+
+        local PP = UGCGameSystem.GetLocalPlayerPawn()
+        if PP then
+            local UsingWeapon = UGCWeaponManagerSystem.GetCurrentWeapon(PP)
+            if UsingWeapon then
+                if self.ItemDefineID then
+                    local bIsCurrentWeapon = (UsingWeapon.ItemDefineID.InstanceID == self.ItemDefineID.InstanceID)
+                    if self.CurrentUsingText then
+                        if bIsCurrentWeapon then
+                            self.CurrentUsingText:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+                        else
+                            self.CurrentUsingText:SetVisibility(ESlateVisibility.Collapsed)
+                        end
+                    end
+                elseif self.CurrentUsingText then
+                    self.CurrentUsingText:SetVisibility(ESlateVisibility.Collapsed)
+                end
+            end
+        end
+
+        if PP and not IsMeleeSlot(self.SlotName) then
+            self:RetryGetWeapon(10, 0.02, function(Weapon)
+                if Weapon then
+                    if self.LastWeapon == nil or self.LastWeapon ~= Weapon then
+                        if CheckObjectContainsField(Weapon, "OnCurBulletChange") then
+                            Weapon.OnCurBulletChange:Add(function()
+                                self:UpdateWeaponBulletCount(Weapon)
+                            end)
+                        end
+                    end
+                    self.LastWeapon = Weapon
+
+                    self:UpdateWeaponBulletCount(Weapon)
+                    self:UpdateBulletType(Weapon)
+                end
+            end)
+        end
+
+        self.UGCCommonDragDropItem:SetDragEnable(true)
+        self:EnsureFittingWidgets(function()
+            self:UpdateAttachUI()
+        end)
+    end
+end
+```
+
+**效果**
+
+> 如果想要在装备栏上挂接自定义的UI组件，需要在UI更新的时候监听 data 是否为空，若为空则需要手动隐藏
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/S0U4Pimage.png)
+
+---
+
+#### 副武器UI模板
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/C1H58image.png)
+
+---
+
+#### 近战武器UI模板
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/qZ8TXimage.png)
+
+
+#### 配件槽位UI模板
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/HqIjIimage.png)
+
+<br>
+
+### 物品详情面板
+
+#### 物品详情UI模板
+
+**Lua**
+
+核心实现是异步加载装备Widget、武器属性框Widget、配件列表Widget。
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/DxXGKimage.png)
+
+---
+
+#### 武器属性框UI模板
+
+武器属性框UI是一个容器，用来显示下面的武器属性条UI。
+
+**Lua**
+
+核心的实现是计算武器的各个维度的属性值：
+
+```lua
+local function CalculateWeaponPropertyList(ItemData)
+    if not ItemData then return {} end
+
+    local ItemID = (ItemData.ItemDefineID and ItemData.ItemDefineID.TypeSpecificID or 0)
+    if ItemID <= 0 then ItemID = ItemData.ItemID or 0 end
+
+    local ItemHandle = UGCItemSystemV2.GetConfigItemHandle(ItemID)
+    if not ItemHandle then
+        return {}
+    end
+
+    local PC = UGCGameSystem.GetLocalPlayerController()
+    local WeaponClass = ItemHandle:GetWeaponClass()
+    local Weapon = UGCGameSystem.NewObject(PC, WeaponClass)
+    if not Weapon or not UE.IsValid(Weapon) then
+        return {}
+    end
+
+    local isOverride = ItemHandle.bIsAttributeOverride
+
+    -- 最大值（用于计算百分比）
+    local MaxPower        = 150
+    local MaxShootRange   = 2000   -- 单位m，原始值单位cm
+    local MaxStability    = 10
+    local MaxClipCapacity = 120
+    local MaxShootSpeed   = 600
+
+    -- 威力
+    local power = isOverride and ItemHandle.BaseImpactDamage or Weapon:GetBulletBaseDamage()
+
+    -- 射程（原始单位cm，显示单位m）
+    local shootRange = isOverride and ItemHandle.BulletRange or Weapon:GetBulletRangeEntity()
+
+    -- 稳定性
+    local vRecoil      = Weapon:GetVerticalRecoilFactorModifier()
+    local hRecoil      = Weapon:GetHorizontalRecoilFactorModifier()
+    local shake        = Weapon:GetAnimationKickFromEntity()
+    local recoilFactor = isOverride and ItemHandle.RecoilFactor or Weapon.RecoilFactorWrapper.InnerDataProp
+    local stability    = (vRecoil + hRecoil) * recoilFactor + shake
+
+    -- 弹夹容量（先通过接口获取，再根据覆盖模式取值）
+    local clipCapacity = Weapon:GetMaxBulletNumInOneClipFromEntity(true)
+    if isOverride then
+        clipCapacity = ItemHandle.MaxBulletNumInOneClip
+    else
+        clipCapacity = Weapon.MaxBulletNumInOneClipWrapper.InnerDataProp
+    end
+
+    -- 射速
+    local shootInterval  = Weapon:GetShootIntervalFromEntity()
+    local reloadSpeed    = Weapon:GetReloadTime()
+    local intervalFactor = isOverride and ItemHandle.ShootIntervalFactor or Weapon.ShootIntervalFactorWrapper.InnerDataProp
+    if intervalFactor == nil or type(intervalFactor) ~= "number" then
+        intervalFactor = 1
+    end
+    -- reloadSpeed 可能返回 -1（表示不支持换弹），此时不应计入射速计算
+    local reloadContribution = (clipCapacity > 0 and reloadSpeed and reloadSpeed > 0) and (reloadSpeed / clipCapacity) or 0
+    local divisor            = shootInterval + reloadContribution
+    local shootSpeed         = divisor > 0 and (60 / divisor * intervalFactor) or 0
+
+    return {
+        { name = "威力",   value = power        / MaxPower,             rawValue = math.floor(power) },
+        { name = "射程",   value = shootRange    / MaxShootRange / 100,  rawValue = math.floor(shootRange / 100) },
+        { name = "稳定性", value = stability     / MaxStability,         rawValue = math.floor(stability) },
+        { name = "容量",   value = clipCapacity  / MaxClipCapacity,      rawValue = math.floor(clipCapacity) },
+        { name = "射速",   value = shootSpeed    / MaxShootSpeed,        rawValue = math.floor(shootSpeed) },
+    }
+end
+```
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/cKYP8image.png)
+
+---
+
+#### 配件列表UI模板
+
+**Lua**
+
+核心实现是初始化配件信息：
+
+```lua
+---初始化配件展示信息（图标、名称、品质、描述）
+---@param InParams table|nil @参数表 {DefineID: FItemDefineID, ItemID: number}
+function Bag_8_ListAtt:InitData(InParams)
+    InParams = InParams or {}
+    self.AttachItem = InParams
+    self:Clear()
+
+    local DefineID = InParams.DefineID
+    local ItemID = 0
+    if (DefineID and DefineID.TypeSpecificID or 0) > 0 then
+        ItemID = DefineID.TypeSpecificID
+    elseif InParams.ItemID and InParams.ItemID > 0 then
+        ItemID = InParams.ItemID
+    end
+    if ItemID <= 0 then
+        self:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        return
+    end
+
+    local LocalPC = UGCGameSystem.GetLocalPlayerController()
+    local IconSoftPath, Quality, ItemName, desc
+    if DefineID then
+        IconSoftPath = UGCItemSystemV2.GetItemIconWithPlayerSkinV2ByDefineID(DefineID, LocalPC)
+        Quality = UGCItemSystemV2.GetItemQualityV2ByDefineID(DefineID)
+        ItemName = UGCItemSystemV2.GetItemNameV2ByDefineID(DefineID)
+        desc = UGCItemSystemV2.GetItemDetailV2ByDefineID(DefineID)
+    else
+        IconSoftPath = UGCItemSystemV2.GetItemIconWithPlayerSkinV2(ItemID, LocalPC)
+        Quality = UGCItemSystemV2.GetItemQualityV2(ItemID)
+        ItemName = UGCItemSystemV2.GetItemNameV2(ItemID)
+        desc = UGCItemSystemV2.GetItemDetailV2(ItemID)
+    end
+
+    -- 设置物品图标
+    local IconPath = KismetSystemLibrary.BreakSoftObjectPath(IconSoftPath)
+    if IconPath then
+        if self.Image_Icon then
+            self.Image_Icon:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+            FuncUtil.SetImageWithPathAsync(self.Image_Icon, IconPath)
+        end
+    end
+
+    -- 品质背景
+    local QualityBgPath = UGCItemSystemV2.GetQualityTexturePath(Quality)
+    if QualityBgPath and self.Image_Bg then
+        self.Image_Bg:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        FuncUtil.SetImageWithPathAsync(self.Image_Bg, QualityBgPath)
+    end
+
+    -- 物品名称
+    if self.TextBlock_IconName then
+        self.TextBlock_IconName:SetText(ItemName)
+    end
+
+    -- 物品描述
+    if self.UTRichTextBlock_describe then
+        self.UTRichTextBlock_describe:SetText(desc)
+    end
+end
+```
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/iq6U2image.png)
+
+---
+
+#### 武器属性条UI模板
+
+武器属性条UI模板用于显示武器的单个属性数值，用进度条显示。
+
+**Lua**
+
+核心的实现是刷新两个物品的Data的对比：
+
+```lua
+---刷新数值对比显示
+function Bag_7_AttItem:RefreshCompare()
+    if self.PrevAttributeNum == nil then
+        self.WidgetSwitcher_Num:SetVisibility(ESlateVisibility.Collapsed)
+        return
+    end
+
+    local curNum = tonumber(self.AttributeNum) or 0
+    local prevNum = tonumber(self.PrevAttributeNum) or 0
+    local diff = curNum - prevNum
+
+    if diff < 0 then
+        self.HorizontalBox_decline:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        self.HorizontalBox_UP:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        self.WidgetSwitcher_Num:SetActiveWidgetIndex(0)
+        self.WidgetSwitcher_Num:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        self.TextBlock_decline:SetText(tostring(diff))
+    elseif diff > 0 then
+        self.HorizontalBox_decline:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        self.HorizontalBox_UP:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        self.WidgetSwitcher_Num:SetActiveWidgetIndex(1)
+        self.WidgetSwitcher_Num:SetVisibility(ESlateVisibility.SelfHitTestInvisible)
+        self.TextBlock_Up:SetText("+" .. tostring(diff))
+    else
+        self.WidgetSwitcher_Num:SetVisibility(ESlateVisibility.Collapsed)
+    end
+end
+```
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/IXBkRimage.png)
+
+<br>
+
+### 弹框面板
+
+#### TipsUI模板
+
+配置UI控件之后，参考 [背包接入UGCTips系统](https://developer.gp.qq.com/wikieditor/#/catalog/20463) 进行配置。
+
+**效果**
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/L37Umimage.png)
+
+---
+
+#### 购买/扩容确认弹框UI模板
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/6IIQLimage.png)
+
+---
+
+#### 取出代币弹框UI模板
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/uCKLmimage.png)
+
+---
+
+#### 丢弃物品弹框UI模板
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/0UV0ximage.png)
+
+---
+
+#### 销毁物品弹框UI模板
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/coCfrimage.png)
+
+---
+
+#### 数量选择控件UI模板
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/N4Y5cimage.png)
+
+---
+
+## 背包流程概览
+
+> 文档路径: 进阶内容 > GamePlay系统 > 物资系统 > 物资编辑器2.0 > 背包流程概览
+
+> 文档ID: 20471 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20471)
+
+> 新增: 2026-09-02 13:54:56
+
+**涉及API/标识符:** `AddAndEquipItemV2`, `AddCellCapacity`, `AddFailed`, `AddItemByDefineIDV2`, `AddItemV2`, `AddMaxCellCapacity`, `AttachEquipmentToTargetItem`, `BatchPutInWarehouse`, `BatchTakeOutWarehouse`, `CanNotAdd`, `CanNotEquip`, `CheckCanAddItem`, `DetachEquipmentToTargetItem`, `DisableItemNewFlag`, `DisuseItemV2`, `DropItemByDefineIDV2`, `DropItemV2`, `EItemAddAndEquipResultV2`, `EnableItemNewFlag`, `EquipItemToAnySlotV2`, `EquipItemV2`, `GetAllItemDefineIDsV2`, `GetItemCountV2`, `GetItemDefineIDsByIDV2`, `ItemDefineID`, `OnEquip`, `OnSwapEquipSlot`, `OnUnEquip`, `PutInWarehouse`, `RemoveItemByDefineIDV2`, `RemoveItemNewFlag`, `RemoveItemV2`, `SetItemCustomData_WithKey`, `Success`, `SwapEquipSlotV2`, `TakeOutWarehouse`, `true`, `TryAutoEquip`, `TrySortOutItemV2`, `TrySortOutWarehouseItem`，另有 7 项
+
+# 背包流程概览
+
+> 本文档面向外部开发者，概述 V2 背包系统各公开接口的核心业务流程，帮助开发者理解接口行为、返回值语义与使用注意事项，以便在自定义功能中正确接入 V2 背包。接口的具体参数定义请参考 [API 文档（`UGCBackpackSystemV2` / `UGCItemSystemV2`）](https://developer.gp.qq.com/api/#/searchContent/UGCBackpackSystemV2)，本文只讲"流程与规则"。
+
+<br>
+
+---
+
+## 一、整体说明
+
+V2 背包是绿洲启元专用背包系统，基于 [GP Backpack V2 Game Part](https://developer.gp.qq.com/wikieditor/#/catalog/20104) 启用。
+
+
+| 特性 | 说明 |
+| --- | --- |
+| 服务器权威 | 除查询类接口外，所有写操作最终在服务器（DS）执行；客户端调用会自动转发到服务器，本地状态会等服务器广播回包后才更新 |
+| 物品操作 | 存入、移除、丢弃、查询、事件广播 |
+| 装备系统 | 支持槽位扩展、自定义槽位；物品间支持 Attach 附加关系（如武器挂配件） |
+| 仓库系统 | 背包与仓库间可转移物品，仓库有独立容量 |
+| 容量规则 | 基于格子数；货币、已装备物品、已 Attach 的子件不计入占格 |
+| 实例化数据 | 每个物品实例拥有唯一实例 ID（`ItemDefineID`），支持 `SetItemCustomData_WithKey` 等自定义数据接口 |
+
+
+---
+
+## 二、通用约定
+
+下列约定覆盖整个 V2 背包接口族，**所有方法在调用前都应预先理解**：
+
+- **返回值语义**：添加 / 移除 / 丢弃类接口返回**实际生效数量**（可能小于请求量，受容量、物品总量上限、可添加量钩子等多重约束）；装备 / 附加类接口返回**布尔结果**。
+- **客户端调用的"返回 ≠ 结果"**：客户端调用成功返回仅表示请求已被服务器受理，由于 RPC 异步，**最终成败以服务器事件广播为准**。部分接口（如 `UseItemV2`、`EquipItemV2`、`RemoveItemV2`）的服务器/客户端返回值语义不同，详见各章节。
+- **事务性**：单个物品的添加 / 移除 / 转移为原子操作，失败不会留下半成品。
+- **实例 ID 转换**：仓库与背包之间的转移（`PutInWarehouse` / `TakeOutWarehouse`）以及丢弃（`DropItemV2` / `DropItemByDefineIDV2`）都会**生成全新实例 ID**，原实例上的实例化数据会被复制到新实例上；如需追踪新实例，请通过物品查询接口获取。
+
+<br>
+
+---
+
+## 三、M1. 物品存储与堆叠
+
+
+
+### 3.1 `AddItemV2`（按物品 ID 添加）
+
+**适用场景**：开发者给玩家发物品的最常用接口（按配置 ID 凭空添加，自动合并堆叠）。
+
+**流程**：
+
+1. 校验服务器与组件有效性、配置表存在性
+2. 通过可添加量钩子获得本次允许添加的总量
+3. 优先与背包内已有堆叠合并，剩余部分逐实例新建
+4. 每新建一个实例后，若物品配置允许则尝试自动装备
+5. 返回实际添加数量，以及新创建的实例 ID 列表
+
+
+**开发者注意**：
+
+- 容量满时新建中断，剩余数量不会添加
+- 实际添加数量受"物品总量上限"约束，可能小于请求数量
+- 新物品**不会合并到拥有实例化数据的物品分堆**（避免覆盖随机属性）
+
+<br>
+
+### 3.2 `AddItemByDefineIDV2`（按实例 ID 添加）
+
+**适用场景**：创建带实例化数据的物品（随机属性、定制装备等）。
+
+**流程**：
+
+1. 区分普通物品与带 Attach 子件的"整件"
+2. 整件添加时，**主件与全部子件都必须可全额添加**，否则整体失败
+3. 添加完成后还原 Attach 父子关系；若原装备在背包槽位，会装回原槽位
+4. 返回实际添加数量
+
+
+**关键提示**：
+
+> ⚠️ 由于 `ItemDefineID` 需要保证唯一，**必须使用全新的实例 ID 创建物品**（通过 `UGCItemSystemV2.GetItemDefineID` 获取）。如果使用另一物品的实例 ID 创建新物品，将导致 ID 混乱。接口最多创建一个新堆叠，此堆叠的实例 ID 即函数传入的实例 ID。
+
+<br>
+
+### 3.3 `RemoveItemV2` / `RemoveItemByDefineIDV2`（移除，不生成拾取物）
+
+**适用场景**：消耗物品、彻底清除物品、任务扣物品等"无痕清除"场景。
+
+**流程**：
+
+1. 移除数量取"请求数"与"当前数量"的较小值
+2. 已装备 / 已 Attach 的物品会先卸下 / 解除再移除
+3. 物品数量归零后自动取消使用中状态
+4. 返回实际移除数量
+
+**对比**：
+
+| 方法 | 传参方式 | 适用场景 |
+| --- | --- | --- |
+| `RemoveItemV2(Player, ItemID, Count)` | 按配置 ID，只看数量 | 不同实例物品等价时（如消耗通用子弹） |
+| `RemoveItemByDefineIDV2(Player, ItemDefineID, Count)` | 按实例 ID | 只移除指定实例，不波及同配置 ID 的其他实例 |
+
+**返回值**：服务器返回**实际移除数量**；客户端调用后**总是返回 0**（实际数量需等服务器广播）。
+
+<br>
+
+### 3.4 `添加前预检`（不落库，内核能力）
+
+**适用场景**：在真正调用 `AddItemV2` 前预判能否添加、添加多少，避免落库后失败回滚。
+
+**流程**（依次检查）：
+
+1. 配置表存在
+2. 容量足够
+3. 物品总量上限
+4. 钩子允许量
+
+返回可添加数量，**`0` 表示不可添加**。
+
+
+<br>
+
+---
+
+## 四、M2. 装备穿戴与配件附加
+
+
+
+
+### 4.1 `EquipItemV2`（装备到指定槽位）
+
+**流程**：
+
+1. 槽位类型校验（组件层 + 核心层双重校验）
+2. 校验物品数量为 1 且可装备
+3. 建立物品与槽位的绑定关系
+4. 触发装备表现（挂模型 / 技能），失败自动回滚
+
+
+**开发者注意**：
+
+- 如果对应槽位已经装备了其它物品，会触发**卸下旧装备 + 装备新物品**两步动作
+- 已装备的物品**不再占用背包容量**
+- 客户端调用返回 `true` 仅表示请求已受理，最终成败以服务器广播为准
+
+
+<br>
+
+### 4.2 `UnEquipItemV2`（卸下装备）
+
+**流程**：
+
+1. 卸下前**检查容量**（卸下后物品回背包占格）
+2. 背包已满时卸下失败
+3. 卸下成功触发相关广播
+
+
+<br>
+
+### 4.3 `EquipItemToAnySlotV2`（装备到任意合适槽位）
+
+**适用场景**：不关心具体落到哪个槽位时（如通用武器槽、防具槽）。
+
+**流程**：
+
+1. 查找首个合适的空闲槽位
+2. 复用装备逻辑
+3. 若所有可装备的槽位都非空，尝试向一个非空槽位装备，**此时该槽位的原物品将被卸下**
+
+
+<br>
+
+### 4.4 `AddAndEquipItemV2`（添加并装备）
+
+**适用场景**：发物品时直接穿戴（如任务奖励发防具）。
+
+**流程**：
+
+1. 前置检查
+2. 添加
+3. 装备，各阶段独立失败
+
+**返回分步结果枚举** `EItemAddAndEquipResultV2`（常见值：`CanNotAdd` / `CanNotEquip` / `AddFailed` / `Success`）：
+
+
+<br>
+
+### 4.5 `SwapEquipSlotV2`（交换两槽位装备）
+
+**流程**：
+
+1. 双向校验（A ⇄ B）类型约束
+2. 交换两物品的槽位绑定
+3. 触发交换广播
+
+
+**与"卸下 + 装备"两步走的区别**：
+
+- 卸下可能受背包容量限制，交换则不经过背包中间态
+- 装备 / 卸下会触发物品 Handle 上的 `OnEquip` / `OnUnEquip` 事件；**交换装备时只触发 `OnSwapEquipSlot`**
+
+<br>
+
+### 4.6 `AttachEquipmentToTargetItem`（配件附加）
+
+**适用场景**：武器挂配件、装备组合（多件装备逻辑上绑定为一件）。
+
+**流程（三层准入校验）**：
+
+1. 实例数据可附加
+2. 目标物品槽位允许
+3. 配件自身可附加
+
+通过后：
+
+- 建立父子绑定关系
+- 若父件处于已装备状态，**配件随之进入装备态**（挂模型）
+- 校验失败自动回滚
+
+**开发者注意**：若父件**仅放在背包中组装**（未装备），附加只建立数据关系、不挂模型。
+
+<br>
+
+### 4.7 `DetachEquipmentToTargetItem`（解除附加）
+
+**流程**：
+
+1. 校验配件存在
+2. 检查容量（配件解除后回背包占格）
+3. 解除绑定、配件退出装备态并触发广播
+
+<br>
+
+### 4.8 `TryAutoEquip`（添加后自动装备，内部规则）
+
+**适用场景**：不需要显式调用，由 `AddItemV2` / `AddItemByDefineIDV2` 在新建实例时自动触发。
+
+**触发顺序**：
+
+1. 物品配置开启自动装备且钩子允许
+2. 优先装备到空闲背包槽位
+3. 无空闲槽位时，尝试附加到可附加的物品上
+4. 都不可行则不装备
+
+<br>
+
+---
+
+## 五、M3. 道具使用
+
+### 5.1 `UseItemV2`（使用，可失败）
+
+**流程**：
+
+1. 校验可使用（钩子 + 数量 > 0 + 未过期）
+2. 广播"使用开始"状态
+3. 执行使用逻辑
+4. 若为**立即结束型**道具，使用后广播"使用停止"状态；若为**持续施法类**道具，保持使用态，由后续逻辑择机停止
+
+
+**关键提示**：只会使用**指定物品实例**，不会波及到其它物品实例（同配置 ID 的其他实例不受影响）。
+
+<br>
+
+### 5.2 `DisuseItemV2`（取消使用）
+
+**幂等操作**，永远成功。物品被移除且数量归零时系统会自动调用。
+
+
+<br>
+
+---
+
+## 六、M4. 丢弃与销毁
+
+### 6.1 `DropItemV2` / `DropItemByDefineIDV2`（丢弃，生成拾取物）
+
+**流程**：
+
+1. 丢弃数量取"请求数"与"当前数量"的较小值
+2. 已装备 / 已 Attach 物品先卸下 / 解除
+3. **生成拾取物**：随机落点生成，绑定丢弃者与时间
+4. 返回实际丢弃数量
+
+**对比**：
+
+| 方法 | 传参 | 生成的 PickupWrapper 实例 ID |
+| --- | --- | --- |
+| `DropItemV2(Player, ItemID, Count)` | 按配置 ID | 全新实例 ID（原始实例化数据被复制） |
+| `DropItemByDefineIDV2(Player, ItemDefineID, Count)` | 按实例 ID | 全新实例 ID（同上） |
+
+**返回值**：服务器返回**实际丢弃数量**；客户端调用后**总是返回 0**（实际数量需等服务器广播）。
+
+<br>
+
+### 6.2 销毁 vs 移除（语义区分，重要）
+
+> **关键提示**：很多开发者会把"销毁"和"移除"混用，但 V2 背包里这两个词的语义**完全不同**——
+
+| 操作 | 是否生成拾取物 | 是否可被再次拾取 |
+| --- | --- | --- |
+| 丢弃 / 销毁（`DropItemV2`） | ✅ 是 | ✅ 是 |
+| 移除（`RemoveItemV2`） | ❌ 否 | ❌ 否（无痕清除） |
+
+> 需要"**彻底清除不留物**"时，请使用 `RemoveItemV2` 而非丢弃接口。这条规则在玩家消耗货币、清除任务物品、回收装备等场景下都适用。
+
+<br>
+
+---
+
+## 七、M5. 排序整理与容量管理
+
+
+### 7.1 `TrySortOutItemV2`（整理背包）
+
+逆序遍历，将可堆叠物品向更靠前的堆叠合并，**压缩背包空间**。
+
+<br>
+
+### 7.2 超容处理（内部机制）
+
+满容时仍执行某些操作（如货币存取、装备操作）可能导致超容。
+
+**收尾规则**：
+
+1. 优先剔除本次操作新增的物品
+2. 仍超容再剔除其他占格物品
+3. 被剔除物品默认丢到地上（可通过钩子自定义处理）
+
+<br>
+
+### 7.3 容量接口
+
+| 接口 | 行为 | 校验 |
+| --- | --- | --- |
+| `AddCellCapacity(Player, AddCount)` | 解锁当前容量 | 受上限约束，超过上限失败 |
+| `AddMaxCellCapacity(Player, AddCount)` | 抬升容量上限 | 无前置校验，**扩容不持久化**（与背包扩容不同） |
+| `RemoveMaxCellCapacity(Player, AddCount)` | 降低容量上限 | 降低后容量为负则失败 |
+
+<br>
+
+---
+
+## 八、M6. 仓库与物品转移
+
+
+### 8.1 `PutInWarehouse`（背包 → 仓库）
+
+**流程**：
+
+1. 已装备物品先卸下（卸下失败则整体失败）
+2. 双向校验：仅允许根级物品转移、双方可转移
+3. 克隆生成全新实例 ID
+4. 源端移除旧实例，目标端添加新实例
+5. 返回转移结果
+
+
+**开发者注意**：
+
+- 转移结果**不包含新实例 ID**，如需追踪新实例，请通过物品查询接口获取
+- 存入受**仓库容量**约束，取出受**背包容量**约束
+
+<br>
+
+### 8.2 `BatchPutInWarehouse`（批量转移）
+
+**流程**：
+
+1. 逐项前置校验，**任一失败则整体失败**
+2. 容量校验在整体层面执行
+
+> ⚠️ 批量过程中若某件装备卸下失败，**前面已卸下的装备不会回滚**
+
+<br>
+
+### 8.3 `TakeOutWarehouse` / `BatchTakeOutWarehouse`（仓库取出）
+
+取出方向与存入相反，取出物进背包受**背包容量**约束。
+
+取出后系统自动：
+
+1. 还原 Attach 关系
+2. 尝试自动装备
+3. 超容按超容规则处理
+
+
+<br>
+
+### 8.4 `TrySortOutWarehouseItem`（仓库整理）
+
+仅合并同 ID 可堆叠物品，**逻辑与背包整理一致**（更简单，无时间戳重排）。
+
+<br>
+
+---
+
+## 九、M7. 物品新标记（New 角标）
+
+
+### 9.1 `RemoveItemNewFlag`（移除单个物品的角标）
+
+物品已在其他界面查看过后调用。会触发背包 `Update` 事件。
+
+
+<br>
+
+### 9.2 `EnableItemNewFlag` / `DisableItemNewFlag`（全局开关）
+
+- **新标记默认开启**：物品进入背包即带 New 角标
+- `EnableItemNewFlag(Player)`：激活物品新标记
+- `DisableItemNewFlag(Player)`：关闭全部角标并清除现有标记
+
+<br>
+
+---
+
+## 附：推荐接入路径
+
+下列对照表给出最常见需求与对应接口的组合，开发者可直接按此选择入口：
+
+| 需求 | 推荐接口组合 |
+| --- | --- |
+| 给玩家发物品 | `AddItemV2`（合并堆叠 + 自动装备） |
+| 发带随机属性的装备 | `UGCItemSystemV2.GetItemDefineID` → `AddItemByDefineIDV2` |
+| 预检能否添加 | `CheckCanAddItem` |
+| 消耗物品（不留物） | `RemoveItemV2` |
+| 丢弃并留拾取物 | `DropItemV2` |
+| 装备 / 卸下 | `EquipItemV2` / `UnEquipItemV2` |
+| 武器挂配件 | `AttachEquipmentToTargetItem`（`UGCItemSystemV2.GetAttachAllowSlotsByDefineID` 预判可挂槽位） |
+| 使用道具 | `UseItemV2` / `DisuseItemV2` |
+| 仓库转移 | `PutInWarehouse` / `TakeOutWarehouse`（批量同理） |
+| 容量扩张 | `AddCellCapacity` / `AddMaxCellCapacity` |
+| 物品查询 | `GetItemCountV2` / `GetItemDefineIDsByIDV2` / `GetAllItemDefineIDsV2` |
+| 事件订阅 | 背包事件广播（增删改、装备、转移均有对应事件） |
+
+<br>
+
+---
+
 ## 背包系统
 
 > 文档路径: 进阶内容 > GamePlay系统 > 物资系统 > 物资编辑器2.0 > 背包系统
@@ -1805,11 +3337,13 @@ end
 
 > 文档ID: 20420 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20420)
 
-> 新增: 2026-07-27 19:03:53
+> 新增: 2026-07-27 19:03:53 | 更新: 2026-09-17 11:57:07
+
+**涉及API/标识符:** `bPickUpWidgetEnable`, `Event_PickUpWrapperInfoChange`, `PickUpWidgetClass`, `true`, `UE.IsValid`, `UGCGameSystem.GetLocalPlayerPawn`, `UGCItemSystemV2.GetItemNameV2ByDefineID`, `UGCItemSystemV2.GetItemQualityV2ByDefineID`, `UGCItemSystemV2.GetQualityBarTexturePath`, `UGCObjectUtility.AsyncLoadObject`, `UGCPlayerPawnSystem.PickUpWrapperActor`
 
 # 自定义拾取组件
 
-物品编辑器提供了自定义拾取权重和自动拾取数量的配置，开发者能够通过开启自定义拾取组件使其生效，让自定义物品可以按照权重在拾取列表中排序和自动拾取。
+物品编辑器提供了自定义拾取权重和自动拾取数量的配置，开发者能够通过开启自定义拾取组件使其生效，让自定义物品可以按照权重在拾取列表中排序和自动拾取，且支持关闭原有拾取列表UI，启用自定义的拾取物控件交互UI。
 
 <br>
 
@@ -1819,7 +3353,7 @@ end
 
 点击编辑器菜单栏的【玩法通用设置】按钮，在【GamePart】中添加【GP_BackpackV2】模块和【GP_PickUpV2List】。
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/SBrvgimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/hqFetimage.png)
 
 <br>
 
@@ -1846,7 +3380,8 @@ end
 
 开启UGC拾取组件后，可以创建一个UGC拾取列表组件用于自定义，进入【Lua】即可自定义拾取物物品排序逻辑。
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Kplrximage.png)![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/J8tXTimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/XSgkXimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/GBaOsimage.png)
 
 每种物品都会有一套默认的排序规则和拾取规则，下面分类说明。
 
@@ -1897,6 +3432,105 @@ end
 ### 防具背包拾取规则
 
 ![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/82B1ximage.png)
+
+<br>
+
+## 自定义拾取物控件交互UI
+
+UGCPickUpWrapperActor（UGC 地面拾取物）新增三项能力：
+
+- 控件配置：在 Actor 上新增 ``bPickUpWidgetEnable`` 、``PickUpWidgetClass`` 等交互控件配置属性
+- 控件模板：提供标准控件模板 UGC_WrapperNameWidget_UIBP（Lua），展示名称/数量/品质，支持点击拾取
+- 事件开放：新增 ``Event_PickUpWrapperInfoChange`` 事件，DefineID 或 Count 变化时通知控件刷新 UI
+
+> 如果希望通过点击控件来拾取物品，建议关闭自动拾取(在【Gamepart】上挂载【GP_PickUpV2List】中，找到并勾选关闭拾取列表)，避免走近就自动拾取导致控件交互失效。
+
+<br>
+
+### 配置流程
+
+1. 在【GP_PickUpV2List】中创建一个新的V2拾取组件，在组件中找到并勾选 ``是否禁用UGC拾取列表UI``：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/0V22Kimage.png)
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Xc4yuimage.png)
+
+2. 自定义拾取物UI交互控件，在【UI编辑器】中以拾取物名称UI模板创建一个蓝图控件
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/BAAviimage.png)
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/1L90mimage.png)
+
+3. 在内容管理器中选择拾取物蓝图父类，创建自定义的 UGCPickupWrapper_BP 拾取物蓝图，进入蓝图配置，勾选 ``启用拾取物控件``，并替换自定义的拾取物UI交互控件蓝图：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/W1CBtimage.png)
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/57I9Uimage.png)
+
+4. 在 UGCGameState 蓝图中替换拾取物蓝图，点击【编译】、【保存】
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/tHKfnimage.png)
+
+5. 进入调试，添加掉落物查看效果：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/B9JZHimage.png)
+
+<br>
+
+### 拾取物UI交互控件功能
+
+**Event_PickUpWrapperInfoChange 实现**
+
+拾取物信息变化通知，Lua 层重写收到事件后更新名称/数量/品质背景刷新名称/数量/品质
+
+```lua
+function UGC_WrapperNameWidget_UIBP:Event_PickUpWrapperInfoChange(ItemDefineID, Count)
+    local ItemName = UGCItemSystemV2.GetItemNameV2ByDefineID(ItemDefineID)
+    self.RichTextBlock:SetText(ItemName .. " +" .. tostring(Count))
+
+    local Quality = UGCItemSystemV2.GetItemQualityV2ByDefineID(ItemDefineID)
+    local QualityBgPath = UGCItemSystemV2.GetQualityBarTexturePath(Quality)
+    UGCObjectUtility.AsyncLoadObject(QualityBgPath, function(LoadedTexture)
+        if UE.IsValid(self.Image_Bg) and UE.IsValid(LoadedTexture) then
+            self.Image_Bg:SetBrushFromTexture(LoadedTexture)
+        end
+    end)
+end
+```
+
+**LuaOnWrapperClick 实现**
+
+点击拾取物UI交互控件事件
+
+```lua
+function UGC_WrapperNameWidget_UIBP:LuaOnWrapperClick()
+    -- 0.1s 冷却防重复点击
+    local CurrentTime = os.clock()
+    if self.ClickLastTime and (CurrentTime - self.ClickLastTime) < 0.1 then return end
+    self.ClickLastTime = CurrentTime
+
+    local PlayerPawn = UGCGameSystem.GetLocalPlayerPawn()
+    if not UE.IsValid(PlayerPawn) or not UE.IsValid(self.WrapperActor) then return end
+
+    local DataList = self.WrapperActor:GetDataList()
+    if DataList == nil or #DataList <= 0 then return end
+
+    UGCPlayerPawnSystem.PickUpWrapperActor(PlayerPawn, self.WrapperActor, DataList[1] or {}, self.WrapperActor:GetItemCount())
+end
+```
+
+**自定义控件显示**
+
+自定义控件显示规则（如过滤低品质物品），返回 ``true`` 显示控件
+
+```lua
+function UGC_WrapperNameWidget_UIBP:CanShowPickUpWidget()
+    if not UE.IsValid(self.WrapperActor) then return false end
+    -- 仅显示831开头的UGC物品
+    local DefineID = self.WrapperActor:GetDefineID()
+    return tostring(DefineID.TypeSpecificID):sub(1, 3) == "831"
+end
+```
 
 ---
 

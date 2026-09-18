@@ -161,9 +161,9 @@ end
 
 > 文档ID: 20245 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20245)
 
-> 更新: 2026-03-12 10:26:09
+> 新增: 2026-09-08 18:57:29
 
-**涉及API/标识符:** `BP_UGCVehicleRefresher_Base`, `ExplosionBaseDamage`, `ExplosionMinimumDamage`, `SetBoosting`, `SpawnVehicle`, `UGCVehicleSystemV2`, `UGCWheeledVehicleComponent`
+**涉及API/标识符:** `BP_UGCVehicleRefresher_Base`, `camp`, `ExplosionBaseDamage`, `ExplosionMinimumDamage`, `SetBoosting`, `SpawnVehicle`, `UGCVehicleSystemV2`, `UGCWheeledVehicleComponent`
 
 # 载具编辑器
 
@@ -548,6 +548,16 @@ end
 目前驾驶位的座椅模板支持同时激活多个武器，但共享同一个开火按键，即开火时触发所有武器的攻击行为。
 
 ![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/NFkyuimage.png)
+
+---
+
+### 载具阵营配置
+
+在载具编辑器中找到载具蓝图，在细节面板搜索 `camp` 就是其阵营ID，用法和怪物相同。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/CH7loimage.png)
+
+>载具自身较大，可能需要调整行为树或者攻击范围，避免无法达到指定的范围内而一直卡住。
 
 <br>
 

@@ -185,7 +185,7 @@ end
 
 > 文档ID: 20112 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20112)
 
-> 更新: 2026-02-25 15:30:46
+> 新增: 2026-09-02 17:27:13
 
 # 技能Event查询手册
 
@@ -504,6 +504,19 @@ end
 - 发射的抛体：该事件触发时，通过 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108) 输出对应的抛体实例
 > 属性绑定数据类型：AUniversalProjectileCore
 
+---
+
+### 阶段跳转事件
+
+技能的阶段发生跳转时，根据配置的参数，触发对应事件。
+
+> 只能在主动技能的状态图中使用该事件
+
+![企业微信截图_17871273576309.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Bbb8c%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17871273576309.png)
+
+- 来源阶段名：若为None，则代表任一阶段发生跳转时，都可以触发该事件；若为一个固定的阶段名称，则要求对应阶段触发跳转时，才能触发事件
+- 目标节阶段名：若为None，则代表跳转到任一阶段时，都可以触发该事件；若为一个固定的阶段名称，则要求跳转到该固定阶段时，才能触发事件
+
 <br>
 
 ## 枪械类事件
@@ -596,7 +609,7 @@ end
 
 > 文档ID: 20094 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20094)
 
-> 新增: 2026-05-22 11:30:54 | 更新: 2026-07-27 16:04:07
+> 新增: 2026-05-22 11:30:54 | 更新: 2026-09-02 13:56:24
 
 **涉及API/标识符:** `Anim3DTransformWarpingTargetType_Custom`, `Anim3DTransformWarpingTargetType_SelectTarget`, `Anim3DTransformWarpingTargetType_SelectTransform`, `AnimListComp`, `AUniversalProjectileCore`, `CustomShakeClass`, `GenericCharacterAnim.General.SharingStateAnim.Attack`, `Input.Skill.Slot0`, `Interval`, `None`, `PawnState.SwitchPP`, `PESkillPickerBase`, `Script.Blueprint.NewLua`, `Slot0`, `SortFunction`
 
@@ -777,11 +790,11 @@ end
   	- 冲刺速度曲线：配置曲线资产
 - 冲刺速度：位移速度的常数值，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108?autoJump=%E4%BD%BF%E7%94%A8%E5%B1%9E%E6%80%A7%E7%BB%91%E5%AE%9A)
 - 初始方向：进行冲刺时的初始方向，非“瞄准方向/角色前向”类型依赖前置 **``目标选择``** 类型Task的选取结果
-  - 瞄准方向：沿当前瞄准方向进行冲刺
-  - 选取方向：沿技能选定的方向进行冲刺
-  - 选取点位：朝向技能指定的坐标位置进行冲刺
-  - 选取目标：朝向技能选中的目标单位进行冲刺
-  - 角色前向：沿角色当前朝向的正前方进行冲刺
+  - 朝视角方向：沿当前瞄准方向进行冲刺
+  - 朝选中方向：沿技能选定的方向进行冲刺
+  - 朝选中位置：朝向技能指定的坐标位置进行冲刺
+  - 朝选中目标：朝向技能选中的目标单位进行冲刺
+  - 朝自身前方：沿角色当前朝向的正前方进行冲刺
 - 转向方式：
    - View Direction：使用摄像机视角方向控制冲刺转向
    - JoyStick Direction：使用摇杆输入方向控制冲刺转向
@@ -949,8 +962,8 @@ end
    - 释放者自身：以释放者自身播放震屏。
    - 选中目标：在技能Task选中的目标位置播放震屏，依赖前置 **``目标选择``** 类型Task的选取结果
    - 选中点周围：在选中点位置周围，根据 ``生效距离`` 判断，决定主控端是否播放震屏
-   - 释放者周围：在释放者自身位置周围，根据 ``生效距离`` 判断，决定主控端是否播放震屏
-   ![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/oDJfmimage.png)
+   - 释放者自身周围：在释放者自身位置周围，根据 ``生效距离`` 判断，决定主控端是否播放震屏
+   ![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/L6meuimage.png)
 	 - 生效距离：选点位置为中心的半径范围，依赖前置 **``目标选择``** 类型Task的选取结果
 
 ---
@@ -1410,17 +1423,17 @@ end
 根据指定方向发射抛射物，例如魔法飞弹。
 > 【周期性Task】每隔 ``Interval`` 发射一次抛体
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/YSQI2image.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/kBuvqimage.png)
 
 - 抛体类：指定的 [技能抛体](https://developer.gp.qq.com/wikieditor/#/catalog/20093) 蓝图
 - 发射方向类型：非“角色前向”类型依赖前置 **``目标选择``** 类型Task的选取结果
 	- 角色前向：抛体沿角色当前朝向的正前方发射
 	- 技能选中方向/目标/位置：抛体朝向选取的方向/目标/位置结果
 - Socket：发射抛体的位置可以额外基于施法者身上的一个挂点位置进行计算（仅当该发射抛体的位置来源类型为技能施法者自身时生效）
-- 位置来源类型：该抛体发射的起点位置类型，非“技能施法者”类型依赖前置 **``目标选择``** 类型Task的选取结果
-	- 技能选择目标：以技能选取的全部目标位置作为抛体发射起点
-	- 技能选取点位：以技能选取的全部坐标位置作为抛体发射起点
-	- 技能施法者：以技能施法者自身位置作为抛体发射起点
+- 变换源类型：该抛体发射的起点位置类型，非“技能施法者”类型依赖前置 **``目标选择``** 类型Task的选取结果
+	- 技能选择的目标：以技能选取的全部目标位置作为抛体发射起点
+	- 技能选择的位置：以技能选取的全部坐标位置作为抛体发射起点
+	- 技能释放者自身：以技能施法者自身位置作为抛体发射起点
 	- 客户端枪口位置：以主控端枪口的位置作为抛体发射起点
 - 偏移量：最终发射位置相对起点位置的偏移
 - 覆写抛体速度及重力系数：若勾选，可设置速度与重力系数的覆盖值；否则，使用抛体蓝图的属性值
@@ -1429,9 +1442,9 @@ end
 - 覆写抛体伤害：若勾选，可设置伤害相关的覆盖值；否则，使用抛体蓝图的属性值
 	- 伤害值：支持绑定常数、基于自定义属性的 [计算公式](https://developer.gp.qq.com/wikieditor/#/catalog/20135?autoJump=%E8%AE%A1%E7%AE%97%E5%85%AC%E5%BC%8F) 或者 [指定Lua函数](https://developer.gp.qq.com/wikieditor/#/catalog/20135?autoJump=%E6%8C%87%E5%AE%9ALua%E5%87%BD%E6%95%B0) 的返回值
 	- 伤害类型Tag列表：支持为抛体命中伤害设置多种Tag，通过 [GameplayTag](https://developer.gp.qq.com/wikieditor/?timeStamp=1725589224096#/catalog/20102) 创建
-- 发射数量：发射抛体的数量，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
-- 随机发射角度限制：发射抛体允许随机偏移的最大角度
-- 随机发射位置偏移范围：发射抛体的随机起点偏移角度
+- 抛体数量：发射抛体的数量，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
+- 移动方向发射角度限制：发射抛体允许随机偏移的最大角度
+- 生成位置随机范围：发射抛体的随机起点偏移角度
 
 > 属性绑定数据类型：float
 
@@ -1444,7 +1457,8 @@ end
 
 该配置对应了一组最终发射方向分别可以和人物形成的横滚角、俯仰角、偏航角的最大限制，如果超过了该限制，只会修正到朝最大限制的方向发射抛体，避免出现比如玩家几乎在怪物垂直下方，怪物做了一个向前的动作，抛体却在垂直向下打得情况。
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/B5zNEimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/8H09Fimage.png)
+
 
 ---
 
@@ -1549,6 +1563,19 @@ end
 <br>
 
 ## UI
+
+### 技能Task - 显示取消按钮
+执行该Task时，将显示技能的取消按钮，这时点击取消按钮，则可以主动取消该技能。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/8jHKwimage.png)
+
++ 取消按钮自定义描述：若不配置，取消按钮显示默认的取消释放；否则将使用该配置字符串进行显示。
++ 取消操作：点击取消按钮后，将执行的取消行为。直接取消技能：技能会直接结束；仅发送取消事件：不会直接结束技能，取消在状态图里配置技能取消事件的跳转使得技能后续跳转到某取消阶段或End阶段。
++ 取消按钮UI：取消按钮使用的UI蓝图，可进行替换，覆盖默认的取消按钮样式。
++ UISlot：该取消按钮动态挂接的挂点以及偏移，可通过修改该挂接位置，来改变取消按钮在游戏内出现的位置。
+
+
+---
 
 ### 技能Task-修改技能UI信息
 
@@ -1657,7 +1684,7 @@ end
 - 位置来源类型：
    - 技能选择的目标：以技能选择的第一个目标为中心，生成点位
    - 技能选择的位置：以技能选取的第一个点位为中心，生成点位
-   - 技能施法者自身：以技能施法者自身为中心，生成点位
+   - 技能释放者自身：以技能释放者自身为中心，生成点位
    - 客户端枪口位置：以主控端枪口的位置为中心，生成点位
 - Offset：选取中心的偏移
 - 最小距离：选取圆环区域的最小半径
@@ -1784,7 +1811,7 @@ end
 
 **扇形目标选取器**
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/hJQHsimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Fhy7Dimage.png)
 
 - 半径：扇形区域的半径
 - 角度：扇形区域的角度
@@ -1795,10 +1822,11 @@ end
 	- 随机排序：对选取到的目标进行随机排序
 	- 距离排序：根据目标与施法者之间的距离排序，距离越近的目标越靠前
 	- 角度排序：根据目标与施法者之间的角度排序，角度越小的目标越靠前
-- 阵营过滤：选中指定阵营关系的目标，支持多选，阵营的概念可参考 [队伍与阵营](https://developer.gp.qq.com/wikieditor/#/catalog/20095)
-	- Same：友方
-	- Enemy：敌方
-	- Neutral：中立
+	- 自定义：可以额外配一个绑定的LuaFunction根据LuaFunction来定义优先级
+- 阵营过滤器：选中指定阵营关系的目标，支持多选，阵营的概念可参考 [队伍与阵营](https://developer.gp.qq.com/wikieditor/#/catalog/20095)
+	- 相同：友方
+	- 敌人：敌方
+	- 中立：中立
 - 选取目标需要是否可见：如果勾选，目标需要可见才会被选取
 - 变换源类型：该选取区域的起点位置类型，非“释放者自身”类型依赖前置 **``目标选择``** 类型Task的选取结果
 	- 技能释放者自身：扇形区域以施法者为中心
@@ -1819,7 +1847,7 @@ end
 
 **矩形目标选取器**
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/wdKzeimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/cgihkimage.png)
 
 - 选取器宽度：选取矩形区域的宽度
 - 选取器长度：选取矩形区域的长度
@@ -1827,12 +1855,13 @@ end
 - 最大数量：至多能选取到多少个目标，-1代表无限制
 - 选取目标排序类型:
 	- 随机排序：对选取到的目标进行随机排序
-	- 距离排序：根据目标与施法者之间的距离排序，距离越近的目标越靠前。
-	- 角度排序：根据目标与施法者之间的角度排序，角度越小的目标越靠前。
-- 阵营过滤：选中指定阵营关系的目标，支持多选，阵营的概念可参考 [队伍与阵营](https://developer.gp.qq.com/wikieditor/#/catalog/20095)
-	- Same：友方
-	- Enemy：敌方
-	- Neutral：中立
+	- 距离排序：根据目标与施法者之间的距离排序，距离越近的目标越靠前
+	- 角度排序：根据目标与施法者之间的角度排序，角度越小的目标越靠前
+	- 自定义：可以额外配一个绑定的LuaFunction根据LuaFunction来定义优先级
+- 阵营过滤器：选中指定阵营关系的目标，支持多选，阵营的概念可参考 [队伍与阵营](https://developer.gp.qq.com/wikieditor/#/catalog/20095)
+	- 相同：友方
+	- 敌人：敌方
+	- 中立：中立
 - 是否需要可见：如果勾选，目标需要可见，才会被选取。
 - 位置来源类型：该选取区域的起点位置类型，非“释放者自身”类型依赖前置 **``目标选择``** 类型Task的选取结果
 	- 技能释放者自身：扇形区域以施法者为中心
@@ -1854,18 +1883,19 @@ end
 
 **球形目标选择器**
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Q7lMhimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/rFa1ximage.png)
 
 - 球形选取半径：球形范围的半径。
 - 最大数量：至多能选取到多少个目标，-1代表无限制
 - 选取目标排列类型:
 	- 随机排序：对选取到的目标进行随机排序
-	- 距离排序：根据目标与施法者之间的距离排序，距离越近的目标越靠前。
-	- 角度排序：根据目标与施法者之间的角度排序，角度越小的目标越靠前。
-- 阵营过滤：选中指定阵营关系的目标，支持多选，阵营的概念可参考 [队伍与阵营](https://developer.gp.qq.com/wikieditor/#/catalog/20095)
-	- Same：友方
-	- Enemy：敌方
-	- Neutral：中立
+	- 距离排序：根据目标与施法者之间的距离排序，距离越近的目标越靠前
+	- 角度排序：根据目标与施法者之间的角度排序，角度越小的目标越靠前
+	- 自定义：可以额外配一个绑定的LuaFunction根据LuaFunction来定义优先级
+- 阵营过滤器：选中指定阵营关系的目标，支持多选，阵营的概念可参考 [队伍与阵营](https://developer.gp.qq.com/wikieditor/#/catalog/20095)
+	- 相同：友方
+	- 敌人：敌方
+	- 中立：中立
 - 是否需要可见：如果勾选，目标需要可见，才会被选取。
 - 位置来源类型：该选取区域的起点位置类型，非“释放者自身”类型依赖前置 **``目标选择``** 类型Task的选取结果
 	- 技能释放者自身：球形区域以施法者为中心
@@ -1889,18 +1919,18 @@ end
 
 执行时，点击技能UI的触控位置会额外显示一个右摇杆用于目标选取，右摇杆的轴位置最终会映射到实际场景里的3D位置，并基于该位置为中心进行目标的选取。
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/YOm5nimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/h8sMhimage.png)
 
-- JoyStickRangeRadius：摇杆选取区域大小，选到的点位和施法者的最大距离，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
-- Range Radius：选取目标位置半径区域大小，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
-- Range Height：选取到的游戏实例和最终落点的最大高度差，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
-- Rotate to Joystick：在选取过程中，角色的朝向是否始终朝向摇杆所选位置
+- 操纵杆范围半径：摇杆选取区域大小，选到的点位和施法者的最大距离，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
+- 范围半径：选取目标位置半径区域大小，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
+- 范围高度：选取到的游戏实例和最终落点的最大高度差，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
+- 旋转至操纵杆：在选取过程中，角色的朝向是否始终朝向摇杆所选位置
 - 最大数量：至多能选取到多少个目标，-1代表无限制
 - 选取目标排列类型:
 	- 随机排序：对选取到的目标进行随机排序
 	- 距离排序：根据目标与施法者之间的距离排序，距离越近的目标越靠前
 	- 角度排序：根据目标与施法者之间的角度排序，角度越小的目标越靠前
-	- 自定义： 在技能蓝图lua中写入自定义函数并替换到``SortFunction``选项上，自定义函数中只有两个回调参数，结果取决于 ``目标选择``的结果
+	- 自定义：可以额外配一个绑定的LuaFunction根据LuaFunction来定义优先级
 ![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/bNSqXimage.png)
 
 按距离排序选敌代码示例：
@@ -1918,10 +1948,10 @@ function MySkill:MyCustomFunction(FirstGoal, SecondGoal)
     return false --如果小于则让第二个目标优先被选中
 end
 ```
-- 阵营过滤：选中指定阵营关系的目标，支持多选，阵营的概念可参考 [队伍与阵营](https://developer.gp.qq.com/wikieditor/#/catalog/20095)
-	- Same：友方
-	- Enemy：敌方
-	- Neutral：中立
+- 阵营过滤器：选中指定阵营关系的目标，支持多选，阵营的概念可参考 [队伍与阵营](https://developer.gp.qq.com/wikieditor/#/catalog/20095)
+	- 相同：友方
+	- 敌人：敌方
+	- 中立：中立
 - 是否需要可见：如果勾选，目标需要可见才会被选取
 - 位置来源类型：该选取区域的起点位置类型，非“释放者自身”类型依赖前置 **``目标选择``** 类型Task的选取结果
 	- 技能释放者自身：摇杆出发点以施法者为中心
@@ -1936,10 +1966,10 @@ end
 
 以屏幕中心发射射线进行检测，将命中的目标作为最终选取的目标。
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/G1mJhimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/dUKc7image.png)
 
-- Trace Distance：射线检测的最大有效距离，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
-- Sweep Sphere Radius：检测射线的体积半径大小，射线路径上在此半径范围内的所有物体均会被视为命中
+- 检测距离：射线检测的最大有效距离，支持 [属性绑定](https://developer.gp.qq.com/wikieditor/#/catalog/20108)
+- 扫描球半径：检测射线的体积半径大小，射线路径上在此半径范围内的所有物体均会被视为命中
 - 最大数量：至多能选取到多少个目标，-1代表无限制
 - 选取目标排列类型:
 	- 随机排序：对选取到的目标进行随机排序
@@ -2489,7 +2519,7 @@ Entry跳转至下一阶段时，默认由技能激活事件触发，因此无需
 
 > 文档ID: 20091 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20091)
 
-> 新增: 2026-07-17 12:32:50
+> 新增: 2026-07-17 12:32:50 | 更新: 2026-09-02 13:56:44
 
 **涉及API/标识符:** `Action`, `ActivateSkill`, `AddSkillByClass`, `CastSkill`, `Charge`, `EnableSkill`, `FullAction`, `GetSkillsByTag`, `GetSkillsByTag:~:text=UPersistEffectSkill[]-,GetSkillsByTag,-(AActorTargetActor`, `Indicator`, `Normal`, `PersistClientStateComponent`, `PESkill_UIBP`, `PlayerPawn`, `RemoveSkillInstance`, `Slot`, `UGCGameSystem.GetPlayerPawnByPlayerController`, `UGCMapInfoLib.GetRootLongPackagePath`, `UGCObjectUtility.LoadClass`, `UGCPersistEffectSystem`, `UGCPersistEffectSystem.AddSkillByClass`, `UGCPersistEffectSystem.RemoveSkillInstance`, `UPersistEffectSkill`
 
@@ -2694,6 +2724,63 @@ Entry跳转至下一阶段时，默认由技能激活事件触发，因此无需
 |切视角类型|是否切换视角<br>- 切换无状态：不切换视角<br>- SwitchFPPWithRecover：切换至第一人称，且技能结束后还原视角<br>- SwitchFPPWithoutRecover：切换至第一人称，且技能结束后不还原视角<br>- SwitchTPPWithRecover：切换至第三人称，且技能结束后还原视角<br>- SwitchTPPWithoutRecover：切换至第三人称，且技能结束后不还原视角|
 |切姿态类型|是否切换角色的Pose姿态<br>- 切换无状态：不切换姿态<br>- 切换站立并恢复：切换至站姿，且技能结束后还原姿态<br>- 切换站立不恢复：切换至站姿，且技能结束后不还原姿态<br>- 切换蹲伏并恢复：切换至蹲姿，且技能结束后还原姿态<br>- 切换蹲伏不恢复：切换至蹲姿，且技能结束后不还原姿态<br>- 切换趴下并恢复：切换至趴姿，且技能结束后还原姿态<br>- 切换趴下不恢复：切换至趴姿，且技能结束后不还原姿态|
 
+【技能等级配置】
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Ww7Xdimage.png)
+
+- SkillLevel：初始技能等级
+- MaxSkillLevel：最大技能等级
+
+**使用说明**
+
+技能等级本身不影响技能等级框架的任何功能。要使得技能等级发生实际作用，需要在具体的技能里，以以下几种方式进行扩展：
+
+1. 利用Getter或是公式计算，在代码里获取技能等级数据影响技能的伤害、范围等实际效果值
+
+```lua
+-- 该函数需要和造成伤害节点进行绑定
+function testTr:ComputeDamage(DamageContext)
+    local Damage = 100 + 20 * self.SkillLevel
+  	return Damage
+end
+```
+
+2. 利用技能条件轨道，动态控制某些节点的执行
+
+比如我们有时候会让技能升级后，解锁一些额外效果，比如添加一个Buff，造成一次额外伤害等等。那么则可以让这些节点对应的轨道绑定一个轨道条件。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Zfx0Ximage.png)
+
+在该条件里，可以利用技能等级做判断
+
+```lua
+---@return boolean
+function testTr:LuaFunction()
+    if self.SkillLevel < 5 then
+	    return false
+    else
+        return true
+    end
+end
+```
+
+3. 在技能的OnSkillLevelChange_BP事件中，执行一些对应逻辑
+
+```lua
+function testTr:OnSkillLevelChange_BP(OldSkillLevel, NewSkillLevel)
+
+end
+```
+
+4. 修改技能等级的接口
+
+```lua
+-- 先用接口获取到对应的技能实例
+SkillInstance:ModifySkillLevel(3)
+SkillInstance:SetSkillLevel(5)
+SkillInstance:SetMaxSkillLevel(10)
+```
+
 【技能预设槽位】
 
 技能编辑器引入了虚拟技能槽的概念，有别于技能栏上的UI槽位，虚拟技能槽可以理解为技能栏上的特定技能位，其本身没有实际的实体或者UI表现，是开发者对于技能特性的概念性定义，例如有多种英雄角色，每个英雄都有“普通攻击”和“终结技”，那么“普通攻击”和“终结技”就是2个虚拟技能槽。
@@ -2842,6 +2929,33 @@ Entry跳转至下一阶段时，默认由技能激活事件触发，因此无需
 
 - 基础动画轨道：该类型的动画Task具备播放速率、播放槽位和混出时间等基础属性，适用于简单的动画配置，不支持轨道激活条件设置
 - 技能动画轨道：在基础动画轨道上进行了功能扩展，支持更复杂的动画槽位与轨道激活条件配置，具体的属性说明可参见 [技能动画Task](https://developer.gp.qq.com/wikieditor/#/catalog/20094?autoJump=%E6%8A%80%E8%83%BD%E5%8A%A8%E7%94%BBTask:~:text=%E6%B7%B7%E5%87%BA%E6%97%B6%E9%97%B4-,%E6%8A%80%E8%83%BD%E5%8A%A8%E7%94%BBTask,-%E4%BD%BF%E7%94%A8%20%E6%8A%80%E8%83%BD%E5%8A%A8%E7%94%BB)
+
+**Actor轨道**
+
+Actor轨道，即可以在技能里添加一个其他的Actor进行控制，并可以利用技能的一些其他Task播放该Actor的动画，以及控制Actor的位置、旋转等。
+
+![image.139.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Tw0dAimage.139.png)
+
+使用方式：直接将Actor蓝图拖到技能Sequence里，将在对应技能Sequence里添加该Actor轨道
+
+![image.140.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Q7nFLimage.140.png)
+
+![image.141.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/CoOO3image.141.png)
+
+目前Actor仅支持由技能进行生成，生命周期直接由技能管理。拖进来时，Actor轨道默认是该状态，此时需要K已生成属性的关键帧，用于控制生成的Actor的生命周期。
+
+![image.142.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/pVswkimage.142.png)
+
+可用于Actor轨道的三种Task：
+
+- AnimTransform：可在AnimTransform轨道上，添加相应关键帧，调整Actor的位置、旋转等。从而用于控制该Actor的Transform动画效果
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/layE0image.png)
+- PESkillAttach：配置后，可将生成的Actor，挂载到角色的某个骨骼挂点上
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/CB8Hzimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Ztv2Eimage.png)
+- PESkillAnimation：配置后可让该Actor播放一个动画
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/eUe5Wimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/sYoATimage.png)
 
 ---
 

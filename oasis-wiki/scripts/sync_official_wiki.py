@@ -137,7 +137,7 @@ def extract_code_blocks(body: str) -> list[tuple[str, str]]:
 
 def _render_article(article: CatalogArticle, row: dict) -> str:
     body = normalize_body(row.get("Body"))
-    api_names = sorted(extract_api_names(body), key=str.casefold)
+    api_names = sorted(extract_api_names(body), key=lambda value: (value.casefold(), value))
     lines = [
         f"## {article.title}",
         "",
@@ -218,7 +218,7 @@ def _render_api_index(
         grouped[first if first.isascii() and first.isalnum() else "#"].append(name)
     for group in sorted(grouped, key=lambda value: (value == "#", value)):
         lines.extend([f"## {group}", ""])
-        for name in sorted(grouped[group], key=str.casefold):
+        for name in sorted(grouped[group], key=lambda value: (value.casefold(), value)):
             refs = sorted(references[name], key=lambda item: (item.path, item.id))
             lines.extend([f"### `{name}`", "", f"出现于 {len(refs)} 篇文档：", ""])
             for article in refs[:20]:

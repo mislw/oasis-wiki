@@ -184,13 +184,13 @@ Invoke-RestMethod -Uri "http://127.0.0.1:18763/call" -Method POST -ContentType "
 
 ## PIE Debugging With `ue_pie`
 
-PIE debugging must use `ue_pie`; it must not use computer control, mouse automation, or keyboard automation to click the editor Play, Stop, or debug controls. If `tools/list` does not expose `ue_pie`, verify the editor MCP version, server state, SSE port, and connection, then report the blocker. Do not fall back to computer control.
+PIE debugging must use `ue_pie`; it must not use computer control, mouse automation, or keyboard automation to click the editor Play, Stop, or debug controls. Every `ue_pie` call with `action=start` must explicitly set `simulation_platform=mobile`. Never omit `simulation_platform` from a start call and never use the PC platform value `pchd`. The `stop`, `reloadlua`, and `doluastring` actions do not need the platform field. If `tools/list` does not expose `ue_pie`, verify the editor MCP version, server state, SSE port, and connection, then report the blocker. Do not fall back to computer control.
 
 The live schema verified on 2026-08-29 reported Tool version `2.4.0` on FastMCP `3.1.1`. Always read the current `tools/list` schema before relying on version-specific fields.
 
 Supported actions:
 
-- `start`: start PIE for the UGC project already open in the editor. Normal single-player settings are `submode_id=0`, `team_count=1`, `players_per_team=1`, and `spectators_per_team=0`.
+- `start`: start mobile-platform PIE for the UGC project already open in the editor. Always pass `simulation_platform=mobile`. Normal single-player settings are `submode_id=0`, `team_count=1`, `players_per_team=1`, and `spectators_per_team=0`.
 - `stop`: stop the current PIE session. Use it only when the session must end or restart.
 - `reloadlua`: after you save the modified Lua files first, hot-reload saved changes into the running PIE DS and clients. `reloadlua` automatically discovers all saved modified project Lua files; do not pass a file path, module name, or source string.
 - `doluastring`: run a Lua snippet in the first registered PIE `client` by default, or set `target` to `ds`/`server` to forward it to the PIE DS. A DS call still requires a connected PIE client.
@@ -209,8 +209,8 @@ When only project Lua changed or a small runtime check is needed, do not stop an
 Raw proxy examples:
 
 ```powershell
-# Start normal single-player PIE
-$body = @{ name = "ue_pie"; arguments = @{ action = "start"; submode_id = 0; team_count = 1; players_per_team = 1; spectators_per_team = 0 } } | ConvertTo-Json -Depth 10
+# Start normal single-player mobile PIE
+$body = @{ name = "ue_pie"; arguments = @{ action = "start"; simulation_platform = "mobile"; submode_id = 0; team_count = 1; players_per_team = 1; spectators_per_team = 0 } } | ConvertTo-Json -Depth 10
 Invoke-RestMethod -Uri "http://127.0.0.1:18763/call" -Method POST -ContentType "application/json" -Body $body
 
 # Reload all saved modified project Lua files

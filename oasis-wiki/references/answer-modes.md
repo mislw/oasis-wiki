@@ -120,10 +120,11 @@ Teaching mode answer shape is defined in `teaching-mode.md`. It should include n
 - If the user does not specify a mode, use normal mode.
 - If the user explicitly says "正常模式", "简短点", "直接说", or "给我代码", keep normal mode.
 - If the user explicitly says "教学模式", "详细讲", "教我", "一步一步", or "拆一下", use teaching mode.
+- During an active teaching-mode feature task, treat the user's instruction `收尾` as an explicit request to end teaching mode and enter normal/direct mode. Implement the current task using the concrete plan already explained and agreed in that teaching exchange, carry it through verification, and leave the conversation in the default normal mode afterward. Do not automatically return to teaching mode; re-enter it only after a later explicit teaching request.
+- `收尾` authorizes only the already explained current-task implementation. It does not expand feature scope or bypass unresolved product decisions, protected-history rules, dirty-worktree safeguards, WidgetBlueprint/editor-write authorization, deletion, commit, push, paid/external actions, or any other separately required approval. If the teaching plan still contains a material unresolved choice, ask only for that choice before implementing.
 - If a normal-mode answer would hide a dangerous detail, briefly include the detail rather than staying overly short.
 - If a teaching-mode answer becomes too long, split it into phases and ask the user to continue with the next file or next step.
 
 ## Interaction With Project File Safety
 
 UGC project files may be read and analyzed freely in both modes. Normal mode may directly modify project files only when the user explicitly asks for implementation. Teaching mode must not directly modify project files; it only provides file-line edit guidance and explanations.
-

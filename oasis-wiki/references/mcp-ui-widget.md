@@ -42,6 +42,8 @@ For viewing an existing UI, prefer `widget_inspect`, current editor context, and
 
 ## Inspect Existing UI
 
+For a detailed comparison between two WidgetBlueprint hierarchies, reusable Item/List design, or a replacement-readiness audit, also read `game-ui/umg-hierarchy-patterns.md`. The comparison is read-only unless the user separately authorizes an exact asset mutation.
+
 Load nearby working UI assets and inspect their trees:
 
 ```python
@@ -134,6 +136,8 @@ Use this branch when a Cowart/workbench page looks correct but its WidgetTree is
 ```text
 UMG_HIERARCHY_VISUALLY_GROUPED_BUT_FLAT
 ```
+
+Before reparenting, apply the runtime-control inventory and component-ownership checks in `game-ui/umg-hierarchy-patterns.md`. A visually cleaner candidate is not a drop-in replacement when required Lua fields, list callbacks, visibility states, or hit regions are missing.
 
 ### Ownership
 
@@ -337,4 +341,3 @@ Verification must confirm:
 - no wrong top-level asset path was created.
 
 Do not treat `widget_inspect` as proof of color. Use it for hierarchy/layout, then use editor-visible refresh or direct property/function readback for style confidence.
-

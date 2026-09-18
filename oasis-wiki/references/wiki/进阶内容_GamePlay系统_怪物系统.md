@@ -1,6 +1,6 @@
 # 进阶内容/GamePlay系统/怪物系统
 
-> 官方知识库同步分类，共 20 篇文章
+> 官方知识库同步分类，共 22 篇文章
 
 ---
 
@@ -556,7 +556,7 @@ end
 
 > 文档ID: 20179 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20179)
 
-> 新增: 2026-08-14 20:03:17 | 更新: 2026-08-17 17:01:12
+> 新增: 2026-08-14 20:03:17 | 更新: 2026-09-02 13:49:51
 
 **涉及API/标识符:** `Actor`, `AUGCGenericCharacter`, `bool`, `float`, `int`, `OnBehaviorNotify_BP`, `PawnState.Movement.Idle`, `string`, `Vector`
 
@@ -579,6 +579,19 @@ end
 
 ## 移动类节点
 
+### [Generic]导航移动到
+
+怪物对象以最大移动速度进行移动，移动到指定的目标位置或者目标对象的位置，可以设置目标位置前的停止距离。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/J2Ajhimage.png)
+
+- 停止距离：距离目标位置前多远距离停止移动（值过小可能会导致一直无法完成此任务节点）
+	- 原始值：固定值，``取值方式`` 选为“原始值”时生效
+	- 黑板值：读取指定的 ``float`` 类型的黑板变量，``取值方式`` 选为“黑板值”时生效
+	- 取值方式：原始值/黑板值
+- 黑板键：指定的目标位置或者目标对象，绑定 ``Actor`` 或者 ``Vector`` 类型的黑板变量
+
+---
 
 ### [Generic]多方向移动
 
@@ -1048,6 +1061,351 @@ Sequence（退出战斗）
 
 ---
 
+## 刷怪点模板与改造使用
+
+> 文档路径: 进阶内容 > GamePlay系统 > 怪物系统 > 刷怪点模板与改造使用
+
+> 文档ID: 20452 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20452)
+
+> 新增: 2026-09-14 13:51:02
+
+**涉及API/标识符:** `UE.IsValid`
+
+# 刷怪点模板与改造使用
+
+根据不同玩法刷怪需求，绿洲启元编辑器预设了四种刷怪点模板，本文档将介绍如何创建以及改造使用刷怪点模板。
+
+## 创建刷怪点蓝图
+
+编辑器菜单栏点击【实体编辑器】按钮，打开实体编辑器操作界面。
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/rElbnimage.png)
+
+在编辑器上方工具栏中打开【实体编辑器】，在【关卡元件】页签找到“刷怪点”模板，点击打开下拉栏可以看到预置的四种刷怪点模板。4个模板都继承自基类 **AUGCMobSpawner** ，基类提供 Range/Height/MaxAliveCount/SpawnCD 等通用参数。
+
+|模板|适用场景|
+|-|-|
+|波次刷怪点|多波次分批，每波可换怪物类型|
+|路点刷怪点|怪物沿预设路径行走|
+|区域触发刷怪点|玩家进入触发区域后刷怪|
+|存活数量刷怪点|维持场内固定怪物数量|
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/UFv4simage.png)
+
+## 配置刷怪点
+
+### 通用参数
+
+所有刷怪点模板都继承自 **AUGCMobSpawner**，以下参数在基类蓝图中已提供，所有模板可直接使用：
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/PjOCPimage.png)
+|属性名|属性说明|
+|-|-|
+|刷出的怪物阵营|默认为-1表示使用 [怪物蓝图中配置的阵营](https://developer.gp.qq.com/wikieditor/#/catalog/20095?autoJump=%E8%AE%BE%E7%BD%AE%E6%80%AA%E7%89%A9%E9%98%B5%E8%90%A5) ，若大于-1则会将此数据覆盖到刷出的怪物上|
+|刷怪器控制模式|- 管理器控制：需要使用**刷怪管理器**引用这个刷怪点才可以让其刷怪<br>- 最大数量控制：刷怪点自动刷怪，仅当场上怪物数量 < ``最大存活数量`` 时才继续刷怪，同时刷怪总量仍然受最大/最小生成数量约束<br>- 无控制：刷怪点自动刷怪，且不受其他条件控制|
+|最大存活数量|仅对 ``刷怪器控制模式`` 为“最大数量控制”时生效，通常该设定值建议小于最小生成数量；例如设置为1，则代表怪物死亡一个再补充一个，直到刷出怪物的总量为最大刷怪数量为止|
+|怪物配置模式|支持蓝图配置，怪物组表，自定义三种模式<br>- 蓝图配置：``怪物蓝图`` 属性可配，指定怪物蓝图类，刷固定种类的怪物<br>- 怪物组表：``怪物组ID`` 属性可配，指定使用的刷怪策略<br>- 自定义参数：``自定义参数`` 属性可配，可添加任意组KV结构的元素，通过 ``自定义刷新规则`` 实现怪物的生成|
+|使用NavMesh找随机点|是否优先在被 [导航网格](https://developer.gp.qq.com/wikieditor/#/catalog/20266) 覆盖的范围内刷怪|
+|随机朝向|怪物生成后的初始朝向，默认使用刷新点蓝图箭头组件的方向，否则随机朝向|
+|生成范围|刷新器以自身为中心的圆柱范围内寻找合适位置，生成范围为圆柱的半径（单位：厘米）|
+|生成高度范围|刷新器以自身为中心的圆柱范围内寻找合适位置，生成高度范围为圆柱的高度（单位：厘米）|
+|最小生成数量|- 当刷新器独立刷怪时，为可生成怪物总数量的最小值<br>- 当配合刷怪管理器使用时，为每波次生成怪物数量的最小值|
+|最大生成数量|- 当刷新器独立刷怪时，为可生成怪物总数量的最大值<br>- 当配合刷怪管理器使用时，为每波次生成怪物数量的最大值|
+|刷怪间隔(秒)|每次刷怪的时间间隔，仅对刷新器独立刷怪有效|
+|单次刷怪数量|每次刷怪的固定数量，直到刷出怪物的总数达到最大值则停止刷怪，仅对刷新器独立刷怪有效|
+|刷在地面上|勾选后，会尽量将怪物贴近地面，防止生成在半空中|
+
+>基类已封装通用逻辑（刷怪位置生成、SpawnCD 节流、MaxAliveCount 上限等）。复杂行为才挂 Lua 模板；简单需求（如"维持固定数量"）只用基类配置即可生效。
+
+### 波次刷怪点
+
+波次刷怪点适用场景：副本分段挑战，每波不同的怪物和数量，怪物按方向角分散在刷怪器四周。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/X9d2Pimage.png)
+
+|参数|说明|
+|-|-|
+|Mob Classes|每波刷的怪物类（按索引对齐）|
+|Mob Counts|每波刷几只怪|
+|Spawn Angles|刷怪方向角（相对刷怪器朝向，度）|
+|Wave Delay|波次间间隔（秒）|
+|Check Interval|全灭检测间隔（秒）|
+
+- 位置算法：每个怪物位置 = CalcPositionByAngle(方向角) + Random(ScatterRange)；每只怪在基础方向角 ± ScatterRange 范围内随机散布
+
+**改造示例**
+
+- 每波结束播特效
+
+	``` Lua
+	function WaveSpawnMob:OnAllWavesComplete()
+			print_dev("[WaveSpawnMob] All waves complete!")
+			self:PlayVictoryEffect()  -- 调用蓝图方法
+	end
+	```
+
+- Boss 波次用不同逻辑（波次 3 是 BOSS）
+
+	``` Lua
+	function WaveSpawnMob:SpawnCurrentWave()
+			-- ...原有代码...
+			if self.WaveIndex == 3 then
+					local Boss = self:SpawnMob(MobClass)
+					if UE.IsValid(Boss) then
+							Boss:K2_SetActorLocation(self:K2_GetActorLocation() + Vector.New(0, 0, 100))
+					end
+					return
+			end
+			-- ...原有波次代码...
+	end
+	```
+
+- 中途玩家死亡时终止刷怪
+
+	``` Lua
+	function WaveSpawnMob:ReceiveBeginPlay()
+			self:StartWaveSpawn()
+			self.OnPartyWipe:Add(self.HandlePartyWipe, self)
+	end
+
+	function WaveSpawnMob:HandlePartyWipe()
+			self:StopSpawn()
+			local WeakSelf = WeakObjectPtr(self)
+			Timer.InsertTimer(10.0, function()
+					if WeakSelf:IsValid() then
+							WeakSelf:Get():RestartWaves()
+					end
+			end)
+	end
+	```
+<br>
+
+### 路点刷怪点
+
+路点刷怪点适用场景：怪物需要沿一条或多条路径行走（巡逻、追击、护送等）。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/yoKbQimage.png)
+
+|参数|说明|
+|-|-|
+|Mob Classes|每波刷的怪物类（按索引对齐）|
+|Mob Counts|每波刷几只怪|
+|Wave Delay|波次间间隔（秒）|
+|Check Interval|全灭检测间隔（秒）|
+|Spawn Delay|同波次内单只刷怪间隔（秒）|
+|Find Waypoint Type|路径模式（见下表）|
+
+路径模式：
+|FindWaypointType|是否循环|是否原路返回|典型用途|
+|-|-|-|-|
+|CircleLoop（0）|是|否|永久巡逻（最常用）|
+|OneWay|否|否|一次性迁徙（走到终点就停）|
+|OneWayReturn|否|是|哨兵来回巡逻|
+|OneWayLoop|是|是|巡逻 + 来回走|
+
+
+**改造示例**
+
+- 自定义路径选择（部分怪走 A 路，部分走 B 路）
+	``` Lua
+	function WayPointSpawnMob:SetSpawnMob(Mob)
+			if not Mob or not UE.IsValid(Mob) then return end
+
+			Mob:K2_SetActorLocation(self:K2_GetActorLocation())
+			local LogicPartComp = Mob.LogicPartManagerComp
+			local Tag = STExtraGameplayStatics.RequestGameplayTag("LogicPart.Class.FollowWaypoint", true)
+			local FollowPart = LogicPartComp:GetLogicPartByTag(Tag)
+			if not FollowPart then return end
+
+			local IsCycle = (self.FindWaypointType == 0 or self.FindWaypointType == 3)
+			local IsReturn = (self.FindWaypointType == 2 or self.FindWaypointType == 3)
+
+			if self.CurrentWaveSpawnedCount % 2 == 0 then
+					local HalfCount = math.floor(#self.CacheWaypointInfos / 2)
+					local GroupA = {}
+					for i = 1, HalfCount do table.insert(GroupA, self.CacheWaypointInfos[i]) end
+					FollowPart:SetWaypoints(GroupA, IsCycle, IsReturn)
+			else
+					local HalfCount = math.floor(#self.CacheWaypointInfos / 2)
+					local GroupB = {}
+					for i = HalfCount + 1, #self.CacheWaypointInfos do
+							table.insert(GroupB, self.CacheWaypointInfos[i])
+					end
+					FollowPart:SetWaypoints(GroupB, IsCycle, IsReturn)
+			end
+
+			local AI = AIBlueprintHelperLibrary.GetAIController(Mob)
+			if AI and UE.IsValid(AI) then
+					local BB = AIBlueprintHelperLibrary.GetBlackboard(AI)
+					if BB then BB:SetValueasBool("bUsePathPoint", true) end
+			end
+	end
+	```
+
+- 刷怪前先播警报动画
+
+	``` Lua
+	function WayPointSpawnMob:StartWaveSpawn()
+			-- ...原有代码...
+			local WeakSelf = WeakObjectPtr(self)
+			Timer.InsertTimer(3.0, function()
+					if WeakSelf:IsValid() then
+							WeakSelf:Get():SpawnCurrentWave()
+					end
+			end)
+	end
+	```
+
+<br>
+
+### 区域触发刷怪点
+
+区域触发刷怪点适用场景： 玩家踩入触发区域后，在区域内刷出一批怪物，怪物全灭后结束。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/3UfvKimage.png)
+
+|参数|说明|
+|-|-|
+|Mob Classes|要刷的怪物蓝图类|
+|Mob Count|一次性刷几只怪|
+|Check Interval|全灭检测间隔（秒）|
+
+>关于 MobClass vs 怪物配置模式：当前模板使用 MobClass（Default 里），不走基类 MobConfig 路径。改造时可任选其一，但不要两个都配
+
+**改造示例**
+
+- 触发后关门，全灭后开门（修复问题 2 + 4）
+	``` Lua
+	function OverlapSpawnMob:OnOverlapCheck(OverlappedActors)
+			if not OverlappedActors or not OverlappedActors.InActorList
+					or OverlappedActors.InActorList:Num() <= 0
+					or self.IsSpawning then
+					return
+			end
+
+			-- 参数检查（修复问题 6）
+			if not self.MobClass then
+					print_dev("[OverlapSpawnMob] MobClass 未配置，无法刷怪")
+					return
+			end
+			if not self.MobCount or self.MobCount <= 0 then
+					print_dev("[OverlapSpawnMob] MobCount 无效：" .. tostring(self.MobCount))
+					return
+			end
+
+			self.IsSpawning = true
+			self.AliveMobs = {}
+
+			-- 关门
+			if self.ExitDoor and UE.IsValid(self.ExitDoor) then
+					self.ExitDoor:CloseDoor()
+			end
+
+			for i = 1, self.MobCount do
+					local Mob = self:SpawnMob(self.MobClass)
+					if Mob and UE.IsValid(Mob) then
+							table.insert(self.AliveMobs, WeakObjectPtr(Mob))
+					end
+			end
+			self:StartCheckTimer()
+	end
+
+	function OverlapSpawnMob:OnAllDead()
+			print_dev("[OverlapSpawnMob] All mobs dead, open door")
+			-- 开门
+			if self.ExitDoor and UE.IsValid(self.ExitDoor) then
+					self.ExitDoor:OpenDoor()
+			end
+			-- 修复问题 2：重置 IsSpawning，允许下次进入再次触发
+			self.IsSpawning = false
+			-- 触发区域完成事件（蓝图侧可绑定下一步逻辑）
+			self:OnAreaCompleted()
+	end
+	```
+> 改造要点：ExitDoor 必须为 APUBGDoor 类型，否则 CloseDoor / OpenDoor 调用无效。
+
+- 玩家未全灭就死亡（允许重新触发）
+	``` Lua
+	function OverlapSpawnMob:ReceiveBeginPlay()
+			self.OverlapCheckArea.OnOverlapCheckChange:Add(self.OnOverlapCheck, self)
+			self.OnPlayerDeath:Add(self.HandlePlayerDeath, self)
+	end
+
+	function OverlapSpawnMob:HandlePlayerDeath()
+			self:StopCheckTimer()
+			self.IsSpawning = false
+			self.AliveMobs = {}
+			if self.ExitDoor and UE.IsValid(self.ExitDoor) then
+					self.ExitDoor:OpenDoor()
+			end
+	end
+	```
+
+<br>
+
+### 存活数量刷怪点
+存活数量刷怪点适用场景： 无限割草、刷怪场训练、压力区域等需要持续维持怪物密度的场景。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/2RZfQimage.png)
+
+**核心机制** ：场上始终维持配置的存活怪物上限。初始刷满，之后定时检测，存活不足时立即补刷差额。
+
+**需要 Lua 扩展时**
+
+如果需求超出基类能力（如多怪物轮换、补刷位置随机化等），可以挂以下最小 Lua 实现：
+``` Lua
+local KeepAliveSpawner = {
+    CheckTimerId = nil,
+}
+
+function KeepAliveSpawner:ReceiveBeginPlay()
+    self:SpawnToFull()
+    self:StartKeepAliveLoop()
+end
+
+function KeepAliveSpawner:SpawnToFull()
+    while self:GetAliveCount() < self.MaxAliveCount do
+        self:SpawnMob(self.MobClass)
+    end
+end
+
+function KeepAliveSpawner:StartKeepAliveLoop()
+    local WeakSelf = WeakObjectPtr(self)
+    local Interval = self.CheckInterval or 2.0
+    self.CheckTimerId = Timer.InsertTimer(Interval, function()
+        if not WeakSelf:IsValid() then return end
+        local This = WeakSelf:Get()
+        if This:GetAliveCount() < This.MaxAliveCount then
+            local Need = This.MaxAliveCount - This:GetAliveCount()
+            for i = 1, Need do
+                This:SpawnMob(This.MobClass)
+            end
+        end
+        This:StartKeepAliveLoop()
+    end)
+end
+
+function KeepAliveSpawner:ReceiveDestroyed()
+    if self.CheckTimerId then
+        Timer.RemoveTimer(self.CheckTimerId)
+    end
+end
+
+return KeepAliveSpawner
+```
+
+<br>
+
+## 刷怪点改造最佳实践
+
+- 不要在 ReceiveTick 中做重活，刷怪逻辑应走定时器或事件驱动。
+- 多波次配置时确保 MobClasses 和 MobCounts 长度一致，否则会跳过空配置。
+- 改造时优先新增方法，避免修改模板原方法。原方法签名（如 SpawnCurrentWave）可能被其他模块依赖。
+- 路径模式下确保怪物已挂载 FollowWaypointPart 逻辑部件，否则 SetWaypoints 无效。
+- 刷怪距离要大于怪物模型半径，避免刷出时穿模；推荐距离 ≥ 100 厘米。
+- 补刷类机制注意 SpawnCD：基类的 SpawnCD 会强制节流，避免一次刷出过多。
+- 能基类解决就不挂 Lua：基类参数是"零代码、零维护"的方案，先看基类能不能满足。
+
+---
+
 ## 动态更新导航网格
 
 > 文档路径: 进阶内容 > GamePlay系统 > 怪物系统 > 动态更新导航网格
@@ -1173,6 +1531,232 @@ FinishedDelegate:Add(self.OnFinishGeneration, self)
 ```
 
 当成功执行了局部更新后，标记的缓存区域将被移除，下一次更新需要重复执行标记与触发更新的操作。
+
+---
+
+## 宠物模板
+
+> 文档路径: 进阶内容 > GamePlay系统 > 怪物系统 > 宠物模板
+
+> 文档ID: 20454 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20454)
+
+> 新增: 2026-09-10 17:24:18
+
+**涉及API/标识符:** `MobOwner`, `UE.IsValid`, `UGC.Player`, `UGC.PlayerPawn`, `UGCGameSystem.GetLocalPlayerPawn`, `UGCGenericMessageSystem.ListenGlobalMessage`, `UGCGenericMessageSystem.Messages`
+
+# 宠物模板
+
+本文档将介绍如何配置宠物模板、行为参数，以及血条样式与主人变动通知的接入方式。
+
+## 概述
+
+宠物是UGC编辑器中的一种特殊实体，普通怪物没有显式主人，血条样式按阵营显示；宠物有了显式主人，阵营关系会随主人变化而变化，进而触发血条样式自动切换。宠物本质上是继承了怪物能力的对象，但额外提供了两层能力：
+
+- 跟随与陪伴：默认具备「自动跟随主人」「超出范围传送回主人身边」的行为。
+
+- 主人归属（MobOwner）：宠物在引擎底层继承了通用怪物的 MobOwner 机制，但将其作为显式概念开放给开发者，行为树与血条样式都会基于此关系联动。
+
+<br>
+
+## 创建宠物蓝图
+
+编辑器菜单栏点击【实体编辑器】按钮，打开实体编辑器操作界面。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/BHdOFimage.png)
+
+实体编辑器内预置了两个宠物模板，开发者可以根据需求创建或改造，在实体编辑器左侧 **宠物** 页签目录下即可找到这两个模板：
+|模板|类型|核心行为|
+|-|-|-|
+|装饰宠物|装饰陪伴型|跟随主人 → 超范围传送 → 玩家靠近显示交互按钮 → 点击播放 Montage|
+|战斗宠物|攻击型|跟随主人 → 仇恨列表中存在敌人则攻击 → 攻击时若远离主人则传回|
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/xX2PPimage.png)
+
+<br>
+
+## 配置怪物
+
+### 交互Montage配置
+
+装饰型宠物默认绑定了一个交互 Montage，开发者可在细节面板的默认配置的 **交互蒙太奇** 中替换：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Sp00wimage.png)
+
+<br>
+
+### 行为树配置
+
+所有宠物默认共享同一棵行为树 **宠物通用基础行为树(BT_UGC_Pet_Follow)** ，参数配置在宠物蓝图的细节面板「行为树 → 行为树属性配置」中：
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/cT7vTimage.png)
+
+其中各个参数的含义如下：
+|参数|含义|
+|-|-|
+|行走范围|距主人小于此值时用行走速度移动|
+|奔跑范围|距主人介于「行走范围」与「传送范围」之间时用奔跑速度移动|
+|传送范围|距主人大于此值时直接传送回主人身边||
+|行走速度|宠物行走时的速度||
+|奔跑速度|宠物奔跑时的速度||
+|停止距离|	距主人小于此值时停止移动|
+|是否可攻击|勾选后宠物会选择仇恨列表中的敌人攻击|
+|攻击距离|有攻击目标时需移动到的释放距离|
+
+<br>
+
+### 血条样式配置
+
+血条样式在蓝图侧配置，在运行时按玩家与宠物的阵营关系自动切换。首先创建[怪物血条](https://developer.gp.qq.com/wikieditor/#/catalog/20412?autoJump=%E5%88%9B%E5%BB%BA%E6%80%AA%E7%89%A9%E8%A1%80%E6%9D%A1)，细节面板中可以找到两个样式字典：Progress Bar HP Style — 主血条样式；Progress Bar Less Blood VFX Style — 虚条（预扣除伤害）样式。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/OrKhzimage.png)
+
+
+每个字典以玩家与宠物的阵营关系为 Key，分为三档：
+
+|阵营关系	|典型场景|
+|-|-|
+|Enemy（敌对）|敌方阵营玩家的宠物、敌人怪物|
+|Neutral（中立）|中立怪物、双方可攻击的野怪|
+|Same（同阵营）|我方宠物、友方 NPC|
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/kjAvnimage.png)
+
+**运行时切换逻辑**
+
+切换由 WBP_UGC_MonsterHealthBar（WBP_UGC_BossHealthBar 结构相同）中的两个函数完成：
+
+- 触发时机一：阵营 ID 变化时
+	 ``` Lua
+	 function MonsterHealthBar:BP_OnGeneralCampIDChanged()
+			self:RefreshProgressBarStyle()
+	end
+	```
+- 触发时机二：血条初始化时
+	``` Lua
+	function MonsterHealthBar:Event_InitParam()
+    	self:SetStateWidgetPanel(...)
+    	self:RefreshProgressBarStyle()  -- 首次出现按当前阵营关系选样式
+	end
+	```
+- 切换核心实现
+	``` Lua
+	function MonsterHealthBar:RefreshProgressBarStyle()
+			local LocalPlayerPawn = UGCGameSystem.GetLocalPlayerPawn()
+			if not UE.IsValid(LocalPlayerPawn) then return end
+
+			-- 取玩家与宠物的阵营关系（Enemy / Neutral / Same）
+			local CampRelation = LocalPlayerPawn:GetGeneralCampRelationWithActor(self.OwnerCharacter)
+
+			-- 查字典，取对应样式
+			local HPStyle = self.ProgressBar_HP_Style:Find(CampRelation)
+			if HPStyle then
+					self.ProgressBar_HP.WidgetStyle = HPStyle
+			end
+
+			local LessBloodVFXStyle = self.ProgressBar_LessBloodVFX_Style:Find(CampRelation)
+			if LessBloodVFXStyle then
+					self.ProgressBar_LessBloodVFX.WidgetStyle = LessBloodVFXStyle
+			end
+	end
+	```
+
+>血条样式不直接监听 MobOwner，而是监听阵营关系（GetGeneralCampRelationWithActor）
+阵营关系变化时（如主人切换、魅惑、归属变更），BP_OnGeneralCampIDChanged 自动触发 → 样式自动更新
+同一血条控件两套字典都要配（主血条 + 虚条），否则会留空
+
+<br>
+
+### 主人变动通知
+宠物对开发者暴露了 `MobOwner` 接口，可以在脚本中监听主人变更、主人死亡、主人下线等事件。
+
+**核心 API**
+|API|说明|
+|-|-|
+|GetMobOwner()|获取当前主人引用，无主人返回 nil|
+|SetMobOwner(Character)	|设置主人，传 nil 表示清空；仅服务端可调用|
+|OnGenericMobOwnerChanged	|主人引用变化时触发的委托（含设置新主人、清空、主人销毁）|
+
+**监听主人变更**
+
+``` Lua
+-- 服务端 + 客户端
+function MyPet:BeginPlay()
+    self.OnGenericMobOwnerChanged:Add(self.OnOwnerChanged, self)
+end
+
+function MyPet:OnOwnerChanged()
+    local owner = self:GetMobOwner()
+    if owner then
+        print("主人变为:", owner.CharacterName or "Unknown")
+        -- 切换 UI / 重置 AI 行为 / 切换阵营逻辑
+    else
+        print("主人被清空")
+        -- 变回中立、停止跟随、停止攻击
+    end
+end
+
+function MyPet:EndPlay()
+    self.OnGenericMobOwnerChanged:Remove(self.OnOwnerChanged, self)
+end
+```
+
+**设置与清空主人**
+
+``` Lua
+-- 服务端：玩家召唤宠物时绑定主人
+local pet = World.SpawnActor(BP_UGC_Pet_Fight, spawnPos)
+pet:SetMobOwner(playerPawn)
+
+-- 解除召唤 / 主人下线后会自动清空（系统已处理，无需手动 SetMobOwner(nil)）
+```
+
+**监听主人状态事件（GMP 消息）**
+
+如果需要按原因做不同响应（死亡 复活 退出 / 掉线），可通过 GMP 全局消息精确监听：
+
+|GMP 消息|触发场景|回调参数|
+|-|-|-|
+|UGC.PlayerPawn.PawnDefeat	|主人死亡|VictimPlayerKey, InstigatorPlayerKey, DamageType|
+|UGC.PlayerPawn.PawnRespawn|主人复活|PlayerKey|
+|UGC.Player.Exit|主人主动下线	|PlayerKey|
+|UGC.Player.PlayerLost|主人掉线|PlayerKey|
+|UGC.Player.PlayerReconnect	|主人重连|PlayerKey|
+
+- 示例：宠物跟随主人时按主人状态调整行为
+``` Lua
+function MyPet:RegisterOwnerListeners()
+    local ctx = self
+    self.OwnerPlayerKey = self:GetMobOwner().PlayerKey or 0
+    if self.OwnerPlayerKey == 0 then return end
+
+    -- 主人死亡：暂停 AI
+    UGCGenericMessageSystem.ListenGlobalMessage(
+        ctx,
+        UGCGenericMessageSystem.Messages.UGC.PlayerPawn.PawnDefeat,
+        self, function(VictimPK, _, _)  -- 修正回调签名以匹配 GMP
+            if VictimPK == self.OwnerPlayerKey then
+                self.AI_SetEnabled(false)
+                self.PlayAnimation("pet_mourn")
+            end
+        end
+    )
+
+    -- 主人复活：恢复 AI 并传送回身边
+    UGCGenericMessageSystem.ListenGlobalMessage(
+        ctx,
+        UGCGenericMessageSystem.Messages.UGC.PlayerPawn.PawnRespawn,
+        self, function(PlayerKey)
+            if PlayerKey == self.OwnerPlayerKey then
+                self.AI_SetEnabled(true)
+                self.PlayAnimation("pet_idle")
+            end
+        end
+    )
+end
+```
+>注意：GMP 是全局广播，必须用 PlayerKey == self.OwnerPlayerKey 过滤，否则会响应到所有玩家的事件
+
+主人销毁时系统会自动清空 MobOwner 并触发委托，开发者无需手动监听 EndPlay。
 
 ---
 
@@ -3936,7 +4520,7 @@ end
 
 > 文档ID: 20254 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20254)
 
-> 更新: 2025-11-17 21:45:17
+> 新增: 2026-09-08 18:57:15
 
 **涉及API/标识符:** `FollowWaypointPart`, `LogicPartManagerComp`, `SpawnConfig`, `StopRadiusScale`, `STSpawnerWayPoint`, `WayPointArr`
 
@@ -3949,9 +4533,21 @@ end
 
 ## 创建路点对象
 
-编辑器菜单栏点击 ``窗口 -> 模式`` 打开模式编辑窗口，搜索 "AIWayPointActor" 找到路点对象Actor，将该Actor拖放到关卡场景中，可以看到其胶囊体。
+编辑器菜单栏点击 ``窗口 -> 模式`` 打开模式编辑窗口，搜索 "Way Point" 找到路点对象Actor，将该Actor拖放到关卡场景中，可以看到其胶囊体。
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/JHcvkimage.png) ![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/oF9R0image.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/eCf2Kimage.png) ![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/oF9R0image.png)
+
+<br>
+
+## 路点配置
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Fv5kwimage.png)
+
+每个路点都有三个配置内容
+
+- 忽略Z轴：默认勾选，表示计算到达距离时候只会计算平面距离
+- 计算胶囊体半径：默认勾选，表示计算到达时候会一并计算使用路点的怪物的胶囊体半径
+- 到达距离：单位为厘米
 
 <br>
 
@@ -3963,7 +4559,7 @@ end
 
 将创建的路点对象都拖放到怪物刷新点下，选中刷怪点对象中的 ``STSpawnerWayPoint`` 组件，属性 ``WayPointArr`` 数组 表示此路线的所有路点，将创建的所有路点配置到这个数组中（注意：数组的元素顺序就是路点的顺序）。
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Y4dhVimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/e4vSximage.png)
 ![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/QTU4Uimage.png)
 
 <br>
@@ -3972,7 +4568,7 @@ end
 
 完成路线配置之后，选中怪物刷新点根组件，在细节面板中，有下图几个关键的配置项：
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/gBjZDimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/1fMlJimage.png)
 
 - 刷出的怪物阵营：若填写大于-1的值，其会覆盖怪物原本的阵营设置
 - 使用路点寻路：勾选之后，此刷怪点出生的怪物才会使用配置的路点进行寻路
@@ -3998,7 +4594,7 @@ end
 
 ## 逻辑管理组件配置
 
-若想让怪物拥有沿路点移动的能力，找到怪物的 ``LogicPartManagerComp`` 组件，添加加 ``FollowWaypointPart`` 组件（此组件表示实体拥有了沿路点移动的能力，实体编辑器中的怪物模板都已经默认增加了这个组件）。
+若想让怪物拥有沿路点移动的能力，找到怪物的 ``LogicPartManagerComp`` 组件，添加 ``FollowWaypointPart`` 组件（此组件表示实体拥有了沿路点移动的能力，实体编辑器中的怪物模板都已经默认增加了这个组件）。
 
 ![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/2BHFhimage.png)
 

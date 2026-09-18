@@ -7,6 +7,7 @@
 - 用户要求按游戏风格生成或修改 UI 图，并希望生成后自动放入、打开 Cowart。
 - 用户要求把扁平 UI 图拆成可移动组件、恢复层级、生成 `layer-manifest.json` 或 UI Tree。
 - 用户提供 Canva Magic Layers 或其他带图层元数据的导出包。
+- 用户提供真实 PSD，并要求保留图层组、父子关系和堆叠顺序导入 UI/UMG 控件树。
 - 用户要求把已审核 UI 转成 RedCliff 的 UMG/Lua/DataTable 交付计划。
 
 ## 标准流水线
@@ -19,7 +20,7 @@
 6. **真实图片生成**：优先把 Style Images、Layout Images 和 Compiled Prompt 一起传给 Codex 内置 `image_gen`。不要求用户配置外部 Key，也不使用通用 CLI fallback。内置工具、official environment Key 或默认图片模型不可用，或者当前凭据来自自定义 Provider 时，不得直接停止：先运行 `generate_with_codex_provider.py --discover-image-models`，只读查询当前 Provider 的 `/models`，按 `confirmed`、`likely`、`uncertain` 列出候选和证据。发现结果固定为 `generation_attempted: false`，禁止 automatic paid probe；即使只有一个候选也保持 `selection_required: true`，由开发者选择模型后，再请求明确授权并执行 `codex_provider_direct`。
 7. **Style Validation**：运行 `scripts/game-ui/create_style_review.py`，建立定性对比记录，状态保持 `pending_developer_review`，不得伪造相似度百分比。
 8. **自动交给 Cowart**：`ai_generated` 来源必须通过 Generation Result、输出 SHA 和候选图一致性检查；`external_source` 仍允许用户直接导入已有 UI 图。
-9. **组件化**：优先使用真实图层导出；扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
+9. **组件化**：优先使用真实图层导出；PSD 输入必须按 `references/cowart-ui/psd-to-umg.md` 结构化解析并保留源层级。扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
 10. **组件确认**：只把明确批准的组件写入用户级项目风格档案，并运行 `scripts/game-ui/validate_library.py`。
 11. **交付**：先生成并验证 RedCliff 交付计划；只有用户明确授权后，才修改 WidgetBlueprint、Lua、DataTable 或其他 UGC 资产。
 
@@ -58,6 +59,7 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 ## 分类资源
 
 - `references/cowart-ui/component-extractor.md`：Stage 0-3、Cowart 自动交接、组件提取与工作台流程。
+- `references/cowart-ui/psd-to-umg.md`：PSD 图层树解析、manifest 规范化、UMG 层级映射、编辑器写入门禁和可复用提示词。
 - `references/cowart-ui/usage-guide.md`：用户如何启动、继续、审核和授权 UI 工具链，以及说明更新与编辑器写入的权限边界。
 - `references/cowart-ui/precision-reconstruction.md`：Stage 2A/2B 识别、clean layer 重建、Assembly Preview 与审核 Gate。
 - `references/cowart-ui/transparent-asset-extraction.md`：完整母底图、透明/半透明控件判定、固定美术字、子控件图标、父层残留和复拼验收规则。
@@ -83,6 +85,7 @@ python scripts/cowart-ui/component-extractor/launch_ui_workflow_console.py --nam
 - Workbench 层级树面向开发者显示本地化 `name`，内部 `id` 必须保持稳定并继续用于布局保存、资源引用和编辑器映射。会话打包不得丢弃 `name`；自动派生的背景子层也必须使用本地化名称，搜索同时匹配显示名和内部 ID。
 - 任意矩形 `source_crop` 都不能自动作为 reusable component；Skin 和父层必须生成 `clean_layer` 并通过审核。
 - 从工作台交付到 UMG 时，不能把视觉图层全部平铺成同级 Widget。先参照项目中已工作的真实 WidgetTree，再按可独立移动的业务组件建立语义父容器；坐标保持、按钮身份、Z-order、事务回滚和验证规则见 `references/mcp-ui-widget.md` 的 `Refine An Existing Widget Hierarchy Without Moving The UI`。
+- PSD 输入必须以结构化图层数据为层级证据。不得用扁平预览、视觉重叠或图层名称猜测父子关系；解析失败或不支持的效果必须进入问题清单并等待确认。
 - 不覆盖或删除 Cowart 中既有图形；修订图保留版本关系。
 - 未经用户明确授权，不写入 UGC Lua、WidgetBlueprint、`.uasset`、`.umap` 或项目内风格档案。
 - 不打包 `.venv`、`__pycache__`、`.pyc`、临时 session、用户 profile 或 RedCliff 运行产物。

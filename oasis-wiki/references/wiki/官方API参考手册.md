@@ -1,9 +1,9 @@
 # 绿洲启元官方API参考手册
 
 > 来源：https://developer.gp.qq.com/api/#/
-> 抓取时间：2026-07-10
+> 抓取时间：2026-07-10（结构体章节 2026-09-18 补录）
 > 包含：UGC核心类、和平精英类、重要枚举和数据结构
-> 统计：57 个类、174 个枚举、0 个结构体、3 个全局函数
+> 统计：290 个类、3692 个枚举、31 个结构体（仅绿洲/和平范围）、3 个全局函数
 
 ## UGC核心类速查
 
@@ -3471,6 +3471,368 @@ The description of a user activity
 ---
 
 ## 数据结构（Structs）
+
+> 来源: https://developer.gp.qq.com/api/ | 收录范围: 名称以 `FUGC` / `FPE` 开头的绿洲启元 / 和平精英结构体（共 31 个）。
+> UE 引擎内部结构体（如 `FClipmap*`）不在本手册范围内。
+
+### FPEBuffInfo
+
+包含了Buff的所有配置信息
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `UIInfo` | `FPEBuffUIInfo` | Buff的UI信息 |
+| `ApplyTagGroup` | `FGameplayTagGroups` | Tag的配置组，包含该Buff与各个Tag的互斥关系 |
+| `MergeConditionType` | `EPEBuffMergeConditionType` | 配置另一个Buff能够与当前Buff合并的判断条件，可以通过CanMerge_BP扩展这个条件，CanMerge_BP与当前条件是“与”的关系 |
+| `MergeTypeMask` | `uint32` | 配置另一个Buff合并到当前后的行为，可通过OnMerge_BP扩展这些行为 |
+| `MaxStackNum` | `int32` | 最大堆叠次数 |
+| `DurationStrategy` | `EPEBuffDurationType` | 堆叠持续时长计算方式 |
+| `BuffEffects` | `TArray < UPEBuffEffectBase * >` | 触发效果 |
+
+### FPEBuffUIInfo
+
+Buff的UI信息
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `BuffName` | `FName` | Buff的名字 |
+| `OverwriteBuffName` | `FName` | 覆盖的Buff名字，该字段不为空时UI优先显示覆盖的Buff名字 |
+| `BuffDetail` | `FString` | Buff的描述 |
+| `OverwriteBuffDetail` | `FString` | 覆盖的Buff描述，该字段不为空时UI优先显示覆盖的Buff描述 |
+| `BuffIcon` | `FSoftObjectPath` | Buff的图标 |
+| `OverwriteBuffIcon` | `FSoftObjectPath` | 覆盖的Buff图标，该字段不为空时UI优先显示覆盖的Buff图标 |
+| `bShowUI` | `bool` | Buff是否显示表示当前状态的图标在UI上 |
+
+### FPESkillAttributeItem
+
+属性修改信息数组
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `Method` | `FPESkillAttributeModifyMethod` | 修改方式 |
+| `GameAttribute` | `FGameAttributeContainer` | 要修改的属性名 |
+| `ModifierOp` | `EAttrOperator` | 属性修改操作类型 |
+| `ModifierOp_DoChange` | `EAttrOperator_DoChange` | 属性修改操作类型 |
+| `ModifierValueWrapper` | `FGameMagnitudeWrapper` | 操作数值 |
+| `bModifyForever` | `bool` | 是否为永久修改（属性修改结束时不还原属性） deprecated from GC033 ！！！ |
+
+### FPESkillCDWapper
+
+技能CD信息
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `CDType` | `EPESkillCDType` | 技能CD类型 |
+| `CDRecoveryTime` | `float` | CD能量充能时间 |
+| `AllowRecoveryDuringActivation` | `bool` | 技能激活期间恢复CD能量 |
+| `MaxLayer` | `int` | 最大充能次数 |
+| `CDEnergyConsume` | `float` | 持续消耗型每秒扣除速率，如果不选energy，就是直接扣完一层的所有能量 |
+| `AllowConsumeMinEnergy` | `float` | 能开始消耗能量的最小百分比 |
+
+### FPESkillConsume
+
+技能消耗
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `ConsumeAttrItems` | `TArray < FPESkillConsumeAttribute >` | 技能消耗数值Array |
+| `ConsumeItems` | `TArray < FPESkillConsumeItem >` | 技能消耗物品Array |
+
+### FPESkillConsumeAttribute
+
+技能属性消耗
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `GameAttribute` | `FGameAttributeContainer` | 要消耗的属性名 |
+| `ConsumeValue` | `float` | 消耗的数值 |
+
+### FPESkillConsumeItem
+
+消耗物品信息
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `ItemID` | `int32` | 消耗物品ID |
+| `ItemNum` | `int32` | 消耗物品数量 |
+
+### FPESkillTargetData
+
+条件触发时的数据
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `TargetActors` | `TArray < AActor * >` | 范围Action中的Actor列表 |
+| `HitResult` | `FHitResult` | 碰撞结果 |
+| `Origin` | `FVector` | 发射起点 |
+
+### FPESkillUIInfo
+
+技能UI信息
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `SkillName` | `FName` | 技能名字 |
+| `OverwriteSkillName` | `FName` | 覆盖的技能名字，该字段不为空时UI优先显示覆盖的技能名字 |
+| `SkillDetail` | `FString` | 技能描述 |
+| `OverwriteSkillDetail` | `FString` | 覆盖的技能描述，该字段不为空时UI优先显示覆盖的技能描述 |
+| `SkillIcon` | `FSoftObjectPath` | 技能图标 |
+| `OverwriteSkillIcon` | `FSoftObjectPath` | 覆盖的技能图标，该字段不为空时UI优先显示覆盖的技能图标 |
+| `bUseSkillUISlot` | `bool` | 是否使用技能预设UI槽位，勾了这个选项的话，则会走createui的逻辑注册到技能槽位上，否则走技能UI绑定技能槽位获取技能的逻辑 |
+| `PESkillUIAsset` | `FSoftClassPath` | 默认技能UI |
+| `SkillUISlot` | `FGameplayTag` | 预设技能UI插槽 |
+
+### FUGCActivityTask
+
+活动任务结构体
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `TaskID` | `int32` | 任务ID |
+| `ResetType` | `EUGCActivityTaskResetType` | 重置类型 |
+
+### FUGCCustomDamageNumberItemParams
+
+自定义伤害数字单元
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `ImagePath` | `FString` | 图片路径 |
+| `Text` | `FString` | 文本，只支持数字和符号，图片路径为空时才有效 |
+| `ImageScaleX` | `float` | 图片X轴缩放比例 |
+| `ImageScaleY` | `float` | 图片Y轴缩放比例 |
+
+### FUGCDamageNumberParams
+
+自定义伤害数字参数
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `Items` | `TArray < FUGCCustomDamageNumberItemParams >` | 显示单元列表 |
+| `TimeLife` | `float` | 显示时间 |
+| `MoveTimeLife` | `float` | 飞行时间 |
+| `DrawColor` | `FLinearColor` | 数字的颜色 |
+| `DrawOutlineColor` | `FLinearColor` | 数字的描边颜色 |
+| `DrawOutlineSize` | `float` | 数字的描边大小 |
+| `FadeInTime` | `float` | 淡入时间 |
+| `FadeOutTime` | `float` | 淡出时间 |
+| `SizeScaleRange` | `FVector2D` | 初始尺寸缩放范围 |
+| `MoveScaleRange` | `FVector2D` | 移动距离缩放范围 |
+| `OriginPositionRangeX` | `FVector2D` | 初始位置水平偏移范围 |
+| `OriginPositionRangeY` | `FVector2D` | 初始位置垂直偏移范围 |
+| `MoveDirection` | `FVector2D` | 飞行角度范围，范围-180到180 |
+| `bFollowTarget` | `bool` | 是否跟随目标 |
+
+### FUGCGamePartPlayerComponentConfig
+
+PlayerComponent配置
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `PlayerComponentName` | `FName` | PlayerComponent名称 |
+| `PlayerComponentClass` | `TSubclassOf < UActorComponent >` | PlayerComponent类配置 |
+
+### FUGCGenerateDropItemInfo
+
+蓝图配置掉落物信息
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `ItemID` | `int32` | 掉落物ItemID |
+| `ItemPresetIdx` | `int32` | 掉落物ItemID |
+| `Count` | `int32` | 掉落物数量 |
+
+### FUGCItemSpawnerInfo
+
+物资生成管理器上每个刷新点的配置
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `Spawner` | `AUGCItemSpawner *` | 使用的刷新点 |
+| `bOverrideItemConfig` | `bool` | 是否覆盖该刷新点上的物资配置，开启则刷新点上的配置无效，使用这里的配置 |
+| `ItemConfig` | `FUGCItemSpawnerItemConfig` | 配置刷新点上的物资配置 |
+
+### FUGCItemSpawnerItemConfig
+
+物资配置
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `ConfigMode` | `EUGCItemSpawnerConfigMode` | 刷出物资的配置方式 |
+| `ItemID` | `int32` | 使用物资ID模式时，物资的ID |
+| `ItemCount` | `int32` | 使用物资ID模式时，物资的数量 |
+| `DropID` | `int32` | 使用掉落表模式时，掉落表的ID |
+| `DropGroupID` | `int32` | 使用掉落组表模式时，掉落组表的ID |
+| `CustomParam` | `TMap < FString , FString >` | 使用自定义模式时，用于自定义的ID |
+
+### FUGCItemTransferResult
+
+物品转移结果
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `CanTransfer` | `bool` | 转移是否成功 |
+| `TransferErrorReason` | `TArray < FName >` | 如果转移失败，失败原因来自于转移者 |
+| `ItemErrorReason` | `TMap < FItemDefineID , FName >` | 如果转移失败，失败原因来自于物品 |
+
+### FUGCLevelTaskLineConfig
+
+成长任务线配置结构体
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `Level` | `int32` | 等级 |
+| `TaskIDList` | `TArray < int32 >` | 任务ID列表 |
+
+### FUGCMobBTBlackBoardInfo
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `Key` | `FName` |  |
+| `Value` | `FString` |  |
+| `ValueType` | `FName` |  |
+
+### FUGCMobBTDebugInfo
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `Trees` | `TArray < FUGCMobBTDebugTreeInfo >` |  |
+| `Elems` | `TArray < FUGCMobBTDebugTreeElemInfo >` |  |
+
+### FUGCMobBTDebugTreeElemInfo
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `Name` | `FName` |  |
+| `ExecutionIndex` | `int32` |  |
+| `ParentExecutionIndex` | `int32` |  |
+| `TickInternal` | `float` |  |
+| `RandomDeviation` | `float` |  |
+| `Value` | `bool` |  |
+
+### FUGCMobBTDebugTreeInfo
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `Name` | `FName` |  |
+| `NodeStartIndex` | `int32` |  |
+| `DecoratorStartIndex` | `int32` |  |
+| `ServiceStartIndex` | `int32` |  |
+| `ParallelTaskStartIndex` | `int32` |  |
+| `EndIndex` | `int32` |  |
+
+### FUGCMobSpawnerMobConfig
+
+刷怪系统：怪物刷新配置
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `ConfigMode` | `EUGCMobSpawnerConfigMode` | 刷出怪物类型的配置方式 |
+| `MobClass` | `TSubclassOf < AGenericCharacter >` | 使用蓝图配置时，刷出的怪物类 |
+| `MobGroupID` | `int32` | 使用怪物组表时，怪物组表的ID |
+| `CustomParam` | `TMap < FString , FString >` | 使用自定义模式时，自定义参数列表 |
+
+### FUGCPercentTaskAward
+
+活跃任务线奖励结构体
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `Percent` | `int32` | 活跃度 |
+| `ItemList` | `TArray < FUGCRankingListAwardItem >` | 奖励道具列表 |
+
+### FUGCPercentTaskLineConfig
+
+活跃任务线配置结构体
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `PercentTaskID` | `int32` | 任务ID |
+| `Priority` | `int32` | 任务排序优先级 |
+
+### FUGCPickupItemData
+
+拾取物物品数据
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `PickupWrapper` | `AActor *` | 物品所在的拾取物Actor |
+| `ItemDefineID` | `FItemDefineID` | 物品 DefineID |
+| `ItemCount` | `int32` | 物品数量 |
+
+### FUGCRankingListAwardItem
+
+排行榜物品结构体
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `ItemID` | `int32` | 物品ID |
+| `ItemNum` | `int32` | 物品数量 |
+
+### FUGCRankingListData
+
+排行榜表格结构体
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `ID` | `int32` | 排行榜索引ID |
+| `PeopleNum` | `int32` | 排行榜最大上榜人数 |
+| `PeriodType` | `ERankListPeriodType` | 排行榜周期类型 |
+| `BeginDate` | `FDateTime` | 排行榜开始时间 |
+| `SettleDate` | `FDateTime` | 非周期榜结算时间 |
+| `EndDate` | `FDateTime` | 排行榜结束时间 |
+| `SortPropertyName` | `FString` | 排序属性名称 |
+| `SortType` | `ERankListSortType` | 排序类型 |
+| `RankAward` | `TArray < FRankListAward >` | 排行榜奖励列表 |
+| `TabName` | `FString` | 排行榜页签名称 |
+| `EnableType` | `ERankListEnableType` | 是否启用排行榜 |
+| `ShowInGame` | `ERankListDisplayType` | 是否在玩法内展示 |
+| `ShowInDetails` | `ERankListDisplayType` | 是否在玩法详情页展示 |
+| `Desc` | `FString` | 排行榜说明 |
+| `ScoreFormatType` | `ERankListScoreFormatType` | 分数显示格式 |
+| `EnableFriendRank` | `EFriendRankListEnableType` | 是否启用好友榜 |
+
+### FUGCSpawnActorNumLimitCfg
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `ActorName` | `FString` |  |
+| `NumLimit` | `int32` |  |
+
+### FUGCTaskConfig
+
+任务结构体
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `TaskID` | `int32` | 任务ID |
+| `TaskName` | `FString` | 任务名称 |
+| `TaskType` | `UUGCTaskTypeBase *` | 任务类型 |
+| `TaskDesc` | `FString` | 任务说明 |
+| `TaskAwardList` | `TArray < FUGCRankingListAwardItem >` | 任务奖励列表 |
+| `BeginDate` | `FDateTime` | 开始时间 |
+| `EndDate` | `FDateTime` | 结束时间 |
+| `IsShowOutDate` | `bool` | 过期后是否显示 |
+| `IsShowGotoBtn` | `bool` | 是否显示任务的前往按钮 |
+
+### FUGCTaskLineConfig
+
+任务线配置结构体
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `TaskLineType` | `EUGCTaskLineType` | 任务线类型 |
+| `TaskLineName` | `FString` | 任务线名称 |
+| `LevelTaskLineConfig` | `TArray < FUGCLevelTaskLineConfig >` | 成长任务线配置 |
+| `PercentTaskLineConfig` | `TArray < FUGCPercentTaskLineConfig >` | 活跃任务线配置 |
+| `LevelTaskPropertyName` | `FString` | 成长等级属性名称 |
+| `PercentAwardList` | `TArray < FUGCPercentTaskAward >` | 进度奖励列表 |
+| `ResetType` | `EUGCPercentTaskResetType` | 活跃任务线重置类型 |
+| `WeeklyResetTime` | `EUGCTaskCustomWeekResetType` | 活跃任务线周重置类型 |
+| `DailyResetTime` | `FString` | 活跃任务线重置时间 |
+| `ItemID` | `int32` | 活跃度道具ID |
+| `BeginDate` | `FDateTime` | 开始时间 |
+| `EndDate` | `FDateTime` | 结束时间 |
 
 ## 全局函数（Global Functions）
 

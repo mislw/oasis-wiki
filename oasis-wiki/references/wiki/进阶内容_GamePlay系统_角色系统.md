@@ -1,6 +1,6 @@
 # 进阶内容/GamePlay系统/角色系统
 
-> 官方知识库同步分类，共 5 篇文章
+> 官方知识库同步分类，共 6 篇文章
 
 ---
 
@@ -211,6 +211,126 @@ end
 	end
 	```
 - 枪械的配件及子弹也属于独立的物品，因此需要配合枪械单独配置掉落属性，否则会出现保留或掉落效果不一致的现象
+
+---
+
+## 角色AI托管
+
+> 文档路径: 进阶内容 > GamePlay系统 > 角色系统 > 角色AI托管
+
+> 文档ID: 20466 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20466)
+
+> 新增: 2026-09-15 14:31:59
+
+**涉及API/标识符:** `PlayerController`, `UE.IsValid`, `UGCGame.UGCPlayerAIHostComponent`, `UGCPlayerAIHostComponent`, `UGCPlayerPawn`
+
+# 角色AI托管
+
+## 概述
+
+游戏中常见的自动战斗、自动寻路相关功能，会使得玩家操作的角色临时处于托管状态，并按一定预设好的行为逻辑自动行动，在这个过程中，玩家如果进行了任何操作，就又会恢复手动操作。在绿洲编辑器下，欲实现这样一套功能，可以使用新提供的 `UGCPlayerAIHostComponent` 来解决。角色AI托管依赖导航网格系统作为前提，具体配置方式请参考[导航网格](https://developer.gp.qq.com/wikieditor/#/catalog/20266)。
+
+## 添加UGCPlayerAIHostComponent组件
+
+在 `PlayerController` 蓝图中添加 `UGCPlayerAIHostComponent` 组件
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/WcoA6image.png)
+
+
+给PlayerController挂载了该组件后，且调用接口激活了该组件的托管模式后，角色就会使用配置的行为树里的行为逻辑，进行托管操作了。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/LqKroimage.png)
+
+|参数|说明|
+|-|-|
+|AIHostBTAsset|AI托管组件默认运行的行为树。托管时，会启用该行为树，则玩家角色会以该行为树的配置行为逻辑自动执行相应行为。也可以默认不配置，运行时动态传进去——用于控制不同需求下可能需要用不同的行为树的情况（比如自动战斗、自动寻路应该是俩不同的行为树）|
+|没有操作自动托管|如果玩家在自由操作模式下，如果经过一段时间没有操作，是否自动进入托管状态|
+|任一操作退出托管|玩家在托管状态下，如果进行了任一一个操作，会直接退出托管，恢复自由操作|
+|进入托管挂机时间|自由操作模式下，没有操作自动进入托管的时间|
+|踢出对局托管时间|玩家进入托管了多久后，会自动踢出对局|
+
+## 制作玩家托管使用的行为树
+
+制作玩家托管行为树的方案和制作怪物行为树的原理类似。但需要注意的是，并非所有节点都能在玩家托管行为树中使用，对于此种行为树，可参考现成提供好的一个自动战斗行为树资产。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/NlTPeimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/HlTz5image.png)
+
+将刚才制作好的行为树添加到组件上
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/Ka1a7image.png)
+
+## 通过技能开/关托管功能
+
+在**技能编辑器**中的 自动战斗 模板下创建托管技能模板，并将创建好的[技能添加](https://developer.gp.qq.com/wikieditor/#/catalog/20091?autoJump=%E6%B7%BB%E5%8A%A0%E6%8A%80%E8%83%BD)到 `UGCPlayerPawn` 蓝图上。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/2prA0image.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/JaTXgimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/J0QsXimage.png)
+
+完成技能配置后启动调试效果如下：
+
+![2026-08-1917-45-16-ezgif.com-video-to-gif-converter.gif](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/WPD1r2026-08-1917-45-16-ezgif.com-video-to-gif-converter.gif)
+## 手动调用API开/关托管功能
+
+### 获取AI托管组件
+
+``` Lua
+    local Controller = OwnerActor:GetControllerSafety()
+    if not UE.IsValid(Controller) then
+        return nil
+    end
+
+    local AIHostCompClass = LoadClass("/Script/UGCGame.UGCPlayerAIHostComponent")
+    if not AIHostCompClass then
+        print('AIHostCompClass is Not Valid.............')
+        return nil
+    end
+
+    local AIHostComp = Controller:GetComponentByClass(AIHostCompClass)
+    if not UE.IsValid(AIHostComp) then
+        print('AIHostComp is Not Valid.............')
+        return nil
+    end
+
+return AIHostComp
+```
+
+### 开启托管并透传行为树
+
+``` Lua
+	--服务端调用
+ local HostComp = self:GetAIHostComponent(self:GetOwnerActor())
+ if UE.IsValid(HostComp) then
+     --HostComp:ServerRequestStartAIHosting()
+     HostComp:StopAIHosting()
+     HostComp.AIHostBTAsset = self.AutoCombatBTAsset
+     --HostComp.bAutoStartAIHost = true
+     HostComp:StartAIHosting()
+end
+```
+### 退出托管
+
+``` Lua
+--服务端调用
+local HostComp = self:GetAIHostComponent(self:GetOwnerActor())
+if UE.IsValid(HostComp) then
+    print('test432 StopAIHosting')
+    HostComp:StopAIHosting()
+    --HostComp.bAutoStartAIHost = false
+end
+```
+
+#### 没有操作自动托管
+
+如果需要使用该功能，不建议直接在组件上开启该选项，因为一旦开启，由于组件是持续生效的，则会导致玩家在进入游戏后，只要没有操作一段时间就进入托管状态。（当然如果就是需要这种效果也可以这么使用。）通常还是建议，组件上默认关闭，开启了托管模式后，再打开该开关，关闭了托管模式，同时也将该开关关掉。
+
+``` Lua
+local HostComp = self:GetAIHostComponent(self:GetOwnerActor())
+if UE.IsValid(HostComp) then
+    HostComp.bAutoStartAIHost = true
+end
+```
 
 ---
 

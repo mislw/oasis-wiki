@@ -1,6 +1,211 @@
 # 进阶内容/UI系统
 
-> 官方知识库同步分类，共 14 篇文章
+> 官方知识库同步分类，共 16 篇文章
+
+---
+
+## Tips系统
+
+> 文档路径: 进阶内容 > UI系统 > Tips系统
+
+> 文档ID: 20445 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20445)
+
+> 新增: 2026-09-02 13:56:10
+
+**涉及API/标识符:** `BPDoActionsWhenNewTipBegin`, `BPDoActionsWhenNewTipEnd`, `PlayAnimation`, `UE.IsValid`, `UGCGameSystem.ClearTimer`, `UGCGameSystem.GameState`, `UGCGameSystem.SetTimer`, `UGCWidgetManagerSystem.ShowCustomTipsByID`, `UGCWidgetManagerSystem.ShowCustomTipsByIDWithPC`, `UUserWidget`
+
+# Tips系统
+
+可以基于该系统，配置游戏中常见的弹框消息提示，通常用于一些任务的提示、功能的引导。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/VC5Vvimage.png)
+
+<br>
+
+## Tips表
+
+点击【表格管理器】->【功能表格】->【Tips表】创建TIps表进行Tips的相关配置。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/evmMpimage.png)
+
+参数说明：
++ TipsID：Tips的ID，在代码里用接口显示对应Tips时，依赖ID进行查询。
++ 优先级：当下一条Tips进行显示，而前一条Tips还未完全隐藏时，依赖该优先级确定是否顶替。若优先级更大，则会进行顶替。优先级最大支持到3。即该优先级配置只能配置为0，1，2，3。
++ 是否可以被同等级顶替：如果两条Tips优先级一样，勾选该选项时，可以被优先级一致的Tips顶替。
++ 持续时间：tips的持续时间，优先级低于`Tips调用接口`。
++ 默认文本：该Tips的默认文本，可以使用富文本。
++ TipsUI蓝图：显示Tips的UI蓝图。支持在工程内使用对应UI模板创建自定义的Tips覆盖默认Tips蓝图。
+
+---
+
+### Tips调用接口
+
+**客户端调用**
+
+```lua
+---生效范围：客户端
+-- @param ID Tips表ID
+-- @param TipsContent Tips的覆盖文本。若有，则会用该文本覆盖原本表里配置的默认文本
+-- @param ExtraParam 动态黑板参数，可以构造动态参数传入Tips蓝图。
+function UGCWidgetManagerSystem.ShowCustomTipsByID(ID, TipsContent, ExtraParam)
+```
+
+在对应客户端，根据ID找Tips表里定义的Tips，显示对应Tips。
+
+```lua
+function test:Button_3_OnClicked()
+	UGCWidgetManagerSystem.ShowCustomTipsByID(1, "击杀成功！")
+	return nil;
+end
+```
+
+**服务端调用**
+
+```lua
+---生效范围：服务端
+-- @param ID Tips表ID
+-- @param TipsContent Tips的覆盖文本。若有，则会用该文本覆盖原本表里配置的默认文本
+-- @param PlayerController 对应显示该Tips的玩家的Controller
+function UGCWidgetManagerSystem.ShowCustomTipsByIDWithPC(ID, TipsContent, PlayerController)
+```
+在服务端，根据对应PlayerController，给对应玩家显示相应Tips。
+
+
+```lua
+function UGCGameState:ReceiveTick(DeltaTime)
+    self.Timer = (self.Timer or 0) + DeltaTime
+    if self.Timer >= 5.0 then
+        self.Timer = self.Timer - 5.0
+        local GameState = UGCGameSystem.GameState
+        if GameState and GameState.PlayerArray then
+            for _, PlayerState in pairs(GameState.PlayerArray) do
+                if UE.IsValid(PlayerState) then
+                    local PlayerKey = PlayerState:GetPlayerKey()
+                    if PlayerKey then
+                        local PC = ScriptGameplayStatics.GetPlayerControllerByPlayerKey(GameState, PlayerKey)
+                        if UE.IsValid(PC) then
+                            UGCWidgetManagerSystem.ShowCustomTipsByIDWithPC(1, "Boss 即将出现！", PC)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+```
+
+<br>
+
+## 自定义Tips扩展
+
+### UI模板
+
+点击【UI编辑器】->【元件】->【消息提示】创建自定义TipsUI蓝图。可基于该蓝图进行自定义扩展。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/usuppimage.png)
+
+---
+
+### 数据结构
+`BPDoActionsWhenNewTipBegin`是TipsUI刚显示进行构造时调用的函数，会传入一个data数据。
+
+```lua
+function testTips2:BPDoActionsWhenNewTipBegin(data)
+    self.TopTips_Content:SetText(tostring(data.FinalContext))
+    if CheckObjectContainsField(self, 'FadeIn') then
+        self:StopAnimation(self.FadeIn)
+        self:PlayAnimation(self.FadeIn, 0, 1, EUMGSequencePlayMode.Forward, 1)
+    end
+    if self.Timer then
+        UGCGameSystem.ClearTimer(self, self.Timer)
+        self.Timer = nil
+    end
+    local SelfWeakObjectPtr = WeakObjectPtr(self)
+    self.Timer = UGCGameSystem.SetTimer(self,
+        function ()
+            local self = SelfWeakObjectPtr:Get()
+            if self == nil then return end
+            if CheckObjectContainsField(self, 'FadeOut') then
+                self:StopAnimation(self.FadeOut)
+                self:PlayAnimation(self.FadeOut, 0, 1, EUMGSequencePlayMode.Forward, 1)
+            end
+        end,
+    data.PlayLength - 0.5,
+    false)
+end
+```
+
+以下为data数据含义参考。
+
+```lua
+    data.FinalContext      -- FText 最终文本
+    data.ExtraParam        -- UUAEBlackboard* 调用方传入的额外参数
+    data.PlayLength        -- float 持续时间
+    data.Priority          -- uint8 优先级
+    data.bCanBeReplaced    -- bool 可否被顶替
+    data.TopTipWidget      -- TSoftClassPtr 覆盖的 Widget 类引用
+		data.Offset            -- FVector2D 偏移量
+		data.AnimationName     -- string 播放动画名
+```
+
+`BPDoActionsWhenNewTipEnd`是TipsUI持续时间结束，被隐藏时调用的函数事件。
+
+---
+
+### 淡入淡出动画
+
+可参考Tips模板里的用法，在UI编辑器里配置对应组件的动画效果。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/YbhLUimage.png)
+
+在TipsUI构造时，使用[`PlayAnimation`](https://developer.gp.qq.com/api/#/searchContent/UUserWidget?classDetailShow=true&path=class%2Fdetail%2FOthers%2FUUserWidget.json&isSelect=1&apiEnc=%5B%22%E7%B1%BB%22%5D&apiLabel=UUserWidget&autoJump=PlayAnimation)进行淡入淡出动画的播放。
+> 淡出动画的延迟播放时间=tips持续时间 - 淡出动画时间
+
+```lua
+function testTips2:BPDoActionsWhenNewTipBegin(data)
+  if CheckObjectContainsField(self, 'FadeIn') then
+          self:StopAnimation(self.FadeIn)
+          self:PlayAnimation(self.FadeIn, 0, 1, EUMGSequencePlayMode.Forward, 1)
+      end
+      self.Timer = UGCGameSystem.SetTimer(self,
+                  function ()
+                      if CheckObjectContainsField(self, 'FadeOut') then
+                      self:StopAnimation(self.FadeOut)
+                      self:PlayAnimation(self.FadeOut, 0, 1, EUMGSequencePlayMode.Forward, 1)
+                      end
+                  end,
+                  data.PlayLength - 0.5,
+                  false)
+end
+```
+
+---
+
+### 使用动态黑板参数
+
+可以利用黑板透传Tips的动态参数。
+调用时构造黑板并传入。
+
+```lua
+local BlackBoardClass = LoadClass("/Script/UAESharedModule.UAEBlackboard")
+local BlackBoard = ScriptGameplayStatics.NewObject(self, BlackBoardClass)
+BlackBoard:SetValueAsInt({SelectedKeyName = "ImageIndex"}, 2, true)
+UGCWidgetManagerSystem.ShowCustomTipsByID(1, nil, BlackBoard)
+```
+
+构造TipsUI时使用传入的黑板参数。
+
+```lua
+function testTips2:BPDoActionsWhenNewTipBegin(data)
+    self.TopTips_Content:SetText(tostring(data.FinalContext))
+    local ExtraParam = data.ExtraParam
+    if ExtraParam then
+        local ColorIndex = ExtraParam:GetValueAsInt({SelectedKeyName = "ImageIndex"})
+        local Color = self.ImageIndexs[ColorIndex]
+        self.Image_0:SetColorAndOpacity(Color)
+    end
+end
+```
 
 ---
 
@@ -191,7 +396,7 @@ end
 
 > 文档ID: 20019 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20019)
 
-> 更新: 2026-03-06 16:59:25
+> 新增: 2026-09-10 17:24:38 | 更新: 2026-09-11 14:41:28
 
 **涉及API/标识符:** `AddToSlot`, `SetWidgetLayout`, `UGCGameSystem.GetLocalPlayerController`, `UGCGameSystem.GetUGCResourcesFullPath`, `UGCWidgetManagerSystem`, `UGCWidgetManagerSystem.SetWidgetLayout`, `WidgetLayout`
 
@@ -250,6 +455,7 @@ end
 |MainUI_Microphone_Btn_C_0|麦克风|
 |MainUI_SurviveInfo_Btn_C_0|局内存活状态|
 |MainUI_PlayerInfo_Btn_C_0|人物状态栏|
+|MainUI_Navigator_C_0|指南针罗盘|
 
 <br>
 
@@ -257,9 +463,9 @@ end
 
 ### 创建WidgetLayout
 
-在项目的内容浏览器中，右键 ``用户界面 -> WidgetLayout``，点击创建并命名，双击打开蓝图可看到内置的和平主界面控件。
+在项目的内容浏览器中，右键 ``用户界面 -> 控件布局``，点击创建并命名，双击打开蓝图可看到内置的和平主界面控件。
 
-![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/xJvoTimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/jopSaimage.png)
 ![企业微信截图_17420144956100.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/S3q0Q%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17420144956100.png)
 
 ---
@@ -1432,6 +1638,111 @@ end
 |Alignment|提示控件的轴点对齐方式|
 |ZOrder|提示控件的显示优先级,用于控制与其他控件的叠放顺序|
 |Size To Content|是否让提示控件自动铺满父控件|
+
+---
+
+## 背包Tips系统
+
+> 文档路径: 进阶内容 > UI系统 > 背包Tips系统
+
+> 文档ID: 20463 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20463)
+
+> 新增: 2026-09-08 18:58:08
+
+**涉及API/标识符:** `UGCBackpackSystemV2.GetBackpackTipsConfig`
+
+# 背包Tips系统
+
+可以基于该系统，配置与背包系统相关的弹框信息提示。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/QuZkfimage.png)
+
+<br>
+
+## Tips表
+
+点击【表格管理器】->【功能表格】->【Tips表】创建TIps表进行Tips的相关配置。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/evmMpimage.png)
+
+参数说明：
++ TipsID：Tips的ID，在代码里用接口显示对应Tips时，依赖ID进行查询。
++ 优先级：当下一条Tips进行显示，而前一条Tips还未完全隐藏时，依赖该优先级确定是否顶替。若优先级更大，则会进行顶替。优先级最大支持到3。即该优先级配置只能配置为0，1，2，3。
++ 是否可以被同等级顶替：如果两条Tips优先级一样，勾选该选项时，可以被优先级一致的Tips顶替。
++ 持续时间：tips的持续时间，优先级低于Tips调用接口。
++ 默认文本：该Tips的默认文本，可以使用富文本。
++ TipsUI蓝图：显示Tips的UI蓝图。支持在工程内使用[TipsUI模板](https://developer.gp.qq.com/wikieditor/#/catalog/20463?autoJump=TipsUI%E6%A8%A1%E7%89%88)创建自定义的Tips覆盖默认Tips蓝图。
+
+<br>
+
+## TipsUI模版
+
+点击【UI编辑器】->【元件】->【TipsUI模版】创建背包Tips系统蓝图。可基于该蓝图进行自定义扩展。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/yajcTimage.png)
+
+<br>
+
+## 背包Tips系统的配置
+
+点击【玩法通用设置】按钮，[启用背包系统](https://developer.gp.qq.com/wikieditor/#/catalog/20104?autoJump=%E5%90%AF%E7%94%A8%E8%83%8C%E5%8C%85%E7%B3%BB%E7%BB%9F)，添加“GP_BackpackV2”模块，创建并打开`背包组件（BP_BackpackComponentV2）`。
+
+![ScreenShot_2026-08-17_151147_588.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/IZEqtScreenShot_2026-08-17_151147_588.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/zfXknimage.png)
+
+在【细节】->【Backpack Tips】->【背包Tips配置】中将默认TipsID更改为Tips表中的TipsID。
+
+|背包映射key|默认TipsID|默认文本|触发场景|
+|-|-|-|-|
+|BackpackSpaceNotEnough|81001|背包空间不足!|背包容量满，添加物品失败时|
+|CannotAddToBackpack|81002|无法加入背包!|背包容量满，拾取物品失败时|
+|CannotEquip|81003|无法装备!|装备不符合装备条件的装备时|
+|AddToBackpackFailed|81004|加入背包失败!|添加物品失败时|
+|EquipFailed|81005|装备失败!|装备物品失败时|
+|EquipSuccess|81006|成功装备%s!|装备物品成功时|
+|ItemPickedUp|81011|已拾取%s|拾取物品时|
+|BackpackFullDropItem|81013|背包容量不足，自动丢弃%s|背包容量不足，自动丢弃物品时|
+|CannotUseItemInCurren|81014|当前状态无法使用%s|使用当前状态无法使用的物品时|
+|ItemCannotBeDropped|81016|该物品无法被丢弃|丢弃无法丢弃物品时|
+|ItemDestroyed|81017|已销毁%s|物品被销毁时|
+
+
+> %s 会被替换为对应的物品名称
+
++ 物品名称的文本颜色将以【玩法通用设置】->【物品品质配置】中的【品质文本颜色】显示。
+
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/AbCzHimage.png)
+![image.png](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/UP4khimage.png)
+
+---
+
+### Tips相关接口
+
+获取背包Tips配置值
+
+```lua
+---通过Key查询BackpackTipsConfig TMap中对应的整型配置值
+---生效范围：服务器&客户端
+---@param Player PlayerPawn | PlayerController @玩家角色或者玩家控制器
+---@param Key string @Tips配置Key
+---@return number|nil @对应TipsID，未找到返回nil
+function UGCBackpackSystemV2.GetBackpackTipsConfig(Player, Key) end
+```
+
+弹出背包Tips
+
+```lua
+---func 服务端/客户端调用
+---@param TipKey string Tips配置Key（对应BackpackTipsConfig中的键）
+---@param ItemDefineID userdata 物品DefineID
+---@param Count number 物品数量，默认0
+---@param Reason number EUGCCommonItemReason 通用操作原因，默认Default
+ function BP_BackpackComponentV2_Custom:DisplayBackpackTipsV2(TipKey, ItemDefineID, Count, Reason)
+    BP_BackpackComponentV2_Custom.SuperClass.DisplayBackpackTipsV2(self, TipKey, ItemDefineID, Count, Reason);
+ end
+```
+
+<br>
 
 ---
 

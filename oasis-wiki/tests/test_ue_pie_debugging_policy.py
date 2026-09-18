@@ -18,6 +18,14 @@ class UePieDebuggingPolicyTests(unittest.TestCase):
                 self.assertIn('must not use computer control', entrypoint)
                 self.assertIn('do not fall back to computer control', entrypoint)
 
+    def test_entrypoints_require_mobile_platform_for_start(self):
+        for entrypoint in (SKILL, AGENTS):
+            with self.subTest(entrypoint=entrypoint[:20]):
+                self.assertIn('`action=start`', entrypoint)
+                self.assertIn('`simulation_platform=mobile`', entrypoint)
+                self.assertIn('never omit this field', entrypoint)
+                self.assertIn('PC platform value `pchd`', entrypoint)
+
     def test_documented_actions_match_the_live_tool_contract(self):
         for marker in (
             'Tool version `2.4.0`',
@@ -27,6 +35,17 @@ class UePieDebuggingPolicyTests(unittest.TestCase):
             '`doluastring`',
             '`client`',
             '`ds`',
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, MCP_INTEGRATION)
+
+    def test_start_examples_use_mobile_and_forbid_pc_platform(self):
+        for marker in (
+            'Every `ue_pie` call with `action=start` must explicitly set '
+            '`simulation_platform=mobile`',
+            'Never omit `simulation_platform` from a start call',
+            'never use the PC platform value `pchd`',
+            'simulation_platform = "mobile"',
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, MCP_INTEGRATION)

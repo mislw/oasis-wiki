@@ -13,6 +13,7 @@ Use this branch for UI screenshots, component extraction/correction, project sty
 | Screenshot analysis, extraction, correction, new page | `references/game-ui/workflow.md` |
 | Profile/component fields or file updates | `references/game-ui/schemas.md` |
 | Hierarchy, occlusion, style review | `references/game-ui/validation-rules.md` |
+| Existing UMG hierarchy comparison, reusable items/lists, replacement readiness | `references/game-ui/umg-hierarchy-patterns.md` |
 | Required response order and report fields | `references/game-ui/output-templates.md` |
 
 ## Mandatory gates
@@ -47,6 +48,7 @@ For flattened-page component extraction, read `references/cowart-ui/transparent-
 ## Oasis integration
 
 - Use this branch for visual structure and reusable style decisions.
+- For a real WidgetBlueprint hierarchy comparison or migration audit, read `references/game-ui/umg-hierarchy-patterns.md` before deciding which structure to keep.
 - Use `references/mcp-ui-widget.md` only when real WidgetBlueprint inspection or mutation is needed.
 - Use `references/feature-development-flow.md` for Lua, RPC, events, data ownership, and runtime refresh.
 - Read project files freely. Modify UGC code, `.uasset`, `.umap`, or project-local profiles only with explicit authorization.

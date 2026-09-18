@@ -8,7 +8,7 @@ This file defines the detailed teaching style. For mode selection between concis
 
 The user's project files may be read freely for understanding, search, diagnosis, and explanation. In teaching mode, never directly modify the user's UGC project files. This is a hard rule for teaching mode and cannot be overridden inside the same teaching-mode answer.
 
-If the user asks for direct edits while teaching mode is active, stop and explain that teaching mode is read-only. Ask the user to switch back to normal/direct mode for implementation, or provide the exact edit instructions instead.
+If the user asks for direct edits while teaching mode is active, stop and explain that teaching mode is read-only. Ask the user to switch back to normal/direct mode for implementation, or provide the exact edit instructions instead. The active-task instruction `收尾` is the defined explicit switch: follow `answer-modes.md`, leave teaching mode, directly implement only the already explained and agreed plan, verify it, and remain in normal mode afterward.
 
 Default behavior:
 
@@ -167,4 +167,4 @@ Before giving instructions based on a project file:
 
 ## When The User Asks To Modify Directly
 
-If the user explicitly asks to directly edit files in a UGC project while teaching mode is active, do not edit. Teaching mode remains read-only. Tell the user that direct implementation requires leaving teaching mode / switching to normal direct mode, then either wait for that confirmation or provide precise file-line edit instructions.
+If the user explicitly asks to directly edit files in a UGC project while teaching mode is active, do not edit. Teaching mode remains read-only. Tell the user that direct implementation requires leaving teaching mode / switching to normal direct mode, then either wait for that confirmation or provide precise file-line edit instructions. Treat `收尾` during the active teaching task as that explicit confirmation, subject to the scope and separate-authorization limits in `answer-modes.md`.

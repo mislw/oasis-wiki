@@ -27,6 +27,8 @@
 - A requested project component is not `active`.
 - A semantic item is unresolved, its asset needs a fresh preview, or the cached preview is missing.
 - A `project_library_asset` preview key does not match the referenced image SHA-256.
+- A proposed WidgetBlueprint replacement is missing any existing Lua-facing control, callback owner, dynamic state, or refresh surface without an explicit compatibility mapping.
+- A visible button plate extends outside its actual Button hit region without a reviewed interaction reason and device verification.
 
 ## Checks
 
@@ -35,6 +37,7 @@
 - Button text is above the button plate.
 - Selection is above content but does not hide critical text.
 - Decoration does not intercept input.
+- Dynamic repeated content has a declared ownership model: fixed children for a truly fixed set, or a reusable Item/List contract with data binding and teardown for runtime-sized data.
 - Children remain inside the visible parent unless overflow is explicitly allowed.
 - Colors, corners, borders, shadows, typography, icons, and states match the resolved project profile.
 - Asset IDs, component IDs, semantic keys, and item IDs are unique within their catalogs.

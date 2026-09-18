@@ -112,6 +112,52 @@ The script reads the public thread-detail API, requires the official author ID a
 
 After write mode, verify the requested thread IDs occur exactly once, inspect titles and issue/update times, run `tests.test_official_forum_sync`, and complete the normal Skill and Companion version checks.
 
+## Reference File Refresh Check
+
+`references/wiki/` mixes generated and hand-maintained material. Before claiming the knowledge base matches the official site, classify the file first — the wiki sync only owns part of the directory:
+
+| Class | Files | Covered by |
+|---|---|---|
+| Generated | every file returned by `build_artifacts()` (category docs, `API参考索引.md`, `代码示例库.md`, `README.md`, `新增内容_1.37版本.md`, `绿洲启元Wiki目录.txt`, …) | `sync_official_wiki.py` |
+| Preserved | `官方API参考手册.md`, `术语表.md`, `论坛经验帖_绿洲启妹.md` | their own source, **not** the wiki sync |
+| Hand-maintained | `官方宣讲会回顾.md` and any future briefing archive | this protocol |
+
+A catalog version match in `README.md` is **not** evidence the preserved files are current. Check them separately.
+
+### Official API Manual Freshness
+
+`官方API参考手册.md` is a curated snapshot of the separate API site (`https://developer.gp.qq.com/api/`). The site is a single-page app, but its data is plain static JSON, so freshness can be verified without a browser:
+
+```text
+https://developer.gp.qq.com/api/class/list/tree.json             # classes
+https://developer.gp.qq.com/api/cppenum/list/sorted_list.json    # enums (nested by first letter)
+https://developer.gp.qq.com/api/cppstruct/list/sorted_list.json  # structs (nested by first letter)
+https://developer.gp.qq.com/api/globalfunc/list/sorted_list.json # global functions
+```
+
+Compare the live names against the manual text and report the gap by category. Only UGC/和平精英-scope gaps matter; UE-internal types (`UMaterialExpression*`, `FClipmap*`, `Ak*`, `EABF_*`) are outside the manual's stated scope and do not by themselves mean the manual is stale. Also re-check the counts in the manual header, which have drifted from the body before.
+
+Scope rule: a struct belongs in the manual only when its name starts with `FUGC` or `FPE`. Refresh that section with:
+
+```powershell
+python scripts/refresh_api_structs.py
+```
+
+The script fetches the in-scope struct details and rewrites the `## 数据结构（Structs）` section and the header statistics. It is idempotent. Do not bulk-import the ~1100 UE engine structs.
+
+### Glossary Quality
+
+`术语表.md` is hand-maintained. It was originally produced by a regex that allowed `**…**` spans to cross newlines, so stray bold markers swallowed headings, table rows, and `<br>` tags into the "term" position — those entries spanned several lines and broke the Markdown. The cleaned form keeps only single-line `术语 — 出现于: 文章路径` entries, with leading `#`/`|`/list markers and residual `**` and `\_` escapes stripped.
+
+When the glossary is touched again:
+
+- Keep every entry on one line, matching `- **term** — 出现于: path`; drop anything that cannot be reduced to that shape.
+- Do not delete a term just because it starts with `#` — strip the marker and keep the token (this is how names like `InitAllPlayerScore()` were recovered).
+- Confirm the 出现于 paths still exist in the generated category docs after a wiki sync.
+- Be honest about precision: the 出现于 values are **category/section level** (about 123 sources, sometimes merged as `A, B 等N处`), not exact article paths. The generated docs carry a `> 文档路径:` marker per article (332 of them) and `README.md` lists the categories — point readers there when an exact article is needed. `API参考索引.md` and `代码示例库.md` are the precise indexes; the glossary is coarse.
+- It remains a partial index rather than a full one.
+
+
 ## Suggested Answer When A New Conversation May Be Useful
 
 Use this decision pattern:

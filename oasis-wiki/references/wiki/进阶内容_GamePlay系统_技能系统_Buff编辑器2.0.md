@@ -800,7 +800,7 @@ UGCPersistEffectSystem.AddBuffByClass(BuffTarget, BuffClass)
 
 > 文档ID: 20253 | [官网原文](https://developer.gp.qq.com/wikieditor/#/catalog/20253)
 
-> 新增: 2026-04-20 16:22:28
+> 新增: 2026-04-20 16:22:28 | 更新: 2026-09-08 18:58:51
 
 **涉及API/标识符:** `ABP_TransformPreset_Chicken`
 
@@ -899,7 +899,6 @@ Buff编辑器提供了部分特化制作的功能型Buff模板，通过参数的
 
 角色变身为非主角骨骼类型的怪物模型，具备角色完整的动画功能，可正常移动、攻击等。
 
-> 目前仅支持变身为光子鸡模型，其他怪物模型存在动画与模型不匹配的问题
 
 ![QQ2026120-15433-HD-ezgif.com-video-to-gif-converter.gif](https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/rvPd9QQ2026120-15433-HD-ezgif.com-video-to-gif-converter.gif)
 
@@ -917,12 +916,59 @@ Buff编辑器提供了部分特化制作的功能型Buff模板，通过参数的
 |Preset Box Extend|骨骼模型碰撞盒的大小，针对 ``Collision Type`` 为“Box”时生效|
 |Preset Capsule Radius|胶囊体的半径，针对 ``Collision Type`` 为“Capsule”时生效|
 |Preset Capsule Height|胶囊体的半高，针对 ``Collision Type`` 为“Capsule”时生效|
-|Preset Transform Anim|怪物模型对应的动画蓝图，目前仅光子鸡的动画蓝图 ``ABP_TransformPreset_Chicken`` 可生效|
+|Preset Transform Anim|怪物模型对应的动画蓝图，参考设置光子鸡 ``ABP_TransformPreset_Chicken`` |
 |Fade in Speed|变身过程中相机变化淡入淡出的速度|
 |Offset|相机跟随目标点的偏移|
 |Spring Arm Length Additive|角色弹簧臂的变化量|
 |Sprint Arm Rotation|角色弹簧臂的旋转|
 |Additive Offset Fov|相机FOV修改量|
+
+<br>
+
+### 动画蓝图ABP使用说明
+
+对上述Preset Transform Anim动画蓝图进行说明
+
+首先创建动画蓝图
+
+<img src="https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/YuDKtimage.png" width = "700">
+
+<br>
+
+动画蓝图创建时，选择
+
+<img src="https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/O7SVKimage.png" width = "700">
+
+<br>
+
+创建后动画蓝图后，需配置动画蓝图的默认参数进行动画列表的替换——即控制变身的模型在执行对应行为时播放什么动画。
+
+<img src="https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/v7GgSimage.png" width = "1200">
+
+<br>
+
+（注意，建议只修改动画蓝图这里的动画列表相关参数，不用轻易修改其余配置项，否则可能出现配置项不正确的情况。）
+
+MoveBlendSpace：代表变身模型移动时使用的移动动画资产。是一个BlendSpace资产。
+
+<img src="https://cgugc-video-test-1258633575.cos.ap-shanghai.myqcloud.com/wiki_picture/tD0ylimage.png" width = "1200">
+
+<br>
+
+该移动BlendSpace的创建需要遵守一定的规范
+
+|参数名|参数说明|
+|-|-|
+|水平坐标名称|需要配置为WalkRight，且取值范围需要配置为真实速度的取值范围，运行时，实际会将真实速度在角色右朝向的分量传进来（比如此时角色朝左运动，则此时传进来的值为-[移动速度]，朝右运动，则此时传进来的值为[移动速度]）|
+|垂直坐标名称|需要配置为WalkForward，且取值范围需要配置为真实速度的取值范围，运行时，实际会将真实速度在角色前朝向的分量传进来（比如此时角色朝前运动，则此时传进来的值为[移动速度]，朝后运动，则此时传进来的值为-[移动速度]）|
+|Blend Samples|根据实际的需要，将左走、右走、前走、后走等不同动画配置到不同的位置即可|
+|InPlaceJumpAnim|原地起跳使用的动作|
+|ForwardJumpAnim|向前起跳使用的动作|
+|FallingAnim|在空中滞空的Loop动作|
+|LandingLightAnim|轻落地动作|
+|LandingHardAnim|重落地动作|
+|HurtAnim|被攻击时播放的动画。该动作需要是一个叠加类型的动作资产|
+|DeathMontage|死亡时播放的蒙太奇。该资产需要为一个蒙太奇。且该蒙太奇的最后一个阶段需要为循环且卡在死亡动画的最后一帧（这是为了保证死亡过程中死亡动画播完且目标还未销毁时，目标最后可以保留在一个静止的死亡Pose）|
 
 <br>
 
