@@ -249,6 +249,16 @@ Native 控件：<planned widgets>
 
 收到当前计划的明确批准后，继续遵守现有 MCP、PRV、事务、备份和 Git 安全规则。完成后报告真实写入与独立回读结果：
 
+写入前创建或刷新 `artifact_type: ui_delivery_contract`，把已批准视觉 SHA、Workbench page/revision/session SHA、精确 WidgetBlueprint `load_path`、MCP `umg-snapshot.json`、Lua 面向控件契约和项目外输出目录绑定在一起。写入或回读后运行 `scripts/game-ui/validate_ui_delivery_contract.py`。任何快照、哈希、控件或布局规则过期时停止，不得复用旧的成功报告。
+
+采用 **Designer-first** 验证顺序，并始终分开表述：
+
+1. **属性回读**：MCP 中的结构、槽位、画刷、变量与保存状态。
+2. **Designer 视觉**：重新打开 WidgetBlueprint 后的真实布局、裁切、层级、文字比例和贴图显示。
+3. **PIE 功能**：移动端运行时创建、动态数据、按钮回调、状态切换和关闭流程。
+
+属性回读不能代替 Designer 视觉，Designer 视觉也不能代替 PIE 功能。布局或样式迭代默认先在 Designer 验收，只有 Designer 通过后再统一运行 PIE；仅运行时症状可以提前进入 PIE。
+
 ```text
 WidgetBlueprint 构建完成。
 
@@ -312,6 +322,8 @@ Git/Skill 沉淀：<done/not requested>
 ```
 
 只有用户确认最终结果后才使用 `COMPLETE`。测试未运行、编辑器不可见或 PIE 未执行时必须直说。
+
+最终报告同时附上当前 `ui_delivery_contract` 和验证报告路径。审计脚本、提示词、JSON、差异图、截图、临时源文件与备份必须位于项目外，不得写入 UGC 工程目录；PIE 前还要检查工程中的非法文件名、非法后缀和意外生成文件。
 
 ## Approval Interpretation
 

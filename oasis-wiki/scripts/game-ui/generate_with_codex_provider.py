@@ -492,7 +492,7 @@ def main() -> int:
         prompt = (package / request["prompt_file"]).read_text(encoding="utf-8")
         reference_paths = [
             package / path
-            for path in [*request["style_references"], *request["layout_references"]]
+            for path in request["reference_files"]
         ]
         response = create_image_edit(connection, model, prompt, reference_paths, args.size, args.quality)
         response_data = response.get("data")

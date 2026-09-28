@@ -46,6 +46,28 @@ def slug(value: str) -> str:
     return text or "ui-workbench"
 
 
+def copy_visual_asset(
+    source: Path,
+    target: Path,
+    asset_name: str,
+    bounds: dict[str, float],
+    page_size: tuple[int, int],
+) -> None:
+    if asset_name != "clean_layer":
+        shutil.copy2(source, target)
+        return
+
+    with Image.open(source) as opened:
+        image = ImageOps.exif_transpose(opened)
+        bound_size = (int(round(bounds["width"])), int(round(bounds["height"])))
+        if image.size != page_size or bound_size == page_size:
+            shutil.copy2(source, target)
+            return
+        left = int(round(bounds["x"]))
+        top = int(round(bounds["y"]))
+        image.crop((left, top, left + bound_size[0], top + bound_size[1])).save(target)
+
+
 def is_native_close_button(item: dict[str, Any], component_id: str, node_kind: str) -> bool:
     category = str(item.get("category") or item.get("type") or "").lower()
     if node_kind != "native" or category not in {"button", "hit_target"}:
@@ -503,7 +525,13 @@ def normalize_controls(
                 continue
             asset_directory.mkdir(exist_ok=True)
             target_asset = asset_directory / f"{component_id}{source_asset.suffix.lower()}"
-            shutil.copy2(source_asset, target_asset)
+            copy_visual_asset(
+                source_asset,
+                target_asset,
+                asset_name,
+                bounds,
+                (width, height),
+            )
             copied_visual_assets[asset_name] = target_asset.relative_to(session_dir).as_posix()
 
         semantic_input = dict(item)

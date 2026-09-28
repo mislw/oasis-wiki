@@ -178,6 +178,8 @@ Read:
 
 This category owns the Cowart UI production pipeline. The native Companion workflow is enabled: open or focus it only after an explicit user request or when presenting the exact generated review handoff is part of the requested task. Verify the project, page ID, and session path before opening. The UI Agent interaction reference orchestrates the existing pipeline: ask only for missing information, keep one pending decision, stop at each approval gate, and report verified paths/results. Opening Companion does not authorize editor writes. The pipeline must not treat a visual-review bitmap as editable components, and it must not mutate UGC project files during visual review, component extraction, or delivery-plan generation.
 
+Generic image preparation belongs to the formal `image-generation` Skill and `image_optimize`. Cowart consumes only a prepared schema-1 `ImageGenerationSpec`, then adds Oasis UI and review requirements without selecting generic templates, styles, or cases again.
+
 ### UI And Interaction
 
 Use when the user asks where a UI lives, how a button opens a panel, how a Widget should be named/bound, or how UI refresh should happen.

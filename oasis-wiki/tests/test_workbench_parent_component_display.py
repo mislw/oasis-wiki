@@ -25,6 +25,40 @@ def write_png(path: Path, size=(64, 32), color=(220, 160, 40, 255)) -> None:
 
 
 class WorkbenchParentComponentDisplayTests(unittest.TestCase):
+    def test_workbench_crops_full_canvas_clean_layer_to_control_bounds(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            full_canvas = Image.new("RGBA", (320, 180), (0, 0, 0, 0))
+            full_canvas.paste((20, 180, 120, 255), (40, 60, 160, 100))
+            asset = root / "assets" / "button-full-canvas.png"
+            asset.parent.mkdir(parents=True)
+            full_canvas.save(asset)
+            controls_path = root / "ui-tree.json"
+            controls_path.write_text(json.dumps({
+                "controls": [{
+                    "id": "button.primary.gold",
+                    "category": "button",
+                    "node_kind": "skin",
+                    "bounds": {"x": 40, "y": 60, "width": 120, "height": 40},
+                    "visual_assets": {
+                        "source_crop": "__source__",
+                        "clean_layer": "assets/button-full-canvas.png",
+                        "assembly_preview": None,
+                    },
+                    "layer_reconstruction": {"status": "ready", "method": "image_reconstruction", "error": None},
+                    "review": {"status": "pending_review", "cleanup_status": "ready"},
+                }],
+            }), encoding="utf-8")
+
+            session = root / "session"
+            session.mkdir()
+            controls = create_ui_workbench.normalize_controls(controls_path, session, 320, 180)
+            clean_layer = session / controls[0]["visual_assets"]["clean_layer"]
+
+            with Image.open(clean_layer) as cropped:
+                self.assertEqual(cropped.size, (120, 40))
+                self.assertEqual(cropped.getpixel((0, 0)), (20, 180, 120, 255))
+
     def test_workbench_session_copies_clean_and_assembly_assets(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

@@ -14,8 +14,8 @@ def main() -> int:
     parser.add_argument("--style-profile", required=True, type=Path)
     parser.add_argument("--references", required=True, type=Path)
     parser.add_argument("--library-references", type=Path)
+    parser.add_argument("--optimization", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--page-purpose", default="")
     parser.add_argument("--reuse-component", action="append", default=[])
     args = parser.parse_args()
     try:
@@ -23,8 +23,8 @@ def main() -> int:
             args.ui_tree,
             args.style_profile,
             args.references,
+            args.optimization,
             args.output,
-            args.page_purpose,
             args.reuse_component,
             args.library_references,
         )

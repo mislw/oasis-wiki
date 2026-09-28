@@ -56,6 +56,30 @@ class CowartUiUsageGuideTests(unittest.TestCase):
             with self.subTest(marker=marker):
                 self.assertIn(marker, content)
 
+    def test_generation_guidance_routes_generic_preparation_through_image_optimization(self):
+        expected = {
+            ROOT / 'SKILL.md': ('image-generation', 'image_optimize', 'needs_clarification'),
+            ROOT / 'references' / 'task-router.md': ('image-generation', 'image_optimize'),
+            ROOT / 'references' / 'cowart-ui-workflow.md': ('--optimization', 'image_optimize', 'ImageGenerationSpec'),
+            ROOT / 'references' / 'game-ui' / 'workflow.md': ('image-generation', 'image_optimize', 'ImageGenerationSpec'),
+        }
+        for path, markers in expected.items():
+            content = path.read_text(encoding='utf-8')
+            for marker in markers:
+                with self.subTest(path=path.name, marker=marker):
+                    self.assertIn(marker, content)
+
+    def test_cowart_guidance_does_not_reselect_generic_templates_or_cases(self):
+        content = (ROOT / 'references' / 'cowart-ui-workflow.md').read_text(encoding='utf-8')
+        self.assertNotIn('同时编译项目 Style Profile', content)
+        self.assertIn('不得重新选择通用模板、风格或案例', content)
+
+    def test_generation_guidance_keeps_project_library_assets_supplemental(self):
+        cowart = (ROOT / 'references' / 'cowart-ui-workflow.md').read_text(encoding='utf-8')
+        workflow = (ROOT / 'references' / 'game-ui' / 'workflow.md').read_text(encoding='utf-8')
+        self.assertIn('补充 Oasis 输入', cowart)
+        self.assertIn('supplemental Oasis inputs', workflow)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -39,6 +39,75 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def prepared_optimization(
+    references: list[dict[str, object]],
+    operation: str = "generate",
+) -> dict[str, object]:
+    image_references = []
+    for input_index, reference in enumerate(references, start=1):
+        source = Path(str(reference["source"]))
+        if source.is_file():
+            with Image.open(source) as image:
+                width, height = image.size
+            attachment = {
+                "attachmentId": "sha256:" + sha256_file(source),
+                "mediaType": "image/png",
+                "bytes": source.stat().st_size,
+                "width": width,
+                "height": height,
+                "name": source.name,
+            }
+        else:
+            attachment = {
+                "attachmentId": "missing-reference",
+                "mediaType": "image/png",
+                "bytes": 1,
+                "width": 1,
+                "height": 1,
+                "name": source.name,
+            }
+        image_references.append(
+            {
+                "inputIndex": input_index,
+                "role": reference["role"],
+                "priority": reference["priority"],
+                "attachment": attachment,
+            }
+        )
+    return {
+        "status": "prepared",
+        "spec": {
+            "schemaVersion": 1,
+            "operation": operation,
+            "canonicalPrompt": "## Task\nCreate an optimized game UI image.\n\n## Avoid\nwatermark",
+            "references": image_references,
+            "composition": ["clear information hierarchy"],
+            "visualStyle": ["project-authored game UI"],
+            "scene": ["resource exchange screen"],
+            "exactText": [{"text": "EXCHANGE", "placement": "header", "preserveCase": True}],
+            "output": {
+                "width": 1280,
+                "height": 720,
+                "transparentBackground": False,
+                "count": 1,
+            },
+            "preserve": ["approved icon identity"],
+            "negativeConstraints": ["watermark"],
+            "requiredCapabilities": ["image-generation", "exact-text"],
+            "evidence": [
+                {
+                    "provider": "library",
+                    "templateId": "game-ui",
+                    "caseIds": ["exchange-shop"],
+                    "visualStyleTags": ["game-ui"],
+                    "sceneTags": ["shop"],
+                }
+            ],
+            "warnings": ["fixture warning"],
+        },
+    }
+
+
 def minimal_spec(references: list[dict[str, object]]) -> dict[str, object]:
     return {
         "schema_version": 1,
@@ -106,12 +175,23 @@ class GameUiGenerationTests(unittest.TestCase):
 
     def run_script(self, relative_path: str, *args: object) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [sys.executable, str(WIKI_ROOT / relative_path), *(str(arg) for arg in args)],
+            [sys.executable, "-B", str(WIKI_ROOT / relative_path), *(str(arg) for arg in args)],
             cwd=WIKI_ROOT,
             text=True,
             capture_output=True,
             check=False,
         )
+
+    def test_child_script_does_not_write_bytecode_into_bundled_skill(self) -> None:
+        result = self.run_script("scripts/game-ui/build_generation_prompt.py", "--help")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        game_ui_root = WIKI_ROOT / "scripts" / "game-ui"
+        bytecode = sorted(
+            path.relative_to(WIKI_ROOT).as_posix()
+            for path in game_ui_root.rglob("*")
+            if path.name == "__pycache__" or path.suffix == ".pyc"
+        )
+        self.assertEqual(bytecode, [])
 
     def load_provider_module(self):
         script = WIKI_ROOT / "scripts" / "game-ui" / "generate_with_codex_provider.py"
@@ -138,6 +218,41 @@ class GameUiGenerationTests(unittest.TestCase):
         write_json(path, {"schema_version": 1, "references": references})
         return path
 
+    def write_optimization(
+        self,
+        *metadata_paths: Path,
+        value: dict[str, object] | None = None,
+        name: str = "optimization.json",
+    ) -> Path:
+        path = self.root / name
+        if value is None:
+            references = []
+            for metadata_path in metadata_paths:
+                metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                references.extend(metadata["references"])
+            value = prepared_optimization(references)
+        write_json(path, value)
+        return path
+
+    def run_build_script(
+        self,
+        *args: object,
+        optimization: Path | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        arguments = list(args)
+        if optimization is None:
+            metadata_paths = []
+            for flag in ("--references",):
+                if flag in arguments:
+                    metadata_paths.append(Path(str(arguments[arguments.index(flag) + 1])))
+            optimization = self.write_optimization(*metadata_paths)
+        return self.run_script(
+            "scripts/game-ui/build_generation_package.py",
+            *arguments,
+            "--optimization",
+            optimization,
+        )
+
     def build_valid_package(self) -> Path:
         tree = self.write_tree(
             [
@@ -152,8 +267,7 @@ class GameUiGenerationTests(unittest.TestCase):
             ]
         )
         package = self.root / "generation-package"
-        result = self.run_script(
-            "scripts/game-ui/build_generation_package.py",
+        result = self.run_build_script(
             "--ui-tree",
             tree,
             "--style-profile",
@@ -162,8 +276,6 @@ class GameUiGenerationTests(unittest.TestCase):
             references,
             "--output",
             package,
-            "--page-purpose",
-            "Resource exchange shop",
             "--reuse-component",
             "button.primary.gold",
         )
@@ -209,8 +321,7 @@ class GameUiGenerationTests(unittest.TestCase):
         references = self.write_reference_metadata(
             [{"source": str(self.layout), "role": "layout", "priority": 1, "source_kind": "input_image_attachment"}]
         )
-        result = self.run_script(
-            "scripts/game-ui/build_generation_package.py",
+        result = self.run_build_script(
             "--ui-tree",
             tree,
             "--style-profile",
@@ -226,8 +337,7 @@ class GameUiGenerationTests(unittest.TestCase):
     def test_style_profile_alone_cannot_replace_style_image(self) -> None:
         tree = self.write_tree([])
         references = self.write_reference_metadata([])
-        result = self.run_script(
-            "scripts/game-ui/build_generation_package.py",
+        result = self.run_build_script(
             "--ui-tree",
             tree,
             "--style-profile",
@@ -261,8 +371,7 @@ class GameUiGenerationTests(unittest.TestCase):
         explicit_refs = self.write_reference_metadata([], name="explicit-references.json")
         package = self.root / "library-package"
 
-        result = self.run_script(
-            "scripts/game-ui/build_generation_package.py",
+        result = self.run_build_script(
             "--ui-tree",
             self.write_tree([]),
             "--style-profile",
@@ -284,10 +393,67 @@ class GameUiGenerationTests(unittest.TestCase):
             ["currency.dragon_jade"],
         )
         prompt = (package / "generation-prompt.txt").read_text(encoding="utf-8")
-        self.assertIn("PROJECT LIBRARY REFERENCES", prompt)
-        self.assertIn("currency.dragon_jade", prompt)
-        self.assertIn("Icon_Item_10.Icon_Item_10", prompt)
+        self.assertNotIn("currency.dragon_jade", prompt)
+        self.assertNotIn("Icon_Item_10.Icon_Item_10", prompt)
         self.assertNotIn(str(self.style), prompt)
+
+    def test_project_library_references_are_supplemental_and_reach_execution(self) -> None:
+        direct_reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([direct_reference])
+        library_references = self.write_reference_metadata(
+            [{
+                "source": str(self.layout),
+                "role": "layout",
+                "priority": 2,
+                "source_kind": "project_library_asset",
+                "library": {
+                    "asset_id": "redcliff.uiresources.common.panel.exchange",
+                    "preview_key": "sha256:" + sha256_file(self.layout),
+                    "component_ids": [],
+                    "semantic_keys": ["panel.exchange"],
+                    "states": ["default"],
+                    "source_asset": "/RedCliff/Asset/UIresources/Common/Panel/Exchange.Exchange",
+                },
+            }],
+            name="supplemental-library-references.json",
+        )
+        package = self.root / "supplemental-library-package"
+
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree([direct_reference]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--library-references", library_references,
+            "--output", package,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        image_spec = json.loads((package / "image-spec.json").read_text(encoding="utf-8"))
+        manifest = json.loads((package / "reference-manifest.json").read_text(encoding="utf-8"))
+        request = json.loads((package / "generation-request.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(image_spec["references"]), 1)
+        self.assertEqual(len(manifest["references"]), 2)
+        self.assertEqual(
+            request["reference_files"],
+            ["references/style-01.png", "references/layout-01.png"],
+        )
+        prepared = self.run_script(
+            "scripts/game-ui/prepare_image_generation.py",
+            "--package", package,
+            "--available-tool", "image_gen",
+        )
+        self.assertEqual(prepared.returncode, 0, prepared.stderr or prepared.stdout)
+        self.assertEqual(
+            json.loads(prepared.stdout)["references"],
+            [str(package / path) for path in request["reference_files"]],
+        )
+        prompt = (package / "generation-prompt.txt").read_text(encoding="utf-8")
+        self.assertNotIn("panel.exchange", prompt)
 
     def test_project_library_reference_rejects_preview_hash_mismatch(self) -> None:
         library_refs = self.write_reference_metadata(
@@ -305,8 +471,7 @@ class GameUiGenerationTests(unittest.TestCase):
             name="library-references.json",
         )
 
-        result = self.run_script(
-            "scripts/game-ui/build_generation_package.py",
+        result = self.run_build_script(
             "--ui-tree",
             self.write_tree([]),
             "--style-profile",
@@ -338,8 +503,7 @@ class GameUiGenerationTests(unittest.TestCase):
             name="library-references.json",
         )
 
-        result = self.run_script(
-            "scripts/game-ui/build_generation_package.py",
+        result = self.run_build_script(
             "--ui-tree",
             self.write_tree([]),
             "--style-profile",
@@ -366,8 +530,7 @@ class GameUiGenerationTests(unittest.TestCase):
             [{"source": str(self.style), "role": "style", "priority": 1, "source_kind": "input_image_attachment"}]
         )
 
-        result = self.run_script(
-            "scripts/game-ui/build_generation_package.py",
+        result = self.run_build_script(
             "--ui-tree", tree,
             "--style-profile", self.profile,
             "--references", references,
@@ -407,8 +570,7 @@ class GameUiGenerationTests(unittest.TestCase):
         )
         package = self.root / "resolved-component-package"
 
-        result = self.run_script(
-            "scripts/game-ui/build_generation_package.py",
+        result = self.run_build_script(
             "--ui-tree", tree,
             "--style-profile", self.profile,
             "--references", references,
@@ -418,7 +580,8 @@ class GameUiGenerationTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
         prompt = (package / "generation-prompt.txt").read_text(encoding="utf-8")
-        self.assertIn('"component_id": "button.primary.gold"', prompt)
+        self.assertIn('Reusable control IDs: ["button.primary.gold"]', prompt)
+        self.assertNotIn('"visual_style":', prompt)
 
     def test_valid_style_and_layout_package_records_images_hashes_and_dimensions(self) -> None:
         package = self.build_valid_package()
@@ -436,16 +599,519 @@ class GameUiGenerationTests(unittest.TestCase):
         request = json.loads((package / "generation-request.json").read_text(encoding="utf-8"))
         self.assertEqual(request["style_references"], ["references/style-01.png"])
         self.assertEqual(request["layout_references"], ["references/layout-01.png"])
+        self.assertEqual(request["reference_files"], ["references/style-01.png", "references/layout-01.png"])
+        self.assertEqual(request["image_spec"], "image-spec.json")
+        self.assertEqual(request["oasis_constraints"], "oasis-constraints.json")
+        self.assertEqual(request["required_capabilities"], ["image-generation", "exact-text"])
         self.assertEqual(request["required_capability"], "codex_builtin_image_gen")
         self.assertEqual(request["generation_backend"], "codex_builtin")
         self.assertEqual(request["credential_mode"], "codex_managed")
         self.assertEqual(request["fallback_policy"], "forbid_html_screenshot")
         prompt = (package / request["prompt_file"]).read_text(encoding="utf-8")
-        self.assertIn("STYLE REFERENCES", prompt)
-        self.assertIn("LAYOUT REFERENCES", prompt)
-        self.assertIn("Same game.\nSame art team.\nSame UI design system.", prompt)
-        self.assertIn("Do NOT copy their visual style.", prompt)
-        self.assertIn("simplified CSS-like controls", prompt)
+        self.assertTrue(prompt.startswith("## Task\nCreate an optimized game UI image."))
+        self.assertIn("## Oasis UI constraints", prompt)
+        self.assertIn("runtime-native", prompt)
+        self.assertIn("Cowart", prompt)
+        self.assertNotIn('"source":', prompt)
+        self.assertNotIn("STYLE PROFILE", prompt)
+        self.assertNotIn("Same art team.", prompt)
+        self.assertNotIn("simplified CSS-like controls", prompt)
+
+    def test_generation_package_requires_prepared_optimization_result(self) -> None:
+        references = self.write_reference_metadata(
+            [{"source": str(self.style), "role": "style", "priority": 1, "source_kind": "input_image_attachment"}]
+        )
+        optimization = self.write_optimization(
+            value={"status": "needs_clarification", "issues": []},
+            name="needs-clarification.json",
+        )
+
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree(json.loads(references.read_text(encoding="utf-8"))["references"]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", self.root / "clarification-package",
+            optimization=optimization,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("prepared", (result.stderr + result.stdout).lower())
+
+    def test_generation_package_rejects_wrong_image_spec_schema_version(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        optimization_value = prepared_optimization([reference])
+        optimization_value["spec"]["schemaVersion"] = 2
+        optimization = self.write_optimization(
+            value=optimization_value,
+            name="schema-version-2.json",
+        )
+
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree([reference]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", self.root / "schema-version-package",
+            optimization=optimization,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("schemaversion", (result.stderr + result.stdout).lower())
+
+    def test_oasis_constraints_extend_canonical_spec_without_reselecting_generic_guidance(self) -> None:
+        package = self.build_valid_package()
+        image_spec = json.loads((package / "image-spec.json").read_text(encoding="utf-8"))
+        expected = prepared_optimization(
+            [
+                {"source": str(self.style), "role": "style", "priority": 1},
+                {"source": str(self.layout), "role": "layout", "priority": 1},
+            ]
+        )["spec"]
+        self.assertEqual(image_spec, expected)
+
+        constraints = json.loads((package / "oasis-constraints.json").read_text(encoding="utf-8"))
+        self.assertIs(constraints["dynamicText"], True)
+        self.assertIs(constraints["dynamicNumbers"], True)
+        self.assertIs(constraints["dynamicProgress"], True)
+        self.assertIs(constraints["hitTargets"], True)
+        self.assertEqual(constraints["uiTree"]["artifact_type"], "ui_tree")
+        self.assertIn("button.primary.gold", constraints["reusableControls"])
+        self.assertFalse(constraints["editorWriteRestrictions"]["authorized"])
+        self.assertEqual(
+            constraints["cowartReviewStages"],
+            ["style_validation", "visual_review", "component_extraction", "component_confirmation"],
+        )
+        serialized = json.dumps({"imageSpec": image_spec, "oasisConstraints": constraints})
+        self.assertNotIn("templateSelection", serialized)
+        self.assertNotIn("caseSelection", serialized)
+
+    def test_generation_prompt_preserves_canonical_prompt_bytes_before_oasis_appendix(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        optimization_value = prepared_optimization([reference])
+        canonical_prompt = "## Task\nPreserve this exact prompt.  \n"
+        optimization_value["spec"]["canonicalPrompt"] = canonical_prompt
+        optimization = self.write_optimization(
+            value=optimization_value,
+            name="exact-canonical-prompt.json",
+        )
+        package = self.root / "exact-canonical-package"
+
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree([reference]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", package,
+            optimization=optimization,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        prompt = (package / "generation-prompt.txt").read_text(encoding="utf-8")
+        self.assertEqual(prompt[:len(canonical_prompt)], canonical_prompt)
+
+    def test_generation_package_preserves_optimizer_operation_variants(self) -> None:
+        cases = (
+            ("generate", "style"),
+            ("edit", "edit-target"),
+            ("variation", "content"),
+        )
+        for operation, role in cases:
+            with self.subTest(operation=operation, role=role):
+                reference = {
+                    "source": str(self.style),
+                    "role": role,
+                    "priority": 1,
+                    "source_kind": "input_image_attachment",
+                }
+                references = self.write_reference_metadata(
+                    [reference],
+                    name=f"{operation}-references.json",
+                )
+                optimization = self.write_optimization(
+                    value=prepared_optimization([reference], operation),
+                    name=f"{operation}-optimization.json",
+                )
+                package = self.root / f"{operation}-package"
+                result = self.run_build_script(
+                    "--ui-tree", self.write_tree([reference] if role in {"style", "layout"} else []),
+                    "--style-profile", self.profile,
+                    "--references", references,
+                    "--output", package,
+                    optimization=optimization,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+                image_spec = json.loads((package / "image-spec.json").read_text(encoding="utf-8"))
+                self.assertEqual(image_spec["operation"], operation)
+                attachment_id = image_spec["references"][0]["attachment"]["attachmentId"]
+                self.assertEqual(attachment_id, "sha256:" + sha256_file(self.style))
+                manifest = json.loads((package / "reference-manifest.json").read_text(encoding="utf-8"))
+                self.assertEqual(manifest["references"][0]["attachment"]["attachmentId"], attachment_id)
+                self.assertEqual(manifest["references"][0]["sha256"], sha256_file(self.style))
+
+    def test_generation_package_preserves_multiple_roles_for_one_input_ordinal(self) -> None:
+        style_reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 50,
+            "source_kind": "input_image_attachment",
+        }
+        target_reference = {
+            "source": str(self.style),
+            "role": "edit-target",
+            "priority": 100,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata(
+            [style_reference, target_reference],
+            name="shared-ordinal-references.json",
+        )
+        optimization_value = prepared_optimization(
+            [style_reference, target_reference],
+            "edit",
+        )
+        optimization_value["spec"]["references"][1]["inputIndex"] = 1
+        package = self.root / "shared-ordinal-package"
+
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree([style_reference]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", package,
+            optimization=self.write_optimization(value=optimization_value),
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        image_spec = json.loads((package / "image-spec.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            [(item["inputIndex"], item["role"]) for item in image_spec["references"]],
+            [(1, "style"), (1, "edit-target")],
+        )
+        manifest = json.loads((package / "reference-manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            [(item["input_index"], item["role"]) for item in manifest["references"]],
+            [(1, "style"), (1, "edit-target")],
+        )
+        self.assertEqual(
+            {item["attachment"]["attachmentId"] for item in manifest["references"]},
+            {"sha256:" + sha256_file(self.style)},
+        )
+
+    def test_prepared_image_spec_rejects_invalid_operation_reference_combinations(self) -> None:
+        style_reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 50,
+            "source_kind": "input_image_attachment",
+        }
+        target_reference = {
+            "source": str(self.style),
+            "role": "edit-target",
+            "priority": 100,
+            "source_kind": "input_image_attachment",
+        }
+        second_target_reference = {
+            "source": str(self.layout),
+            "role": "edit-target",
+            "priority": 90,
+            "source_kind": "input_image_attachment",
+        }
+        cases = (
+            ("edit-without-target", "edit", [style_reference], "exactly one edit-target"),
+            (
+                "edit-with-multiple-targets",
+                "edit",
+                [target_reference, second_target_reference],
+                "exactly one edit-target",
+            ),
+            (
+                "variation-with-target",
+                "variation",
+                [target_reference],
+                "must not contain an edit-target",
+            ),
+            (
+                "variation-without-content",
+                "variation",
+                [style_reference],
+                "at least one content reference",
+            ),
+        )
+        for name, operation, source_references, error_text in cases:
+            with self.subTest(name=name):
+                references = self.write_reference_metadata(
+                    source_references,
+                    name=f"{name}-references.json",
+                )
+                optimization = self.write_optimization(
+                    value=prepared_optimization(source_references, operation),
+                    name=f"{name}-optimization.json",
+                )
+                result = self.run_build_script(
+                    "--ui-tree",
+                    self.write_tree(
+                        [
+                            reference
+                            for reference in source_references
+                            if reference["role"] in {"style", "layout"}
+                        ]
+                    ),
+                    "--style-profile", self.profile,
+                    "--references", references,
+                    "--output", self.root / f"{name}-package",
+                    optimization=optimization,
+                )
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(error_text, result.stderr + result.stdout)
+
+    def test_generation_package_rejects_local_reference_metadata_that_does_not_match_attachment(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        optimization_value = prepared_optimization([reference])
+        optimization_value["spec"]["references"][0]["attachment"]["bytes"] += 1
+        optimization = self.write_optimization(
+            value=optimization_value,
+            name="wrong-attachment.json",
+        )
+
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree([reference]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", self.root / "wrong-attachment-package",
+            optimization=optimization,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("attachment", (result.stderr + result.stdout).lower())
+
+    def test_generation_package_rejects_malformed_output(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        invalid_outputs = (
+            {"width": 1280, "transparentBackground": False, "count": 1},
+            {"aspectRatio": "4:2", "transparentBackground": False, "count": 1},
+            {"width": 1280, "height": 720, "aspectRatio": "1:1", "transparentBackground": False, "count": 1},
+        )
+        for index, output in enumerate(invalid_outputs):
+            with self.subTest(output=output):
+                optimization_value = prepared_optimization([reference])
+                optimization_value["spec"]["output"] = output
+                result = self.run_build_script(
+                    "--ui-tree", self.write_tree([reference]),
+                    "--style-profile", self.profile,
+                    "--references", references,
+                    "--output", self.root / f"malformed-output-{index}",
+                    optimization=self.write_optimization(
+                        value=optimization_value,
+                        name=f"malformed-output-{index}.json",
+                    ),
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("output", (result.stderr + result.stdout).lower())
+
+    def test_generation_package_rejects_malformed_evidence(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        invalid_evidence = (
+            {"provider": "library", "caseIds": [], "visualStyleTags": [], "sceneTags": "shop"},
+            {"provider": "", "caseIds": [], "visualStyleTags": [], "sceneTags": []},
+        )
+        for index, evidence in enumerate(invalid_evidence):
+            with self.subTest(evidence=evidence):
+                optimization_value = prepared_optimization([reference])
+                optimization_value["spec"]["evidence"] = [evidence]
+                result = self.run_build_script(
+                    "--ui-tree", self.write_tree([reference]),
+                    "--style-profile", self.profile,
+                    "--references", references,
+                    "--output", self.root / f"malformed-evidence-{index}",
+                    optimization=self.write_optimization(
+                        value=optimization_value,
+                        name=f"malformed-evidence-{index}.json",
+                    ),
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("evidence", (result.stderr + result.stdout).lower())
+
+    def test_generation_package_rejects_non_integer_priority(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        optimization_value = prepared_optimization([reference])
+        optimization_value["spec"]["references"][0]["priority"] = 1.5
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree([reference]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", self.root / "non-integer-priority-package",
+            optimization=self.write_optimization(value=optimization_value),
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("priority", (result.stderr + result.stdout).lower())
+
+    def test_generation_package_rejects_unsupported_attachment_media_type(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        optimization_value = prepared_optimization([reference])
+        optimization_value["spec"]["references"][0]["attachment"]["mediaType"] = "image/bmp"
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree([reference]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", self.root / "unsupported-media-type-package",
+            optimization=self.write_optimization(value=optimization_value),
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("mediatype", (result.stderr + result.stdout).lower())
+
+    def test_generation_package_rejects_non_string_enum_fields(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        mutations = (
+            ("operation", lambda result: result["spec"].update({"operation": []})),
+            ("role", lambda result: result["spec"]["references"][0].update({"role": []})),
+            (
+                "mediaType",
+                lambda result: result["spec"]["references"][0]["attachment"].update({"mediaType": []}),
+            ),
+        )
+        for index, (label, mutate) in enumerate(mutations):
+            with self.subTest(label=label):
+                optimization_value = prepared_optimization([reference])
+                mutate(optimization_value)
+                result = self.run_build_script(
+                    "--ui-tree", self.write_tree([reference]),
+                    "--style-profile", self.profile,
+                    "--references", references,
+                    "--output", self.root / f"non-string-enum-{index}",
+                    optimization=self.write_optimization(
+                        value=optimization_value,
+                        name=f"non-string-enum-{index}.json",
+                    ),
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(label.lower(), (result.stderr + result.stdout).lower())
+
+    def test_generation_package_accepts_declared_optional_schema_fields(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        optimization_value = prepared_optimization([reference])
+        attachment = optimization_value["spec"]["references"][0]["attachment"]
+        attachment["originalDimensions"] = {"width": 128, "height": 80}
+        optimization_value["spec"]["output"]["aspectRatio"] = "16:9"
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree([reference]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", self.root / "optional-schema-fields-package",
+            optimization=self.write_optimization(value=optimization_value),
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+
+    def test_generation_package_accepts_and_preserves_spaced_aspect_ratio(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        optimization_value = prepared_optimization([reference])
+        optimization_value["spec"]["output"]["aspectRatio"] = " 16:9 "
+        package = self.root / "spaced-aspect-ratio-package"
+        result = self.run_build_script(
+            "--ui-tree", self.write_tree([reference]),
+            "--style-profile", self.profile,
+            "--references", references,
+            "--output", package,
+            optimization=self.write_optimization(value=optimization_value),
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        image_spec = json.loads((package / "image-spec.json").read_text(encoding="utf-8"))
+        self.assertEqual(image_spec["output"]["aspectRatio"], " 16:9 ")
+
+    def test_generation_package_rejects_undeclared_schema_fields(self) -> None:
+        reference = {
+            "source": str(self.style),
+            "role": "style",
+            "priority": 1,
+            "source_kind": "input_image_attachment",
+        }
+        references = self.write_reference_metadata([reference])
+        mutations = (
+            ("result", lambda result: result.update({"extra": True})),
+            ("spec", lambda result: result["spec"].update({"extra": True})),
+            ("reference", lambda result: result["spec"]["references"][0].update({"extra": True})),
+            ("attachment", lambda result: result["spec"]["references"][0]["attachment"].update({"extra": True})),
+            ("exactText", lambda result: result["spec"]["exactText"][0].update({"extra": True})),
+            ("output", lambda result: result["spec"]["output"].update({"extra": True})),
+            ("evidence", lambda result: result["spec"]["evidence"][0].update({"extra": True})),
+        )
+        for index, (label, mutate) in enumerate(mutations):
+            with self.subTest(label=label):
+                optimization_value = prepared_optimization([reference])
+                mutate(optimization_value)
+                result = self.run_build_script(
+                    "--ui-tree", self.write_tree([reference]),
+                    "--style-profile", self.profile,
+                    "--references", references,
+                    "--output", self.root / f"extra-field-{index}",
+                    optimization=self.write_optimization(
+                        value=optimization_value,
+                        name=f"extra-field-{index}.json",
+                    ),
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("undeclared", (result.stderr + result.stdout).lower())
 
     def test_screenshot_like_style_reference_requires_explicit_user_authorization(self) -> None:
         tree = self.write_tree(
@@ -454,8 +1120,7 @@ class GameUiGenerationTests(unittest.TestCase):
         references = self.write_reference_metadata(
             [{"source": str(self.style), "role": "style", "priority": 1, "source_kind": "html_screenshot"}]
         )
-        result = self.run_script(
-            "scripts/game-ui/build_generation_package.py",
+        result = self.run_build_script(
             "--ui-tree",
             tree,
             "--style-profile",

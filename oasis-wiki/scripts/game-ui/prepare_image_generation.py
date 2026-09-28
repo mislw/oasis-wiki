@@ -28,6 +28,18 @@ def main() -> int:
         return 3
     package = context["package"]
     request = context["request"]
+    image_spec = context["image_spec"]
+    common = {
+        "package": str(package),
+        "prompt": str(package / request["prompt_file"]),
+        "references": [str(package / path) for path in request["reference_files"]],
+        "style_references": [str(package / path) for path in request["style_references"]],
+        "layout_references": [str(package / path) for path in request["layout_references"]],
+        "image_spec": str(package / request["image_spec"]),
+        "output": image_spec["output"],
+        "required_capabilities": image_spec["requiredCapabilities"],
+        "fallback_policy": request["fallback_policy"],
+    }
     if "image_gen" not in args.available_tool:
         payload = {
             "status": "ready_for_codex_provider_direct_image_generation",
@@ -36,11 +48,7 @@ def main() -> int:
             "credential_mode": "codex_managed",
             "model_suffix": "gpt-image-2",
             "user_authorized": True,
-            "package": str(package),
-            "prompt": str(package / request["prompt_file"]),
-            "style_references": [str(package / path) for path in request["style_references"]],
-            "layout_references": [str(package / path) for path in request["layout_references"]],
-            "fallback_policy": request["fallback_policy"],
+            **common,
         }
         print(json.dumps(payload, ensure_ascii=False))
         return 0
@@ -49,10 +57,7 @@ def main() -> int:
         "generation_backend": "codex_builtin",
         "tool": "image_gen",
         "credential_mode": "codex_managed",
-        "prompt": str(package / request["prompt_file"]),
-        "style_references": [str(package / path) for path in request["style_references"]],
-        "layout_references": [str(package / path) for path in request["layout_references"]],
-        "fallback_policy": request["fallback_policy"],
+        **common,
     }
     print(json.dumps(payload, ensure_ascii=False))
     return 0

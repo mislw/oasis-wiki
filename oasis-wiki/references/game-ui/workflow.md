@@ -14,6 +14,7 @@ detect project
 -> confirm components active
 -> resolve project references
 -> build UI Tree
+-> prepare image request with image-generation and image_optimize
 -> build and validate Generation Package
 -> ImageGen
 -> Cowart review
@@ -47,11 +48,12 @@ Review state families before mapping assets to components. A classified raw asse
 3. Classify controls as direct reuse, state extension, or new candidate.
 4. Create new controls as `pending_review` and state why existing controls cannot satisfy the need.
 5. Build the complete UI Tree.
-6. Resolve approved project-library assets, then build and validate a Generation Package containing explicit references, supplemental `project_library_asset` references, their dimensions and SHA-256, the UI Tree, Style Profile, compiled prompt, and generation request.
-7. Invoke the Codex built-in `image_gen` tool with every listed Style Image, every listed Layout Image, and the compiled prompt. Codex manages credentials; do not request a user Key. If the tool is unavailable, stop with `IMAGE_GENERATION_UNAVAILABLE` unless the user explicitly authorizes `codex_provider_direct`; the authorized runner resolves the current provider's channel-prefixed `gpt-image-2` model and uses Codex-managed authentication. Never use HTML/CSS/Chromium as a final-image fallback.
-8. Record only a real output with `record_generation_result.py`, then create a qualitative style review.
-9. Send the validated result to Cowart as `ai_generated`; use `external_source` only for an existing image supplied directly by the user.
-10. Finish with the automatic check report.
+6. Prepare the generic `generate`, `edit`, or `variation` request through the formal `image-generation` Skill and `image_optimize`. Stop on `needs_clarification`; otherwise retain the complete schema-1 `ImageGenerationSpec`. This deterministic offline step uses no executor credential and performs no image or model execution.
+7. Resolve approved project-library assets, then build and validate a Generation Package from that prepared specification. Match direct-user files to opaque durable attachment IDs and verify their bytes with a separate SHA-256. Keep approved project-library assets as supplemental Oasis inputs with their own hashes and provenance; they do not need entries in `ImageGenerationSpec.references`. Preserve the canonical prompt, durable references, exact text, output, preservation rules, negative constraints, evidence, warnings, and required capabilities. Add only runtime-native text/numbers/progress and hit targets, reusable-control IDs, the UI Tree, editor-write restrictions, and Cowart review stages.
+8. Invoke the Codex built-in `image_gen` tool with every packaged reference and the compiled prompt. Codex manages credentials; do not request a user Key. If the tool is unavailable, stop with `IMAGE_GENERATION_UNAVAILABLE` unless the user explicitly authorizes `codex_provider_direct`; the authorized runner resolves the current provider's channel-prefixed `gpt-image-2` model and uses Codex-managed authentication. Never use HTML/CSS/Chromium as a final-image fallback.
+9. Record only a real output with `record_generation_result.py`, then create a qualitative style review.
+10. Send the validated result to Cowart as `ai_generated`; use `external_source` only for an existing image supplied directly by the user.
+11. Finish with the automatic check report.
 
 Hard rules:
 

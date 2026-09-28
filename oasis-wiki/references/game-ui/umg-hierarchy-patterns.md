@@ -73,6 +73,48 @@ For each responsibility, mark the candidate pattern as:
 - `adapt`: good ownership, but naming, sizing, binding, or lifecycle must change;
 - `reject`: visual-only, broken, redundant, or incompatible with the live contract.
 
+## Reference Instance Parity Gate
+
+When the task says to reproduce, match, copy, or fix a visible difference from an existing UI, use the actual reference widget instance as the baseline. A similar class, texture, component preset, or tree shape is not proof of parity. Do not optimize the target hierarchy until the reference instance has been captured and the target passes this gate.
+
+Compare each reference-target pair in this order:
+
+1. `Tree`: widget class, semantic role, parent, child order, and ownership boundary.
+2. `Slot`: slot class, anchors, offsets, position, size, alignment, auto-size, padding, size rule, and Z-order.
+3. `Appearance`: visibility, enabled state, clipping, render transform, `RenderOpacity`, `ColorAndOpacity`, Brush tint/draw type/resource, Button style brushes, and material parameters.
+4. `Input`: Button bounds, visible child bounds, hit-test visibility, clipping, precise-click behavior, and intentional hit slop.
+5. `Runtime`: Lua-facing names, classes, bindings, animations, refresh behavior, initial state, and teardown.
+
+Treat any unexplained difference in these five groups as unresolved. Record the exact property and owner instead of describing the result only as "looks different."
+
+### Effective transparency
+
+Do not infer transparency from a texture thumbnail or from one opacity field. Trace the full rendered chain from the widget to the root:
+
+- source texture or material alpha;
+- `Image.Brush.ResourceObject` and Brush tint alpha;
+- widget `ColorAndOpacity` alpha;
+- widget `RenderOpacity`;
+- every relevant ancestor's color/opacity, visibility, clipping, and material state;
+- blend mode and material scalar/vector parameters when a material brush is used.
+
+Effective alpha is cumulative. A semi-transparent reference rendered as solid black usually means that the target differs somewhere in this chain, the Brush resource is unbound, or an opaque backing Image is still visible. Find the first divergent property before replacing artwork or adding a compensating overlay.
+
+### Geometry and coordinate conversion
+
+Measure both the visible geometry and the owning slot. When copying a reference child into a different parent, preserve the reference's final visual geometry by converting through the two parent geometries; do not paste viewport or screenshot coordinates into a target-local slot. Account for anchors, alignment, pivot, render transform, ScaleBox scaling, and DPI. After reparenting, re-read the target's absolute geometry and confirm that the intended screen position and size remain unchanged.
+
+For compact controls such as a close button, compare the Button bounds and visible Image bounds independently. A close Button must not inherit the width of a full header row, stretched container, or oversized content child unless that larger hit area is intentional and documented. Match the reference's visual size first, then make the hit region cover that visual without silently turning unrelated empty space into a clickable close action.
+
+### Write and reload discipline
+
+- Preserve exact reference instance values first; perform cleanup or hierarchy optimization only after parity is demonstrated.
+- Keep runtime-facing widget identities and bindings intact when correcting instance properties.
+- Compile, save, close or unload, and reload the WidgetBlueprint before the final comparison.
+- Re-read the tree, slots, appearance properties, and Brush resources after reload.
+- Visually compare at the reference resolution plus the target desktop/mobile aspect ratios, and test center and edge clicks for interactive controls.
+- If editor inspection and the rendered result disagree, trust neither in isolation; capture both states and continue tracing the render or layout chain.
+
 ## Semantic Ownership
 
 Give each independently movable or replaceable unit one semantic parent. A component owns its full visual and interactive bundle, including its plate, icon, native text, progress, badge, state decoration, and hit target.
@@ -243,6 +285,8 @@ Hierarchy improvement does not authorize gameplay or Lua-rule changes. Any compa
 Before accepting a hierarchy or migration:
 
 - root and adaptation container cover the intended viewport;
+- every reference-target pair passes `Tree`, `Slot`, `Appearance`, `Input`, and `Runtime` parity, or each intentional difference is recorded;
+- effective transparency is traced through texture/material alpha, Brush tint, widget color/opacity, `RenderOpacity`, and relevant ancestors;
 - every independently movable bundle has one clear owner;
 - all runtime-required controls exist with expected classes and names;
 - slot type, anchors, offsets, alignment, auto-size, padding, and render transforms are intentional;
@@ -250,12 +294,14 @@ Before accepting a hierarchy or migration:
 - Z-order is correct across sibling components, not only within each component;
 - decorative widgets do not block input;
 - Button hit regions cover their visible plates;
+- compact controls do not inherit unrelated stretched layout width or create undocumented hit slop;
 - fixed repeated content and runtime-sized repeated content use the appropriate ownership model;
 - Item root bounds match list cell configuration;
 - list callbacks bind, use the correct index base, reload from current data, and clear on teardown;
 - switcher child order matches the runtime state mapping;
 - dynamic text, icons, progress, lock, quality, quantity, and visibility all refresh;
 - every required brush resource is non-null after reload;
+- reference screen geometry is converted into target-parent local geometry instead of copying screenshot coordinates;
 - compile/save succeeds and `package_is_dirty() == False` after the intended save;
 - PIE or device testing verifies rendering, list population, edge taps, refresh, reopen, and teardown.
 
@@ -290,10 +336,34 @@ structure_decisions:
   reject:
 
 layout_and_input:
+  reference_instance:
+  tree_parity:
+  slot_parity:
+  appearance_parity:
   anchors_and_slots:
   overflow:
   z_order:
+  visible_bounds:
   button_hit_regions:
+  intentional_hit_slop:
+
+transparency_chain:
+  source_alpha:
+  brush_resource_and_tint:
+  color_and_opacity:
+  render_opacity:
+  ancestor_or_material_effects:
+
+coordinate_conversion:
+  reference_absolute_geometry:
+  reference_parent_geometry:
+  target_parent_geometry:
+  target_local_geometry:
+
+reload_verification:
+  tree_and_properties_reread:
+  visual_comparison:
+  edge_click_test:
 
 asset_integrity:
   moved_dependencies:

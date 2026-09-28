@@ -5,13 +5,17 @@ import json
 import re
 import shutil
 from datetime import datetime, timezone
+from math import gcd
 from pathlib import Path
 from typing import Any, Iterable
 
 from PIL import Image
 
 
-REFERENCE_ROLES = {"style", "layout"}
+REFERENCE_ROLES = {"style", "layout", "content", "edit-target"}
+IMAGE_OPERATIONS = {"generate", "edit", "variation"}
+IMAGE_MEDIA_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
+MAX_SAFE_INTEGER = 9_007_199_254_740_991
 TRUSTED_SOURCE_KINDS = {
     "input_image_attachment",
     "user_provided_file",
@@ -51,6 +55,255 @@ def write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def require_object(value: object, path: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise GenerationPipelineError(f"{path} must be an object")
+    return value
+
+
+def require_closed_object(
+    value: object,
+    path: str,
+    required: Iterable[str],
+    optional: Iterable[str] = (),
+) -> dict[str, Any]:
+    record = require_object(value, path)
+    required_fields = set(required)
+    allowed_fields = required_fields | set(optional)
+    missing = sorted(required_fields - record.keys())
+    if missing:
+        raise GenerationPipelineError(f"{path}.{missing[0]} is required")
+    extra = sorted(record.keys() - allowed_fields)
+    if extra:
+        raise GenerationPipelineError(
+            f"{path} has undeclared fields: {', '.join(extra)}"
+        )
+    return record
+
+
+def require_array(value: object, path: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise GenerationPipelineError(f"{path} must be an array")
+    return value
+
+
+def require_string_array(value: object, path: str) -> list[str]:
+    values = require_array(value, path)
+    for index, item in enumerate(values):
+        if not isinstance(item, str) or not item.strip():
+            raise GenerationPipelineError(
+                f"{path}[{index}] must be a non-empty string"
+            )
+    return values
+
+
+def require_nonempty_string(value: object, path: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise GenerationPipelineError(f"{path} must be a non-empty string")
+    return value
+
+
+def require_positive_integer(value: object, path: str) -> int:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value <= 0
+        or value > MAX_SAFE_INTEGER
+    ):
+        raise GenerationPipelineError(f"{path} must be a positive safe integer")
+    return value
+
+
+def validate_aspect_ratio(value: object, path: str) -> str:
+    ratio = require_nonempty_string(value, path)
+    normalized_ratio = ratio.strip()
+    match = re.fullmatch(r"([1-9]\d*):([1-9]\d*)", normalized_ratio)
+    if match is None:
+        raise GenerationPipelineError(
+            f"{path} must be a reduced positive integer ratio"
+        )
+    try:
+        width = require_positive_integer(int(match.group(1)), path)
+        height = require_positive_integer(int(match.group(2)), path)
+    except ValueError as exc:
+        raise GenerationPipelineError(
+            f"{path} must be a reduced positive integer ratio"
+        ) from exc
+    if gcd(width, height) != 1:
+        raise GenerationPipelineError(
+            f"{path} must be a reduced positive integer ratio"
+        )
+    return normalized_ratio
+
+
+def validate_image_spec(spec_value: object) -> dict[str, Any]:
+    spec = require_closed_object(
+        spec_value,
+        "imageSpec",
+        (
+            "schemaVersion",
+            "operation",
+            "canonicalPrompt",
+            "references",
+            "composition",
+            "visualStyle",
+            "scene",
+            "exactText",
+            "output",
+            "preserve",
+            "negativeConstraints",
+            "requiredCapabilities",
+            "evidence",
+            "warnings",
+        ),
+    )
+    if (
+        isinstance(spec["schemaVersion"], bool)
+        or not isinstance(spec["schemaVersion"], int)
+        or spec["schemaVersion"] != 1
+    ):
+        raise GenerationPipelineError("imageSpec.schemaVersion must be 1")
+    if not isinstance(spec["operation"], str) or spec["operation"] not in IMAGE_OPERATIONS:
+        raise GenerationPipelineError("imageSpec.operation must be generate, edit, or variation")
+    require_nonempty_string(spec["canonicalPrompt"], "imageSpec.canonicalPrompt")
+    references = require_array(spec["references"], "imageSpec.references")
+    for position, reference_value in enumerate(references):
+        reference_path = f"imageSpec.references[{position}]"
+        reference = require_closed_object(
+            reference_value,
+            reference_path,
+            ("inputIndex", "role", "priority", "attachment"),
+        )
+        require_positive_integer(
+            reference["inputIndex"], f"{reference_path}.inputIndex"
+        )
+        if not isinstance(reference["role"], str) or reference["role"] not in REFERENCE_ROLES:
+            raise GenerationPipelineError(f"{reference_path}.role is invalid")
+        require_positive_integer(reference["priority"], f"{reference_path}.priority")
+        attachment_path = f"{reference_path}.attachment"
+        attachment = require_closed_object(
+            reference["attachment"],
+            attachment_path,
+            ("attachmentId", "mediaType", "bytes", "width", "height"),
+            ("name", "originalDimensions"),
+        )
+        require_nonempty_string(
+            attachment["attachmentId"], f"{attachment_path}.attachmentId"
+        )
+        if (
+            not isinstance(attachment["mediaType"], str)
+            or attachment["mediaType"] not in IMAGE_MEDIA_TYPES
+        ):
+            raise GenerationPipelineError(f"{attachment_path}.mediaType is invalid")
+        for field in ("bytes", "width", "height"):
+            require_positive_integer(attachment[field], f"{attachment_path}.{field}")
+        if "name" in attachment:
+            require_nonempty_string(attachment["name"], f"{attachment_path}.name")
+        if "originalDimensions" in attachment:
+            original_path = f"{attachment_path}.originalDimensions"
+            original = require_closed_object(
+                attachment["originalDimensions"],
+                original_path,
+                ("width", "height"),
+            )
+            require_positive_integer(original["width"], f"{original_path}.width")
+            require_positive_integer(original["height"], f"{original_path}.height")
+    target_count = sum(reference["role"] == "edit-target" for reference in references)
+    if spec["operation"] == "edit" and target_count != 1:
+        raise GenerationPipelineError(
+            "edit imageSpec must contain exactly one edit-target reference"
+        )
+    if spec["operation"] == "variation":
+        if target_count != 0:
+            raise GenerationPipelineError(
+                "variation imageSpec must not contain an edit-target reference"
+            )
+        if not any(reference["role"] == "content" for reference in references):
+            raise GenerationPipelineError(
+                "variation imageSpec must contain at least one content reference"
+            )
+    for field in (
+        "composition",
+        "visualStyle",
+        "scene",
+        "preserve",
+        "negativeConstraints",
+        "requiredCapabilities",
+        "warnings",
+    ):
+        require_string_array(spec[field], f"imageSpec.{field}")
+    exact_text = require_array(spec["exactText"], "imageSpec.exactText")
+    for position, entry_value in enumerate(exact_text):
+        entry_path = f"imageSpec.exactText[{position}]"
+        entry = require_closed_object(
+            entry_value,
+            entry_path,
+            ("text", "preserveCase"),
+            ("placement",),
+        )
+        require_nonempty_string(entry["text"], f"{entry_path}.text")
+        if "placement" in entry:
+            require_nonempty_string(entry["placement"], f"{entry_path}.placement")
+        if not isinstance(entry["preserveCase"], bool):
+            raise GenerationPipelineError(f"{entry_path}.preserveCase must be boolean")
+    output = require_closed_object(
+        spec["output"],
+        "imageSpec.output",
+        ("transparentBackground", "count"),
+        ("aspectRatio", "width", "height"),
+    )
+    if not isinstance(output["transparentBackground"], bool):
+        raise GenerationPipelineError("imageSpec.output.transparentBackground must be boolean")
+    require_positive_integer(output["count"], "imageSpec.output.count")
+    has_width = "width" in output
+    has_height = "height" in output
+    if has_width != has_height:
+        raise GenerationPipelineError(
+            "imageSpec.output width and height must be supplied together"
+        )
+    if has_width:
+        width = require_positive_integer(output["width"], "imageSpec.output.width")
+        height = require_positive_integer(output["height"], "imageSpec.output.height")
+    else:
+        width = None
+        height = None
+    if "aspectRatio" in output:
+        ratio = validate_aspect_ratio(output["aspectRatio"], "imageSpec.output.aspectRatio")
+        if width is not None and height is not None:
+            divisor = gcd(width, height)
+            if ratio != f"{width // divisor}:{height // divisor}":
+                raise GenerationPipelineError(
+                    "imageSpec.output.aspectRatio does not match width and height"
+                )
+    evidence = require_array(spec["evidence"], "imageSpec.evidence")
+    for position, evidence_value in enumerate(evidence):
+        evidence_path = f"imageSpec.evidence[{position}]"
+        item = require_closed_object(
+            evidence_value,
+            evidence_path,
+            ("provider", "caseIds", "visualStyleTags", "sceneTags"),
+            ("templateId",),
+        )
+        require_nonempty_string(item["provider"], f"{evidence_path}.provider")
+        if "templateId" in item:
+            require_nonempty_string(item["templateId"], f"{evidence_path}.templateId")
+        for field in ("caseIds", "visualStyleTags", "sceneTags"):
+            require_string_array(item[field], f"{evidence_path}.{field}")
+    return spec
+
+
+def load_prepared_image_spec(optimization_path: Path) -> dict[str, Any]:
+    optimization_value = read_json(optimization_path.resolve())
+    if optimization_value.get("status") != "prepared":
+        raise GenerationPipelineError("image optimization result must have status prepared")
+    optimization = require_closed_object(
+        optimization_value,
+        "imageOptimizationResult",
+        ("status", "spec"),
+    )
+    return validate_image_spec(optimization["spec"])
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -59,14 +312,29 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def image_size(path: Path) -> tuple[int, int]:
+def image_metadata(path: Path) -> tuple[int, int, str]:
     try:
         with Image.open(path) as image:
+            image_format = image.format
             image.verify()
         with Image.open(path) as image:
-            return image.size
+            width, height = image.size
     except (OSError, ValueError) as exc:
         raise GenerationPipelineError(f"reference is not a readable image: {path}") from exc
+    media_type = {
+        "PNG": "image/png",
+        "JPEG": "image/jpeg",
+        "WEBP": "image/webp",
+        "GIF": "image/gif",
+    }.get(image_format or "")
+    if media_type is None:
+        raise GenerationPipelineError(f"reference image format is unsupported: {path}")
+    return width, height, media_type
+
+
+def image_size(path: Path) -> tuple[int, int]:
+    width, height, _media_type = image_metadata(path)
+    return width, height
 
 
 def relative_file(path: Path, root: Path) -> str:
@@ -83,7 +351,7 @@ def normalize_reference(reference: dict[str, Any], index: int) -> dict[str, Any]
         raise GenerationPipelineError(f"{prefix}.source is not a file: {source}")
     role = reference.get("role")
     if role not in REFERENCE_ROLES:
-        raise GenerationPipelineError(f"{prefix}.role must be style or layout")
+        raise GenerationPipelineError(f"{prefix}.role must be style, layout, content, or edit-target")
     priority = reference.get("priority")
     if isinstance(priority, bool) or not isinstance(priority, (int, float)):
         raise GenerationPipelineError(f"{prefix}.priority must be numeric")
@@ -100,7 +368,7 @@ def normalize_reference(reference: dict[str, Any], index: int) -> dict[str, Any]
     user_authorized = reference.get("user_authorized", False)
     if source_kind in REVIEW_SOURCE_KINDS and user_authorized is not True:
         raise GenerationPipelineError(f"{prefix}.user_authorized must be true for {source_kind}")
-    width, height = image_size(source)
+    width, height, media_type = image_metadata(source)
     digest = sha256_file(source)
     normalized = {
         "source": source,
@@ -111,6 +379,7 @@ def normalize_reference(reference: dict[str, Any], index: int) -> dict[str, Any]
         "user_authorized": bool(user_authorized),
         "width": width,
         "height": height,
+        "media_type": media_type,
         "sha256": digest,
     }
     if source_kind == "project_library_asset":
@@ -173,6 +442,7 @@ def assert_tree_reference_alignment(ui_tree: dict[str, Any], references: list[di
     expected = {
         (str(reference["source"]), reference["role"], reference["priority"])
         for reference in references
+        if reference["role"] in {"style", "layout"}
     }
     actual = set()
     for index, reference in enumerate(tree_references):
@@ -237,132 +507,82 @@ def validate_tree_component_reuse(
             )
 
 
-def compile_generation_prompt(
-    style_profile: dict[str, Any],
+def build_oasis_constraints(
     ui_tree: dict[str, Any],
-    reference_manifest: dict[str, Any],
-    page_purpose: str = "",
-    reuse_components: Iterable[str] = (),
-) -> str:
-    project = style_profile.get("project", {})
-    project_name = project.get("name", "RedCliff") if isinstance(project, dict) else "RedCliff"
-    style_guide = style_profile.get("style_guide", {})
-    components = style_profile.get("components", [])
-    requested_ids = list(dict.fromkeys(reuse_components))
-    component_map = {
-        item.get("component_id"): item
-        for item in components
-        if isinstance(item, dict) and isinstance(item.get("component_id"), str)
+    reuse_components: Iterable[str],
+) -> dict[str, Any]:
+    model_visible_tree = json.loads(json.dumps(ui_tree, ensure_ascii=False))
+    visual = model_visible_tree.get("visual")
+    if isinstance(visual, dict):
+        references = visual.get("reference_images")
+        if isinstance(references, list):
+            for reference in references:
+                if isinstance(reference, dict):
+                    reference.pop("source", None)
+                    reference.pop("source_kind", None)
+                    reference.pop("user_authorized", None)
+    return {
+        "schemaVersion": 1,
+        "dynamicText": True,
+        "dynamicNumbers": True,
+        "dynamicProgress": True,
+        "hitTargets": True,
+        "reusableControls": list(dict.fromkeys(reuse_components)),
+        "uiTree": model_visible_tree,
+        "editorWriteRestrictions": {
+            "authorized": False,
+            "requiresExplicitAuthorization": True,
+            "prohibitedTargets": ["WidgetBlueprint", "Lua", "DataTable", ".uasset", ".umap"],
+        },
+        "cowartReviewStages": [
+            "style_validation",
+            "visual_review",
+            "component_extraction",
+            "component_confirmation",
+        ],
     }
-    existing_components = [component_map[component_id] for component_id in requested_ids if component_id in component_map]
-    references = reference_manifest.get("references", [])
-    style_references = [item for item in references if item.get("role") == "style"]
-    layout_references = [item for item in references if item.get("role") == "layout"]
-    library_references = [
-        item["library"]
-        for item in references
-        if item.get("source_kind") == "project_library_asset"
-        and isinstance(item.get("library"), dict)
-    ]
-    native_components = [item for item in ui_tree.get("components", []) if item.get("asset_policy") == "native"]
-    bitmap_components = [item for item in ui_tree.get("components", []) if item.get("asset_policy") != "native"]
-    purpose = page_purpose.strip() or str(ui_tree.get("page", {}).get("purpose", ""))
 
-    def dump(value: object) -> str:
-        return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True)
 
-    return "\n".join(
+def compile_generation_prompt(
+    image_spec: dict[str, Any],
+    oasis_constraints: dict[str, Any],
+) -> str:
+    reusable = oasis_constraints["reusableControls"]
+    tree = oasis_constraints["uiTree"]
+    appendix = "\n".join(
         [
-            "PROJECT",
-            str(project_name),
-            "",
-            "STYLE REFERENCES",
-            "These images define the visual language.",
-            "Treat them as UI from the same game, same art team and same design system.",
-            dump(style_references),
-            "",
-            "LAYOUT REFERENCES",
-            "These images define only:",
-            "- information hierarchy",
-            "- approximate placement",
-            "- required content",
-            "Do NOT copy their visual style.",
-            dump(layout_references),
-            "",
-            "PROJECT LIBRARY REFERENCES",
-            "These approved project assets provide reusable component and item provenance.",
-            dump(library_references),
-            "",
-            "STYLE PROFILE",
-            "The profile is supplementary and must not replace the STYLE reference images.",
-            dump(style_guide),
-            "",
-            "EXISTING COMPONENTS",
-            dump(existing_components),
-            "",
-            "UI TREE",
-            dump(ui_tree),
-            "",
-            "LAYOUT REQUIREMENTS",
-            purpose,
-            "",
-            "NATIVE / BITMAP BOUNDARIES",
-            "Keep text, counters, values, progress, and interactive hit targets as native controls.",
-            "Native controls:",
-            dump(native_components),
-            "Bitmap/layer artwork:",
-            dump(bitmap_components),
-            "",
-            "VISUAL MATCH REQUIREMENTS",
-            "Same game.",
-            "Same art team.",
-            "Same UI design system.",
-            "Match the STYLE reference images in:",
-            "- panel geometry",
-            "- border thickness",
-            "- corner treatment",
-            "- bevel",
-            "- highlight",
-            "- shadow",
-            "- material",
-            "- title rendering",
-            "- button rendering",
-            "- icon rendering",
-            "- spacing rhythm",
-            "- visual density",
-            "Reuse existing RedCliff component language wherever applicable.",
-            "",
-            "NEGATIVE CONSTRAINTS",
-            "Do not produce:",
-            "- generic mobile shop UI",
-            "- generic fantasy UI",
-            "- modern flat UI",
-            "- web dashboard styling",
-            "- simplified CSS-like controls",
-            "Layout reference controls hierarchy only.",
-            "Do not inherit visual styling from layout references.",
-            "Do not use HTML/CSS/Chromium screenshots as final game UI artwork.",
+            "## Oasis UI constraints",
+            "Keep runtime-dynamic text, numbers, progress, and interactive hit targets as runtime-native controls.",
+            f"Reusable control IDs: {json.dumps(reusable, ensure_ascii=False)}",
+            "UI Tree:",
+            json.dumps(tree, ensure_ascii=False, indent=2, sort_keys=True),
+            "Do not write WidgetBlueprint, Lua, DataTable, .uasset, or .umap content without explicit user authorization.",
+            "Cowart review stages: style validation, visual review, component extraction, component confirmation.",
             "",
         ]
     )
+    canonical_prompt = image_spec["canonicalPrompt"]
+    separator = "" if canonical_prompt.endswith("\n\n") else "\n" if canonical_prompt.endswith("\n") else "\n\n"
+    return canonical_prompt + separator + appendix
 
 
 def build_generation_package(
     ui_tree_path: Path,
     style_profile_path: Path,
     reference_metadata_path: Path,
+    optimization_path: Path,
     output_dir: Path,
-    page_purpose: str = "",
     reuse_components: Iterable[str] = (),
     library_reference_metadata_path: Path | None = None,
 ) -> Path:
     ui_tree = read_json(ui_tree_path.resolve())
     style_profile = read_json(style_profile_path.resolve())
+    image_spec = load_prepared_image_spec(optimization_path)
     if ui_tree.get("artifact_type") != "ui_tree":
         raise GenerationPipelineError("ui-tree must be produced by build_ui_tree.py")
     explicit_references = load_reference_inputs(
         reference_metadata_path.resolve(),
-        require_style=library_reference_metadata_path is None,
+        require_style=False,
     )
     assert_tree_reference_alignment(ui_tree, explicit_references)
     library_references = (
@@ -370,11 +590,33 @@ def build_generation_package(
         if library_reference_metadata_path is not None
         else []
     )
-    references = [*explicit_references, *library_references]
+    spec_references = sorted(image_spec["references"], key=lambda item: item["inputIndex"])
+    if len(spec_references) != len(explicit_references):
+        raise GenerationPipelineError(
+            "prepared imageSpec references must match the direct-user local references"
+        )
+    for position, (reference, spec_reference) in enumerate(zip(explicit_references, spec_references)):
+        if reference["role"] != spec_reference["role"] or reference["priority"] != spec_reference["priority"]:
+            raise GenerationPipelineError(
+                f"prepared imageSpec reference {position + 1} role/priority does not match local metadata"
+            )
+        attachment = spec_reference["attachment"]
+        if (
+            attachment["mediaType"] != reference["media_type"]
+            or attachment["bytes"] != reference["source"].stat().st_size
+            or attachment["width"] != reference["width"]
+            or attachment["height"] != reference["height"]
+        ):
+            raise GenerationPipelineError(
+                f"prepared imageSpec reference {position + 1} attachment does not match the local image"
+            )
     tree_reuse_components = tree_reuse_component_ids(ui_tree)
     validate_tree_component_reuse(style_profile, tree_reuse_components, library_references)
     requested_reuse_components = list(dict.fromkeys([*reuse_components, *tree_reuse_components]))
-    if not any(reference["role"] == "style" for reference in references):
+    if image_spec["operation"] == "generate" and not any(
+        reference["role"] == "style"
+        for reference in [*explicit_references, *library_references]
+    ):
         raise GenerationPipelineError(
             "at least one style reference image is required; a style profile or prompt cannot replace it"
         )
@@ -384,9 +626,11 @@ def build_generation_package(
     reference_dir = output / "references"
     reference_dir.mkdir(parents=True, exist_ok=True)
 
-    counters = {"style": 0, "layout": 0}
+    counters = dict.fromkeys(REFERENCE_ROLES, 0)
     manifest_items = []
-    for reference in references:
+    packaged_references = list(zip(explicit_references, spec_references))
+    packaged_references.extend((reference, None) for reference in library_references)
+    for reference, spec_reference in packaged_references:
         role = reference["role"]
         counters[role] += 1
         reference_id = f"{role}-{counters[role]:02d}"
@@ -404,6 +648,9 @@ def build_generation_package(
             "height": reference["height"],
             "sha256": sha256_file(target),
         }
+        if spec_reference is not None:
+            manifest_item["input_index"] = spec_reference["inputIndex"]
+            manifest_item["attachment"] = spec_reference["attachment"]
         if "library" in reference:
             manifest_item["library"] = reference["library"]
         manifest_items.append(manifest_item)
@@ -411,7 +658,10 @@ def build_generation_package(
     shutil.copy2(ui_tree_path.resolve(), output / "ui-tree.json")
     shutil.copy2(style_profile_path.resolve(), output / "style-profile.json")
     write_json(output / "reference-manifest.json", manifest)
-    prompt = compile_generation_prompt(style_profile, ui_tree, manifest, page_purpose, requested_reuse_components)
+    write_json(output / "image-spec.json", image_spec)
+    oasis_constraints = build_oasis_constraints(ui_tree, requested_reuse_components)
+    write_json(output / "oasis-constraints.json", oasis_constraints)
+    prompt = compile_generation_prompt(image_spec, oasis_constraints)
     prompt_path = output / "generation-prompt.txt"
     prompt_path.write_text(prompt, encoding="utf-8")
     project = style_profile.get("project", {})
@@ -423,8 +673,12 @@ def build_generation_package(
         "prompt_file": "generation-prompt.txt",
         "prompt_sha256": sha256_file(prompt_path),
         "reference_manifest": "reference-manifest.json",
+        "image_spec": "image-spec.json",
+        "oasis_constraints": "oasis-constraints.json",
+        "reference_files": [item["file"] for item in manifest_items],
         "style_references": [item["file"] for item in manifest_items if item["role"] == "style"],
         "layout_references": [item["file"] for item in manifest_items if item["role"] == "layout"],
+        "required_capabilities": image_spec["requiredCapabilities"],
         "required_capability": "codex_builtin_image_gen",
         "generation_backend": "codex_builtin",
         "tool": "image_gen",
@@ -443,6 +697,8 @@ def validate_generation_package(package_dir: Path) -> dict[str, Any]:
         "reference-manifest.json",
         "ui-tree.json",
         "style-profile.json",
+        "image-spec.json",
+        "oasis-constraints.json",
         "generation-prompt.txt",
         "generation-request.json",
     )
@@ -450,11 +706,15 @@ def validate_generation_package(package_dir: Path) -> dict[str, Any]:
         if not (package / name).is_file():
             raise GenerationPipelineError(f"missing {name}")
     manifest = read_json(package / "reference-manifest.json")
+    image_spec = validate_image_spec(read_json(package / "image-spec.json"))
+    oasis_constraints = read_json(package / "oasis-constraints.json")
     request = read_json(package / "generation-request.json")
     references = manifest.get("references")
     if manifest.get("schema_version") != 1 or not isinstance(references, list):
         raise GenerationPipelineError("reference-manifest.json is invalid")
-    if not any(item.get("role") == "style" for item in references if isinstance(item, dict)):
+    if image_spec["operation"] == "generate" and not any(
+        item.get("role") == "style" for item in references if isinstance(item, dict)
+    ):
         raise GenerationPipelineError("at least one style reference image is required")
     for index, item in enumerate(references):
         if not isinstance(item, dict):
@@ -491,13 +751,76 @@ def validate_generation_package(package_dir: Path) -> dict[str, Any]:
                     )
             if library.get("preview_key") != f"sha256:{item.get('sha256')}":
                 raise GenerationPipelineError("project library preview_key does not match")
+    direct_references = []
+    for index, item in enumerate(references):
+        has_input_index = "input_index" in item
+        has_attachment = "attachment" in item
+        if has_input_index != has_attachment:
+            raise GenerationPipelineError(
+                f"reference-manifest references[{index}] must pair input_index and attachment"
+            )
+        if has_input_index:
+            direct_references.append(item)
+        elif item.get("source_kind") != "project_library_asset":
+            raise GenerationPipelineError(
+                f"reference-manifest references[{index}] outside image-spec.json must be a project library asset"
+            )
+    spec_references = sorted(
+        image_spec["references"],
+        key=lambda item: (
+            item["inputIndex"],
+            item["role"],
+            item["priority"],
+            json.dumps(item["attachment"], sort_keys=True),
+        ),
+    )
+    direct_references.sort(
+        key=lambda item: (
+            item.get("input_index"),
+            item.get("role"),
+            item.get("priority"),
+            json.dumps(item.get("attachment"), sort_keys=True),
+        )
+    )
+    if len(spec_references) != len(direct_references):
+        raise GenerationPipelineError("image-spec.json references do not match reference-manifest.json")
+    for index, (item, spec_reference) in enumerate(
+        zip(direct_references, spec_references)
+    ):
+        if item.get("input_index") != spec_reference["inputIndex"]:
+            raise GenerationPipelineError(f"reference-manifest references[{index}].input_index does not match")
+        if item.get("role") != spec_reference["role"] or item.get("priority") != spec_reference["priority"]:
+            raise GenerationPipelineError(f"reference-manifest references[{index}] role/priority does not match")
+        if item.get("attachment") != spec_reference["attachment"]:
+            raise GenerationPipelineError(f"reference-manifest references[{index}].attachment does not match")
+    expected_constraints = build_oasis_constraints(
+        read_json(package / "ui-tree.json"),
+        require_string_array(
+            oasis_constraints.get("reusableControls"),
+            "oasisConstraints.reusableControls",
+        ),
+    )
+    if oasis_constraints != expected_constraints:
+        raise GenerationPipelineError("oasis-constraints.json is invalid")
     prompt_path = package / str(request.get("prompt_file", ""))
     if not prompt_path.is_file() or request.get("prompt_sha256") != sha256_file(prompt_path):
         raise GenerationPipelineError("generation prompt is missing or its sha256 does not match")
+    expected_prompt = compile_generation_prompt(image_spec, oasis_constraints)
+    if prompt_path.read_text(encoding="utf-8") != expected_prompt:
+        raise GenerationPipelineError("generation prompt does not match image-spec.json and oasis-constraints.json")
     style_files = [item["file"] for item in references if item.get("role") == "style"]
     layout_files = [item["file"] for item in references if item.get("role") == "layout"]
     if request.get("style_references") != style_files or request.get("layout_references") != layout_files:
         raise GenerationPipelineError("generation request reference lists do not match reference-manifest.json")
+    reference_files = [item["file"] for item in references]
+    if request.get("reference_files") != reference_files:
+        raise GenerationPipelineError("generation request reference_files do not match reference-manifest.json")
+    if request.get("image_spec") != "image-spec.json":
+        raise GenerationPipelineError("generation request must reference image-spec.json")
+    if request.get("oasis_constraints") != "oasis-constraints.json":
+        raise GenerationPipelineError("generation request must reference oasis-constraints.json")
+    if request.get("required_capabilities") != image_spec["requiredCapabilities"]:
+        raise GenerationPipelineError("generation request required_capabilities do not match image-spec.json")
     if request.get("required_capability") != "codex_builtin_image_gen":
         raise GenerationPipelineError("generation request must require the Codex built-in image_gen tool")
     if request.get("generation_backend") != "codex_builtin" or request.get("tool") != "image_gen":
@@ -506,7 +829,13 @@ def validate_generation_package(package_dir: Path) -> dict[str, Any]:
         raise GenerationPipelineError("generation request credentials must be managed by Codex")
     if request.get("fallback_policy") != "forbid_html_screenshot":
         raise GenerationPipelineError("generation request must forbid HTML screenshot fallback")
-    return {"package": package, "manifest": manifest, "request": request}
+    return {
+        "package": package,
+        "manifest": manifest,
+        "request": request,
+        "image_spec": image_spec,
+        "oasis_constraints": oasis_constraints,
+    }
 
 
 def record_generation_result(
@@ -532,7 +861,7 @@ def record_generation_result(
         "status": "generated",
         "output_image": relative_file(target, package),
         "output_sha256": sha256_file(target),
-        "references_used": [*request["style_references"], *request["layout_references"]],
+        "references_used": request["reference_files"],
         "prompt_sha256": request["prompt_sha256"],
         "generated_at": generated_at or datetime.now(timezone.utc).isoformat(),
     }
@@ -561,7 +890,7 @@ def validate_generation_result(package_dir: Path, expected_image: Path | None = 
     if result.get("output_sha256") != sha256_file(output):
         raise GenerationPipelineError("generation result output sha256 does not match")
     request = context["request"]
-    expected_references = [*request["style_references"], *request["layout_references"]]
+    expected_references = request["reference_files"]
     if result.get("references_used") != expected_references:
         raise GenerationPipelineError("generation result references_used does not match the request")
     if result.get("prompt_sha256") != request["prompt_sha256"]:

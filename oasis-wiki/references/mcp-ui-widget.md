@@ -318,6 +318,16 @@ Prefer existing project UIManager and RPC patterns over one-off binding style.
 
 ## Save And Verify
 
+For approved visual-to-UMG delivery, create the cross-stage `ui_delivery_contract` described in `references/ui-delivery-contract.md`. Export the current MCP readback as `umg-snapshot.json`, hash it, and run `scripts/game-ui/validate_ui_delivery_contract.py` after save/reload and Designer review. This catches stale Workbench evidence, wrong root space, missing runtime controls, unbound `Brush.ResourceObject`, unintended `Auto Size`, scrollbar reservation, negative-position policy violations, and audit output written inside the project.
+
+Use a **Designer-first** verification ladder and report each level independently:
+
+- **属性回读**: serialized properties, hierarchy, slots, brush resources, and package save state.
+- **Designer 视觉**: reopened WidgetBlueprint rendering, geometry, clipping, Z-order, text proportion, and hit regions.
+- **PIE 功能**: runtime creation, dynamic values, input callbacks, state switching, refresh, and close behavior.
+
+Do not call a property readback a visual pass. Do not call a Designer screenshot a functional pass. For layout and style iterations, capture and approve the Designer result before starting mobile PIE unless the defect is runtime-only.
+
 Always compile, save, reload, and inspect:
 
 ```python

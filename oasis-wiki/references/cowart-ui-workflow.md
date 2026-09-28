@@ -15,24 +15,31 @@
 1. **设计约束**：先读 `references/game-ui-design-system.md`，解析项目风格档案和已有组件，确定 UI Tree、原生文本/数值控件与位图资源边界。
 2. **UI 规格**：从 `assets/cowart-ui/ui-spec-template.json` 创建并验证 `ui-spec.json`，再生成完整 `ui-tree.json`。
 3. **解析原始参考图**：把用户给出的独立原图分类为 `style` 或 `layout`。聊天截图、浏览器截图、Cowart 截图和多图 collage 默认拒绝，除非用户明确授权。
-4. **构建 Generation Package**：运行 `scripts/game-ui/build_generation_package.py`，把原图复制进包内，并记录尺寸、SHA-256、角色和优先级。
-5. **编译 Prompt**：同时编译项目 Style Profile、已有组件、UI Tree、原生/位图边界和负面约束；Style Profile 只作补充，不能替代 Style Image。
-6. **真实图片生成**：优先把 Style Images、Layout Images 和 Compiled Prompt 一起传给 Codex 内置 `image_gen`。不要求用户配置外部 Key，也不使用通用 CLI fallback。内置工具、official environment Key 或默认图片模型不可用，或者当前凭据来自自定义 Provider 时，不得直接停止：先运行 `generate_with_codex_provider.py --discover-image-models`，只读查询当前 Provider 的 `/models`，按 `confirmed`、`likely`、`uncertain` 列出候选和证据。发现结果固定为 `generation_attempted: false`，禁止 automatic paid probe；即使只有一个候选也保持 `selection_required: true`，由开发者选择模型后，再请求明确授权并执行 `codex_provider_direct`。
-7. **Style Validation**：运行 `scripts/game-ui/create_style_review.py`，建立定性对比记录，状态保持 `pending_developer_review`，不得伪造相似度百分比。
-8. **自动交给 Cowart**：`ai_generated` 来源必须通过 Generation Result、输出 SHA 和候选图一致性检查；`external_source` 仍允许用户直接导入已有 UI 图。
-9. **组件化**：优先使用真实图层导出；PSD 输入必须按 `references/cowart-ui/psd-to-umg.md` 结构化解析并保留源层级。扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
-10. **组件确认**：只把明确批准的组件写入用户级项目风格档案，并运行 `scripts/game-ui/validate_library.py`。
-11. **交付**：先生成并验证 RedCliff 交付计划；只有用户明确授权后，才修改 WidgetBlueprint、Lua、DataTable 或其他 UGC 资产。
+4. **通用图片准备**：先使用正式 `image-generation` Skill 调用 `image_optimize`。`needs_clarification` 必须停止并询问；只有 `prepared` 且 `ImageGenerationSpec.schemaVersion` 为 `1` 才能继续。该步骤确定且离线，不使用执行器凭据，也不执行图像或模型。
+5. **构建 Generation Package**：运行 `scripts/game-ui/build_generation_package.py`，输入完整优化结果，把用户直接提供的本地参考图与不透明持久附件 ID 对齐，并用独立 SHA-256 校验文件字节。已批准的项目库资源作为补充 Oasis 输入保留自己的哈希与来源元数据，无需出现在 `ImageGenerationSpec.references` 中。原样保留 `canonicalPrompt`、references、`exactText`、output、preserve、`negativeConstraints`、evidence、warnings 和 `requiredCapabilities`。
+6. **追加 Oasis 约束**：只追加动态文本/数值/进度、交互热区、可复用控件、UI Tree、编辑器写入限制和 Cowart 评审阶段；不得重新选择通用模板、风格或案例。
+7. **真实图片生成**：优先把全部包内参考图和 Compiled Prompt 一起传给 Codex 内置 `image_gen`。不要求用户配置外部 Key，也不使用通用 CLI fallback。内置工具、official environment Key 或默认图片模型不可用，或者当前凭据来自自定义 Provider 时，不得直接停止：先运行 `generate_with_codex_provider.py --discover-image-models`，只读查询当前 Provider 的 `/models`，按 `confirmed`、`likely`、`uncertain` 列出候选和证据。发现结果固定为 `generation_attempted: false`，禁止 automatic paid probe；即使只有一个候选也保持 `selection_required: true`，由开发者选择模型后，再请求明确授权并执行 `codex_provider_direct`。
+8. **Style Validation**：运行 `scripts/game-ui/create_style_review.py`，建立定性对比记录，状态保持 `pending_developer_review`，不得伪造相似度百分比。
+9. **自动交给 Cowart**：`ai_generated` 来源必须通过 Generation Result、输出 SHA 和候选图一致性检查；`external_source` 仍允许用户直接导入已有 UI 图。
+10. **组件化**：优先使用真实图层导出；PSD 输入必须按 `references/cowart-ui/psd-to-umg.md` 结构化解析并保留源层级。扁平图推断只能标记为 `reconstruction_candidate`，不能冒充独立图层。
+11. **组件确认**：只把明确批准的组件写入用户级项目风格档案，并运行 `scripts/game-ui/validate_library.py`。
+12. **交付**：先生成并验证 RedCliff 交付计划；只有用户明确授权后，才修改 WidgetBlueprint、Lua、DataTable 或其他 UGC 资产。
 
 ## Generation Package
+
+### Exact-reuse visual lock
+
+When the user requires a project background, frame, logo, title plate, or other bitmap to remain unchanged, treat it as an **不可重绘区域**: the exact source file is the baseline and the editable area must be represented by an explicit mask. Run `scripts/game-ui/verify_ui_visual_lock.py` after generation and before visual approval. Any changed pixel in the locked area is `UI_VISUAL_LOCK_FAILED`; keep the candidate for diagnosis, show the diff image, and do not continue to slicing or Workbench.
+
+The prompt's preserve wording is not proof. The report must name the baseline and candidate SHA-256 values, dimensions, editable-mask SHA-256, locked changed-pixel count, and difference bounds. See `references/ui-delivery-contract.md`.
 
 ```powershell
 python scripts/game-ui/build_generation_package.py `
   --ui-tree <ui-tree.json> `
   --style-profile <profile.json> `
   --references <references.json> `
-  --output <generation-package> `
-  --page-purpose "<page purpose>"
+  --optimization <image-optimize-result.json> `
+  --output <generation-package>
 
 python scripts/game-ui/validate_generation_package.py <generation-package>
 python scripts/game-ui/prepare_image_generation.py --package <generation-package> --available-tool image_gen
@@ -43,7 +50,7 @@ python scripts/game-ui/prepare_image_generation.py --package <generation-package
 python scripts/game-ui/generate_with_codex_provider.py --package <generation-package> --user-authorized-provider-direct
 ```
 
-`prepare_image_generation.py` 默认只接受 Codex 当前工具清单中的内置 `image_gen`，并输出真实调用所需的 prompt/reference 路径。工具缺失时以退出码 `3` 输出 `IMAGE_GENERATION_UNAVAILABLE`，但编排层必须先完成只读上游发现，不能只因 official environment Key 缺失就结束。`--discover-image-models` 只读取当前 Provider 配置和托管认证并调用 `GET /models`，输出 Provider 主机名、候选模型、置信度和证据，不打印或写入凭据，也不调用图片生成接口。开发者选择候选且显式授权 `--allow-provider-direct` 后，`generate_with_codex_provider.py` 才解析实际模型名并生成图片。
+`prepare_image_generation.py` 默认只接受 Codex 当前工具清单中的内置 `image_gen`，并输出真实调用所需的 prompt/reference 路径、输出设置和能力要求。工具缺失时以退出码 `3` 输出 `IMAGE_GENERATION_UNAVAILABLE`，但编排层必须先完成只读上游发现，不能只因 official environment Key 缺失就结束。`--discover-image-models` 只读取当前 Provider 配置和托管认证并调用 `GET /models`，输出 Provider 主机名、候选模型、置信度和证据，不打印或写入凭据，也不调用图片生成接口。开发者选择候选且显式授权 `--allow-provider-direct` 后，`generate_with_codex_provider.py` 才解析实际模型名并生成图片。
 
 ## 原生入口
 
