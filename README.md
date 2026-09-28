@@ -1,9 +1,15 @@
 # Oasis Wiki Codex Skill
 
-This repository is the canonical source for the `oasis-wiki` Skill. The Windows
-desktop distribution lives in `mislw/oasis-wiki-comp` and bundles this repository's
-`oasis-wiki/` directory as `src-tauri/resources/skill/`; only Companion packaging
-metadata such as `VERSION` remains plugin-specific.
+> [!IMPORTANT]
+> This repository was archived on September 28, 2026. Active Skill development,
+> the Codex plugin, Windows Companion, tags, and releases now live in
+> [`mislw/oasis-wiki-comp`](https://github.com/mislw/oasis-wiki-comp).
+> Existing source, tags, and releases remain available here for historical
+> compatibility.
+
+This repository is the historical standalone source for the `oasis-wiki` Skill.
+The active canonical source is now `skills/oasis-wiki` inside
+`mislw/oasis-wiki-comp`.
 
 这是一个给 **绿洲启元 / 绿洲起源 / 和平精英 UGC Lua 开发** 使用的 Codex Skill / AI Agent 知识包。
 
